@@ -1,0 +1,6 @@
+click~=8.1.7
+python-dotenv~=1.0.1
+
+pyasn1~=0.6.1
+pysnmp~=7.1.12
+aiogram~=3.14.0

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/constants/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/constants/menu_labels.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/constants/messages.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/constants/regexp.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/constants/symbols.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/database/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/filters/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/handlers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/handlers/error_handler.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/handlers/help.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/handlers/incident.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/handlers/message_handler.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/handlers/start_handler.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/keyboards/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/middlewares/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/utils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/utils/device_utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/utils/helper_functions.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/utils/logger.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/utils/network_utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bot/utils/snmp_functions.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/device_config.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/interfaceList.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/interfaceRange.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/new.oid.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/oid.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/merge.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="2oUPIqvnOh5e05668FgCMkiHuGa" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.main.executor": "Debug",
+    "Python.merge.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "D:/dev.tgnsa.ru/aio.tgnsa/bot/constants"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\constants" />
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\utils" />
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\middlewares" />
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\keyboards" />
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\handlers" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.merge">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="aio.tgnsa" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/bot" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/bot/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="merge" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="aio.tgnsa" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/merge.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.merge" />
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-d7ad00fb9fc3-c546a90a8094-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-242.23726.102" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="" />
+      <created>1730921103985</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1730921103985</updated>
+    </task>
+    <servers />
+  </component>
+</project>
