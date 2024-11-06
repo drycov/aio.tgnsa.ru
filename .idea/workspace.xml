@@ -4,45 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/constants/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/constants/menu_labels.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/constants/messages.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/constants/regexp.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/constants/symbols.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/database/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/filters/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/handlers/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/handlers/error_handler.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/handlers/help.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/handlers/incident.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/handlers/message_handler.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/handlers/start_handler.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/keyboards/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/middlewares/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/utils/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/utils/device_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/utils/helper_functions.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/utils/logger.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/utils/network_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot/utils/snmp_functions.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.env" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/device_config.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/interfaceList.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/interfaceRange.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/new.oid.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/oid.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/merge.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-    </list>
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="first" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -58,6 +20,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/drycov/aio.tgnsa.ru.git",
+    "accountId": "ae814277-c7b2-4e0e-a409-a688ce05fc4c"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -159,6 +127,38 @@
       <option name="presentableId" value="Default" />
       <updated>1730921103985</updated>
     </task>
+    <task id="LOCAL-00001" summary="first">
+      <option name="closed" value="true" />
+      <created>1730935431089</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1730935431089</updated>
+    </task>
+    <task id="LOCAL-00002" summary="first">
+      <option name="closed" value="true" />
+      <created>1730935454774</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1730935454774</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="first" />
+    <option name="LAST_COMMIT_MESSAGE" value="first" />
   </component>
 </project>
