@@ -6,7 +6,7 @@ from netaddr import IPNetwork
 from ping3 import ping
 from typing import Any, Optional
 
-from bot.constants import NetworkMessages
+from app.constants import NetworkMessages
 
 
 class NetworkUtils:

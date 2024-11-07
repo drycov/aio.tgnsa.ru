@@ -4,7 +4,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 from dotenv import load_dotenv
 
-from bot.constants import LogMessages
+from app.constants import LogMessages
 from config import Config
 
 # Загрузка переменных окружения

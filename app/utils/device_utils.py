@@ -1,8 +1,8 @@
 from typing import Any, Dict
 
-from bot.constants import LogMessages
-from bot.utils.helper_functions import HelperFunctions
-from bot.utils.logger import logger
+from app.constants import LogMessages
+from app.utils.helper_functions import HelperFunctions
+from app.utils.logger import logger
 
 
 class DeviceModelFilter:

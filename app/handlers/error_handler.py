@@ -11,7 +11,7 @@ from aiogram.exceptions import (
     TelegramBadRequest,
 )
 
-from bot.constants import ErrorMessages
+from app.constants import ErrorMessages
 
 # Создаем маршрутизатор для регистрации обработчиков
 router = Router()

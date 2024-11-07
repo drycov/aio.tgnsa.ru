@@ -1,0 +1,341 @@
+{
+  "S2350": {
+    "name": "Huawei S2350-28TP-EI-AC",
+    "interface_key": "s5320_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 0
+  },
+  "S2700-18TP-SI-AC": {
+    "name": "Huawei S2700-18TP-SI-AC",
+    "interface_key": "s2700_interfaces",
+    "interface_list_key": "interface_list_huawei2700",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "S2320": {
+    "name": "Huawei S2320-28TP-EI-AC",
+    "interface_key": "s5320_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 0
+  },
+  "S5320-28TP-LI-AC": {
+    "name": "Huawei S5320-28TP-LI-AC",
+    "interface_key": "s5320_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 0
+  },
+  "S5320-28P-LI-AC": {
+    "name": "Huawei S5320-28P-LI-AC",
+    "interface_key": "s5320_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 0
+  },
+  "S6320-54C-EI-48S-AC": {
+    "name": "Huawei S6320-54C-EI-48S-AC",
+    "interface_key": "s6320_interfaces",
+    "interface_list_key": "interface_list_50p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 28
+  },
+  "S5700-26X-SI-12S-AC": {
+    "name": "Huawei S5700-26X-SI-12S-AC"
+  },
+  "Huawei Integrated Access Software": {
+    "name": "Huawei SmartAX MA5616",
+    "interface_key": "s2700_interfaces",
+    "interface_list_key": "interface_list_huawei2700",
+    "ddm": false,
+    "adsl": true,
+    "fibers": 2
+  },
+  "DGS-3420-28SC": {
+    "name": "Dlink DGS-3420-28SC"
+  },
+  "DGS-3620-28SC": {
+    "name": "Dlink DGS-3620-28SC",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 28
+  },
+  "MES2324FB": {
+    "name": "Eltex MES2324FB",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 28
+  },
+  "MES2324P": {
+    "name": "Eltex MES2324P",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 4
+  },
+  "MES3324F": {
+    "name": "Eltex MES3324F",
+    "interface_key": "mes3324_interfaces",
+    "interface_list_key": "eltex3324_list",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 28
+  },
+  "MES3308F": {
+    "name": "Eltex MES3308F",
+    "interface_key": "mes3308_interfaces",
+    "interface_list_key": "eltex3308_list",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 12
+  },
+  "MES3316F": {
+    "name": "Eltex MES3316F",
+    "interface_key": "mes3316_interfaces",
+    "interface_list_key": "eltex3316_list",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 16
+  },
+  "MES2428": {
+    "name": "Eltex MES2428",
+    "interface_key": "mes2428_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 4
+  },
+  "ZXR10 2928": {
+    "name": "ZTE 2928E"
+  },
+  "DES-3200-26": {
+    "name": "D-Link DES-3200-26",
+    "interface_key": "tplink_interfaces2c",
+    "interface_list_key": "interface_list_26p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "DES-3200-10": {
+    "name": "D-Link DES-3200-10",
+    "interface_key": "interface_list_10p",
+    "interface_list_key": "interface_list_10p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "DES-3200-28": {
+    "name": "D-Link DES-3200-28"
+  },
+  "DES-1228/ME": {
+    "name": "D-Link DES-1228/ME"
+  },
+  "DES-1210-28/ME/B2": {
+    "name": "D-Link DES-1210-28/ME/B2"
+  },
+  "DES-1210-28": {
+    "name": "D-Link DES-1210-28",
+    "interface_key": "tplink_interfaces2c",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "DES-1210-28/ME/B3": {
+    "name": "D-Link DES-1210-28/ME/B3"
+  },
+  "DGS-3000-10TC": {
+    "name": "D-Link DGS-3000-10T",
+    "interface_key": "interface_list_10p",
+    "interface_list_key": "interface_list_10p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "DGS-3000-26TC": {
+    "name": "D-Link DGS-3000-26TC",
+    "interface_key": "interface_list_26p",
+    "interface_list_key": "interface_list_26p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "Tp-Link T2700G-28TQ": {
+    "name": "Tp-Link T2700G-28TQ",
+    "interface_key": "tplink_interfaces2",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 0
+  },
+  "Tp-Link T2600G-28TS": {
+    "name": "Tp-Link T2600G-28TS",
+    "interface_key": "s5320_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 0
+  },
+  "Tp-Link TL-SL2428": {
+    "name": "Tp-Link TL-SL2428",
+    "interface_key": "tplink_interfaces2",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "Tp-Link TL-1600G-52PS": {
+    "name": "Tp-Link TL-1600G-52PS",
+    "interface_key": "tplink_interfaces52",
+    "interface_list_key": "interface_list_TL_1600G",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 0
+  },
+  "CRS326-24G-2S+": {
+    "name": "Mikrotik CRS326",
+    "interface_key": "mikrotic_CRS326_26p",
+    "interface_list_key": "interface_list_26p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "CRS112": {
+    "name": "Mikrotik CRS112",
+    "interface_key": "s2350_interfaces",
+    "interface_list_key": "interface_list_12p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 4
+  },
+  "RB2011LS": {
+    "name": "Mikrotik RB2011LS",
+    "interface_key": "RB2011LS_interface_list",
+    "interface_list_key": "interface_list_11p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 1
+  },
+  "RB760": {
+    "name": "Mikrotik RB760iGS",
+    "interface_key": "Mikrotik_CRS326_26p",
+    "interface_list_key": "interface_list_8p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 1
+  },
+  "RB SXT": {
+    "name": "MikroTik SXT SA5"
+  },
+  "RB911G-5HPacD": {
+    "name": "Mikrotik NetBox 5"
+  },
+  "CSS326-24G-2S+": {
+    "name": "Mikrotik CSS326",
+    "interface_key": "Mikrotik_CRS326_26p",
+    "interface_list_key": "interface_list_26p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "SNR-S2962-24T": {
+    "name": "SNR S2962-24T",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 4
+  },
+  "SNR-S2995G-24FX": {
+    "name": "SNR S2995G",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 28
+  },
+  "SNR-S2985G-24T": {
+    "name": "SNR S2985G 24T",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 4
+  },
+  "SNR-S2985G-8T": {
+    "name": "SNR S2985G 8T",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_10p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "SNR-S2982G-24TE": {
+    "name": "SNR S2982G 24T"
+  },
+  "IES-612": {
+    "name": "ZyXEL IES-612",
+    "interface_key": "zyxel_interfaces_adsl_12_2",
+    "interface_list_key": "interface_list_12p",
+    "ddm": false,
+    "adsl": true,
+    "fibers": 0
+  },
+  "IES1248": {
+    "name": "ZyXEL IES1248-51",
+    "interface_key": "zyxel_interfaces_adsl_48_2",
+    "interface_list_key": "interface_list_50p",
+    "ddm": false,
+    "adsl": true,
+    "fibers": 0
+  },
+  "ZyXEL IES-1000/SAM1008": {
+    "name": "ZyXEL SAM1008"
+  },
+  "SG200-26": {
+    "name": "Cisco SG200-26",
+    "interface_key": "SG200_interface_list_26p",
+    "interface_list_key": "cisco_list",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 2
+  },
+  "LinkSys SPS 208G": {
+    "name": "LinkSys SPS 208G"
+  },
+  "ME360x_t": {
+    "name": "Cisco IOS ME3600"
+  },
+  "ASR901": {
+    "name": "Cisco IOS ASR901"
+  },
+  "ASR9K": {
+    "name": "Cisco IOS ASR9001"
+  },
+  "C2960": {
+    "name": "Cisco C2960"
+  },
+  "LPOS": {
+    "name": "Sprinter TX TopGate E1"
+  },
+  "Linux": {
+    "name": "Linux Server",
+    "interface_key": "server",
+    "interface_list_key": "server",
+    "ddm": false,
+    "adsl": false,
+    "fibers": 0
+  }
+}

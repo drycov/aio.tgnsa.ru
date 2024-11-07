@@ -1,4 +1,4 @@
-# bot/handlers/__init__.py
+# bot/handlers/app.py
 from aiogram import Router
 from .start_handler import router as start_router
 from .message_handler import router as message_router

@@ -1,4 +1,4 @@
-# __init__.py
+# app.py
 
 from .menu_labels import MenuLabels
 from .messages import Messages, LogMessages, ErrorMessages, NetworkMessages

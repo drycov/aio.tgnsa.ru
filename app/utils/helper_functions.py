@@ -8,8 +8,8 @@ from pathlib import Path
 from sys import platform
 from typing import Optional, Any, Dict
 
-from bot.constants import NetworkMessages, LogMessages
-from bot.utils.logger import logger
+from app.constants import NetworkMessages, LogMessages
+from app.utils.logger import logger
 from config import Config
 
 
