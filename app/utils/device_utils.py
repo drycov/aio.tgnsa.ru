@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from app.constants import LogMessages
 from app.utils.helper_functions import HelperFunctions
-from app.utils.logger import logger
+from app.utils.logger_instance import app_logger
 
 
 class DeviceModelFilter:
@@ -14,12 +14,13 @@ class DeviceModelFilter:
         """
         Определяет модель устройства на основе строки `dirty_data`.
         """
-        logger.debug(f"Фильтрация модели устройства для данных: {dirty_data}")
+        app_logger.debug(f"Фильтрация модели устройства для данных: {dirty_data}")
         for model_key, model_info in DeviceModelFilter.device_data.items():
             if model_key in dirty_data:
-                logger.info(LogMessages.MODEL_FILTERED.value.format(model_name=model_info["name"], model_key=model_key))
+                app_logger.info(
+                    LogMessages.MODEL_FILTERED.value.format(model_name=model_info["name"], model_key=model_key))
                 return model_info["name"]
-        logger.warning(LogMessages.MODEL_NOT_FOUND.value.format(dirty_data=dirty_data))
+        app_logger.warning(LogMessages.MODEL_NOT_FOUND.value.format(dirty_data=dirty_data))
         return dirty_data
 
     @staticmethod
@@ -40,10 +41,10 @@ class DeviceModelFilter:
                 "adsl": model_info.get("adsl", False),
                 "fibers": model_info.get("fibers", 0)
             }
-            # logger.info(f"Конфигурация для модели '{model_key}' успешно получена.")
+            # app_logger.info(f"Конфигурация для модели '{model_key}' успешно получена.")
             return config
         else:
-            logger.warning(LogMessages.CONFIG_NOT_FOUND.value.format(model_key=model_key))
+            app_logger.warning(LogMessages.CONFIG_NOT_FOUND.value.format(model_key=model_key))
             return {
                 "interfaceRange": "auto",
                 "interfaceList": "auto",

@@ -1,17 +1,20 @@
 # config.py
-import logging
 import os
 import sys
+import urllib.parse
 from pathlib import Path
-import click
+
 from dotenv import load_dotenv
+from loguru import logger
+
+# Получение экземпляра логгера
 
 # Загрузка переменных окружения из .env и config.env
 load_dotenv()
 basedir = Path(__file__).resolve().parent
 config_env_path = basedir / "config.env"
 if config_env_path.exists():
-    click.secho("Импортирование окружения из файла config.env", fg="cyan")
+    logger.info("Импортирование окружения из файла config.env")
     with config_env_path.open() as f:
         for line in f:
             var = line.strip().split("=")
@@ -27,11 +30,12 @@ paths = {
 # Создание директорий, если они не существуют
 for name, path in paths.items():
     if not path.is_dir():
-        click.secho(f"⚠️ Директория {name} не существует. Создаем её...", fg="yellow")
+        logger.info(f"⚠️ Директория {name} не существует. Создаем её...")
         path.mkdir(parents=True, exist_ok=True)
 
 # Версия Python
 PYTHON_VERSION = sys.version_info[0]
+
 
 class Config:
     """Базовая конфигурация приложения."""
@@ -43,6 +47,7 @@ class Config:
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@tgnsa.ru")
     BASE_DIR = basedir
     DATA_PATH = os.getenv("DATA_PATH", basedir / "data")
+    DEBUG = os.getenv("DEBUG", "False").lower() in ["true", "1"]
 
     # ---------- Локализация и время ----------
     DEFAULT_LOCALE = os.getenv("DEFAULT_LOCALE", "en")
@@ -56,7 +61,8 @@ class Config:
 
     # ---------- Параметры баз данных ----------
     # Firebase
-    DATABASE_URL = os.getenv("DATABASE_URL", "https://ttcnsa-default-rtdb.asia-southeast1.firebasedatabase.app")
+    FIREBASE_DATABASE_URL = os.getenv("FIREBASE_DATABASE_URL ",
+                                      "https://ttcnsa-default-rtdb.asia-southeast1.firebasedatabase.app")
 
     # MongoDB
     MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://user:password@cluster.mongodb.net")
@@ -75,16 +81,22 @@ class Config:
     PING_TIMEOUT = int(os.getenv("PING_TIMEOUT", 10))
 
     # ---------- Логирование ----------
-    APP_TYPE = os.getenv("APP_TYPE", "PROD")
-    LOGGING_LEVEL = logging.DEBUG if APP_TYPE == "DEV" else logging.INFO
-    LOGGING_FORMAT = os.getenv("LOGGING_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    LOG_DIR = paths['logs']
-    LOG_FILE = os.getenv("LOG_FILE", "bot.log")
 
     # ---------- Redis и кэширование ----------
-    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+    REDIS_URL = os.getenv("REDIS_URL", "redis://192.168.1.4:6379/db")
     USE_REDIS = os.getenv("USE_REDIS", "False").lower() == "true"
     CACHE_TYPE = os.getenv("CACHE_TYPE", "SimpleCache")
+    # Парсинг REDIS_URL для настройки переменных конфигурации RQ
+    if PYTHON_VERSION == 3:
+        urllib.parse.uses_netloc.append("redis")
+        url = urllib.parse.urlparse(REDIS_URL)
+
+        REDIS_HOST = url.hostname
+        REDIS_PORT = url.port
+        RQ_DEFAULT_HOST = url.hostname
+        RQ_DEFAULT_PORT = url.port
+        RQ_DEFAULT_PASSWORD = url.password
+        RQ_DEFAULT_DB = 0
 
     # ---------- Настройки электронной почты ----------
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp-mail.outlook.com")
@@ -111,4 +123,25 @@ class Config:
     VENDOR_PHONE = os.getenv("VENDOR_PHONE", "+7-771-051-5252")
 
     # ---------- Списки исключений ----------
-    EXCLUDED_SUBSTRINGS = os.getenv("EXCLUDED_SUBSTRINGS", "Vl,vl,Loop,Lo,null,Nu,me,loop,tunne,oob,stack-port,noSuchInstance").split(",")
+    EXCLUDED_SUBSTRINGS = os.getenv("EXCLUDED_SUBSTRINGS",
+                                    "Vl,vl,Loop,Lo,null,Nu,me,loop,tunne,oob,stack-port,noSuchInstance").split(",")
+
+    # ---------- Настройки Housekeeper ----------
+    # Указатель на контейнерное окружение
+
+    IS_CONTAINER = os.path.exists('/.dockerenv') or os.getenv("HOUSEKEEPER_CONTAINER_MODE", "False").lower() == "true"
+
+    HOUSEKEEPER_ENABLED = os.getenv("HOUSEKEEPER_ENABLED", "True").lower() == "true"
+    HOUSEKEEPER_INTERVAL = int(os.getenv("HOUSEKEEPER_INTERVAL", 3600))
+    HOUSEKEEPER_DAYS_THRESHOLD = int(os.getenv("HOUSEKEEPER_DAYS_THRESHOLD", 15))
+    HOUSEKEEPER_INACTIVITY_THRESHOLD = int(os.getenv("HOUSEKEEPER_INACTIVITY_THRESHOLD", 86400))
+    HOUSEKEEPER_MAX_THREADS = int(os.getenv("HOUSEKEEPER_MAX_THREADS", 10))
+    HOUSEKEEPER_MAX_REQUESTS = int(os.getenv("HOUSEKEEPER_MAX_REQUESTS", 1000))
+    HOUSEKEEPER_MAX_CONCURRENT_REQUESTS = int(os.getenv("HOUSEKEEPER_MAX_CONCURRENT_REQUESTS", 50))
+    HOUSEKEEPER_MAX_RETRY_ATTEMPTS = int(os.getenv("HOUSEKEEPER_MAX_RETRY_ATTEMPTS", 3))
+    HOUSEKEEPER_MAX_RETRY_DELAY = int(os.getenv("HOUSEKEEPER_MAX_RETRY_DELAY", 300))
+    HOUSEKEEPER_RETRY_DELAY_MULTIPLIER = int(os.getenv("HOUSEKEEPER_RETRY_DELAY_MULTIPLIER", 2))
+    HOUSEKEEPER_MAX_QUEUE_SIZE = int(os.getenv("HOUSEKEEPER_MAX_QUEUE_SIZE", 10000))
+    HOUSEKEEPER_QUEUE_NAME = os.getenv("HOUSEKEEPER_QUEUE_NAME", "default")
+    HOUSEKEEPER_TASK_NAME = os.getenv("HOUSEKEEPER_TASK_NAME", "housekeeper")
+    HOUSEKEEPER_TASK_CLASS = "housekeeper.tasks.HousekeeperTask"

@@ -14,7 +14,7 @@ class MenuLabels(Enum):
     CONTINUE = f"{Symbols.OK.value} Продолжить"
 
     # Пользователи и администрирование
-    ADMIN_PANEL = f"{Symbols.TECH_LAB.value} Администрирование системы"
+    ADMIN_PANEL = f"{Symbols.EMOJI_TOOLS.value} Администрирование системы"
     SYSTEM_LOGS = f"{Symbols.TECH_LOG.value} Логи системы"
     USER_ADMIN = f"{Symbols.ROLE_USER.value} Пользователи системы"
     NOT_APPROVED_USERS = f"{Symbols.EMOJI_ALIEN.value} Не активированные"
@@ -58,3 +58,5 @@ class MenuLabels(Enum):
 
     # Прочее
     USER_ALLOW = f"{Symbols.OK.value} Добавить пользователя"
+    USER_APPROVE = f"{Symbols.CABLE_CHECKED.value} Подтвердить"
+    USER_REJECT = f"{Symbols.STATUS_DISCONNECTED.value} Отклонить"

@@ -1,10 +1,8 @@
-import os
 import platform
-import json
-from enum import Enum
+from typing import Optional
+
 from netaddr import IPNetwork
 from ping3 import ping
-from typing import Any, Optional
 
 from app.constants import NetworkMessages
 

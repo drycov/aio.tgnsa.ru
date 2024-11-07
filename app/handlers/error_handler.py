@@ -1,23 +1,12 @@
-import logging
 from aiogram import Router
+from aiogram.exceptions import TelegramRetryAfter, TelegramUnauthorizedError, TelegramForbiddenError, \
+    TelegramConflictError, TelegramNotFound, TelegramBadRequest, TelegramAPIError
 from aiogram.types import Update
-from aiogram.exceptions import (
-    TelegramAPIError,
-    TelegramRetryAfter,
-    TelegramUnauthorizedError,
-    TelegramForbiddenError,
-    TelegramConflictError,
-    TelegramNotFound,
-    TelegramBadRequest,
-)
 
 from app.constants import ErrorMessages
+from app.utils.logger_instance import app_logger
 
-# Создаем маршрутизатор для регистрации обработчиков
 router = Router()
-
-# Настройка логирования
-logger = logging.getLogger("bot_logger")
 
 
 @router.errors()
@@ -28,7 +17,7 @@ async def error_handler(event: Update, *args, **kwargs):
     exception = kwargs.get("exception")
 
     if not exception:
-        logger.error(ErrorMessages.NO_EXCEPTION_INFO.value, exc_info=True)
+        app_logger.error(ErrorMessages.NO_EXCEPTION_INFO.value, exc_info=True)
         return
 
     # Карта обработки исключений и соответствующих действий
@@ -78,18 +67,19 @@ async def error_handler(event: Update, *args, **kwargs):
     }
 
     # Обработка ошибки из карты
-    log_message, send_message, log_level, format_data = exception_map.get(type(exception), (None, None, "exception", {}))
+    log_message, send_message, log_level, format_data = exception_map.get(type(exception),
+                                                                          (None, None, "exception", {}))
 
     if send_message:
         await event.message.answer(send_message.value.format(**(format_data or {})))
 
     if log_message:
-        log_func = getattr(logger, log_level)
+        log_func = getattr(app_logger, log_level)
         log_func(log_message.value.format(**(format_data or {})))
 
     # Обработка неизвестных ошибок
     if not log_message and not send_message:
-        logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)
+        app_logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)
         await event.message.answer(ErrorMessages.UNKNOWN_ERROR_USER.value)
 
     return True  # Чтобы предотвратить дальнейшую обработку ошибок

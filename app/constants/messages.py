@@ -33,10 +33,14 @@ class Messages(Enum):
     PLEASE_ENTER = f"{Symbols.EMOJI_LOCK_MANAGER.value} Пожалуйста войдите"
     ACCESS_DENIED = f"{Symbols.EMOJI_LOCK_MANAGER.value} Доступ запрещен, обратитесь к администратору."
     USER_SAVED_IN_DB = f"{Symbols.OK.value} Вы добавлены в базу. {Symbols.EMOJI_SAND_CLOCK.value} Ожидайте одобрения."
+
     USER_ALLOWED_IN_DB = (
         f"{Symbols.OK.value} Вы добавлены в базу. {Symbols.OK.value} "
         f"Для начала работы введите /start или {Symbols.INDICATOR_GREEN.value} Войти."
     )
+    USER_REMOVED_FROM_DB = f"{Symbols.OK.value} Вы удалены из базы."
+    USER_REJECTED_FROM_DB = f"{Symbols.INDICATOR_RED.value} Ваш доступ отклонен администратором"
+    NOT_REGISTERED=f"{Symbols.EMOJI_LOCK_MANAGER.value} Вы не зарегистрированы в системе."
 
     # Сообщения API токена
     API_TOKEN_CREATION = f"{Symbols.EMOJI_LOCK_MANAGER.value} Создается токен-доступа в приложение"
@@ -70,6 +74,8 @@ class Messages(Enum):
     # Администрирование
     USER_ADDED = f"{Symbols.OK.value} Пользователь добавлен"
     USER_REMOVED = f"{Symbols.OK.value} Пользователь удален"
+    USER_UPDATED = f"{Symbols.OK.value} Пользователь изменен"
+    USER_REJECTED = f"{Symbols.STATUS_WARNING.value} Пользователь отклонен"
     ADMIN_HELP = (
         f"<b>{Symbols.TECH_LAB.value} Команды Администратора</b>\n"
         f"<i><code>/log</code> - выгрузка логов</i>\n"
@@ -132,7 +138,6 @@ class LogMessages(Enum):
     MODEL_NOT_FOUND = "Модель устройства для данных '{dirty_data}' не найдена."
     CONFIG_NOT_FOUND = "Конфигурация для модели '{model_key}' не найдена, возвращаются значения по умолчанию."
     FILTERING_MODEL = "Фильтрация модели устройства для данных: {dirty_data}"
-
 
 
 class ErrorMessages(Enum):

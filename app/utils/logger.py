@@ -1,39 +1,49 @@
-# logger.py
-import logging
-from logging.handlers import TimedRotatingFileHandler
+import sys
 
 from dotenv import load_dotenv
+from loguru import logger
 
 from app.constants import LogMessages
-from config import Config
+from logging_config import LoggingConfig  # Импортируем из нового файла конфигурации
 
 # Загрузка переменных окружения
 load_dotenv()
 
-# Формат логирования
-formatter = logging.Formatter(Config.LOGGING_FORMAT)
 
-# Создание логгера
-logger = logging.getLogger("bot_logger")
-logger.setLevel(Config.LOGGING_LEVEL)
+class AppLogger:
+    def __init__(self, name="bot_logger", log_level=None, log_format=None, log_file=None):
+        # Отложенный импорт Config, чтобы избежать циклического импорта
 
-# Обработчик для вывода в консоль
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+        log_level = log_level or LoggingConfig.LOGGING_LEVEL
+        log_format = log_format or "{time} - {name} - {level} - {message}"
+        log_file_path = log_file or (LoggingConfig.LOG_DIR / LoggingConfig.LOG_FILE)
 
-# Обработчик для записи в файл с ежедневной ротацией
-log_file_path = Config.LOG_DIR / Config.LOG_FILE
-file_handler = TimedRotatingFileHandler(
-    filename=log_file_path,
-    when="midnight",  # Ротация каждый день в полночь
-    interval=1,  # Интервал ротации — 1 день
-    backupCount=14,  # Максимальное количество файлов
-    encoding="utf-8",  # Кодировка для файлов лога
-)
-file_handler.setFormatter(formatter)
-file_handler.setLevel(logging.INFO)  # Запись только сообщений уровня INFO и выше
-logger.addHandler(file_handler)
+        # Удаление всех стандартных обработчиков loguru
+        logger.remove()
 
-# Сообщение при запуске логгера
-logger.info(LogMessages.LOGGER_INITIALIZED)
+        # Настройка логгера для вывода в консоль
+        logger.add(
+            sys.stdout,
+            level=log_level,
+            format=log_format
+        )
+
+        # Настройка логгера для записи в файл с ежедневной ротацией
+        logger.add(
+            log_file_path,
+            level=log_level,
+            format=log_format,
+            rotation="00:00",
+            retention="14 days",
+            encoding="utf-8"
+        )
+
+        logger.info(LogMessages.LOGGER_INITIALIZED.value)
+
+    def get_logger(self):
+        return logger
+
+
+# Создание функции для получения логгера вместо создания его сразу
+def get_app_logger():
+    return AppLogger().get_logger()

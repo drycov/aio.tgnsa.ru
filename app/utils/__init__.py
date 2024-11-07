@@ -1,7 +1,7 @@
-# app.py
+# bot_module.py
 
 from .device_utils import DeviceModelFilter
-from .helper_functions import HelperFunctions
+from .helper_functions import HelperFunctions,StateManager
 from .network_utils import NetworkUtils
 from .snmp_functions import SNMPFunctions
 

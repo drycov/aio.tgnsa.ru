@@ -1,3 +1,4 @@
-from .app import bot, dp, setup_bot, start_bot, graceful_shutdown
+from .bot_module import setup_bot, start_bot, graceful_shutdown
 
-__all__ = ["bot", "dp", "setup_bot", "start_bot", "graceful_shutdown"]
+__all__ = ["setup_bot", "start_bot", "graceful_shutdown"]
+
