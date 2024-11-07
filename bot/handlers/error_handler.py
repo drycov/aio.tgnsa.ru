@@ -10,7 +10,8 @@ from aiogram.exceptions import (
     TelegramNotFound,
     TelegramBadRequest,
 )
-from .error_messages import ErrorMessages  # Импортируем перечисление сообщений
+
+from bot.constants import ErrorMessages
 
 # Создаем маршрутизатор для регистрации обработчиков
 router = Router()
@@ -22,45 +23,73 @@ logger = logging.getLogger("bot_logger")
 @router.errors()
 async def error_handler(event: Update, *args, **kwargs):
     """
-    Обработчик ошибок для различных исключений, связанных с работой Telegram API.
+    Унифицированный обработчик ошибок для исключений Telegram API.
     """
     exception = kwargs.get("exception")
 
     if not exception:
-        logger.error(ErrorMessages.NO_EXCEPTION_INFO.value)
+        logger.error(ErrorMessages.NO_EXCEPTION_INFO.value, exc_info=True)
         return
 
-    # Проверка на конкретные ошибки и логика обработки
-    if isinstance(exception, TelegramRetryAfter):
-        await event.message.answer(ErrorMessages.FLOOD_CONTROL.value.format(retry_after=exception.retry_after))
-        logger.warning(
-            ErrorMessages.FLOOD_CONTROL_LOG.value.format(method=exception.method, retry_after=exception.retry_after))
+    # Карта обработки исключений и соответствующих действий
+    exception_map = {
+        TelegramRetryAfter: (
+            ErrorMessages.FLOOD_CONTROL,
+            ErrorMessages.FLOOD_CONTROL,
+            "warning",
+            {"retry_after": exception.retry_after},
+        ),
+        TelegramUnauthorizedError: (
+            ErrorMessages.UNAUTHORIZED_TOKEN,
+            None,
+            "error",
+            None,
+        ),
+        TelegramForbiddenError: (
+            ErrorMessages.FORBIDDEN_CHAT,
+            ErrorMessages.FORBIDDEN_CHAT,
+            "warning",
+            None,
+        ),
+        TelegramConflictError: (
+            None,
+            ErrorMessages.TOKEN_CONFLICT,
+            "error",
+            None,
+        ),
+        TelegramNotFound: (
+            ErrorMessages.RESOURCE_NOT_FOUND,
+            ErrorMessages.RESOURCE_NOT_FOUND,
+            "info",
+            None,
+        ),
+        TelegramBadRequest: (
+            ErrorMessages.BAD_REQUEST,
+            ErrorMessages.BAD_REQUEST,
+            "warning",
+            {"exception": exception},
+        ),
+        TelegramAPIError: (
+            ErrorMessages.TELEGRAM_API_ERROR,
+            ErrorMessages.TELEGRAM_API_ERROR,
+            "error",
+            {"exception": exception},
+        ),
+    }
 
-    elif isinstance(exception, TelegramUnauthorizedError):
-        logger.error(ErrorMessages.UNAUTHORIZED_TOKEN.value)
+    # Обработка ошибки из карты
+    log_message, send_message, log_level, format_data = exception_map.get(type(exception), (None, None, "exception", {}))
 
-    elif isinstance(exception, TelegramForbiddenError):
-        logger.warning(ErrorMessages.FORBIDDEN_CHAT.value)
-        await event.message.answer(ErrorMessages.FORBIDDEN_CHAT_USER.value)
+    if send_message:
+        await event.message.answer(send_message.value.format(**(format_data or {})))
 
-    elif isinstance(exception, TelegramConflictError):
-        logger.error(ErrorMessages.TOKEN_CONFLICT.value)
+    if log_message:
+        log_func = getattr(logger, log_level)
+        log_func(log_message.value.format(**(format_data or {})))
 
-    elif isinstance(exception, TelegramNotFound):
-        await event.message.answer(ErrorMessages.RESOURCE_NOT_FOUND.value)
-        logger.info(ErrorMessages.RESOURCE_NOT_FOUND_LOG.value)
-
-    elif isinstance(exception, TelegramBadRequest):
-        await event.message.answer(ErrorMessages.BAD_REQUEST.value)
-        logger.warning(ErrorMessages.BAD_REQUEST_LOG.value.format(exception=exception))
-
-    elif isinstance(exception, TelegramAPIError):
-        logger.error(ErrorMessages.TELEGRAM_API_ERROR.value.format(exception=exception))
-        await event.message.answer(ErrorMessages.TELEGRAM_API_USER.value)
-
-    else:
-        logger.exception(ErrorMessages.UNKNOWN_ERROR.value, exc_info=exception)
+    # Обработка неизвестных ошибок
+    if not log_message and not send_message:
+        logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)
         await event.message.answer(ErrorMessages.UNKNOWN_ERROR_USER.value)
 
-    # Возвращаем True, чтобы обработчик ошибок не вызывал дальнейшую обработку
-    return True
+    return True  # Чтобы предотвратить дальнейшую обработку ошибок
