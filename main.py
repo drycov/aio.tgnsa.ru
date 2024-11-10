@@ -1,60 +1,61 @@
 # main.py
-# !/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import asyncio
 import sys
 from pathlib import Path
 
 import firebase_admin
+from aiogram import Bot, Dispatcher
 from firebase_admin import credentials
 
-from app import setup_bot, start_bot, graceful_shutdown
+from app import start_bot, graceful_shutdown
 from app.constants import Messages
 from app.utils.logger_instance import app_logger
 from config import Config
+from healthy import Healthy
+from healthy_api import run as run_health_api
 from housekeeper import Housekeeper
 
-# Получение экземпляра логгера
-# app_logger = get_app_logger()
+# Настройка бота и диспетчера
+bot = Bot(token=Config.API_TOKEN)
+dp = Dispatcher()
+
+# Создание экземпляров для фоновых задач
 housekeeper = Housekeeper()
+health_checker = Healthy()
 
 # Инициализация Firebase
 try:
     if not firebase_admin._apps:
         serviceAccountKey = Path(Config.BASE_DIR) / "serviceAccountKey.json"
         app_logger.info(f"Начало инициализации Firebase с файлом ключа: {serviceAccountKey}")
-
         cred = credentials.Certificate(serviceAccountKey)
-        database_url = Config.FIREBASE_DATABASE_URL
-        if not database_url:
-            raise ValueError("FIREBASE_DATABASE_URL не задана. Пожалуйста, укажите URL базы данных в .env файле.")
-
-        # Инициализация Firebase с указанием URL базы данных
         firebase_admin.initialize_app(cred, {
-            'databaseURL': database_url
+            'databaseURL': Config.FIREBASE_DATABASE_URL
         })
         app_logger.info("Firebase успешно инициализирован")
-    else:
-        app_logger.info("Firebase уже инициализирован")
 except Exception as e:
     app_logger.error(f"Ошибка при инициализации Firebase: {e}")
     sys.exit(1)
 
 
-async def on_startup(dispatcher):
-    # Запускаем фоновую задачу Housekeeper для очистки старых данных
-    asyncio.create_task(housekeeper.run())  # Запускаем Housekeeper в фоновом режиме
+async def on_startup():
+    # Ваша логика запуска здесь
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, run_health_api)  # Запуск Health API в отдельном потоке
+    asyncio.create_task(housekeeper.run())
+    asyncio.create_task(health_checker.run())
+    app_logger.info("Фоновые задачи Housekeeper и Health Checker запущены")
+
+
+async def main():
+    # Запуск бота с учетом on_startup
+    await start_bot(on_startup=on_startup)
 
 
 if __name__ == "__main__":
     app_logger.info(Messages.START_BOT_MODULE.value)
-
     try:
-        asyncio.run(housekeeper.report_status())
-
-        setup_bot()  # Подключение обработчиков и настройка бота
-        asyncio.run(start_bot(on_startup=on_startup))  # Запуск основного процесса бота с вызовом on_startup
-
+        asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
+        asyncio.run(graceful_shutdown())
         app_logger.warning(Messages.SHUTDOWN_SIGNAL.value)
-        asyncio.run(graceful_shutdown())  # Корректное завершение

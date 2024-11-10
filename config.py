@@ -82,6 +82,7 @@ class Config:
 
     # ---------- Логирование ----------
 
+
     # ---------- Redis и кэширование ----------
     REDIS_URL = os.getenv("REDIS_URL", "redis://192.168.1.4:6379/db")
     USE_REDIS = os.getenv("USE_REDIS", "False").lower() == "true"
@@ -145,3 +146,7 @@ class Config:
     HOUSEKEEPER_QUEUE_NAME = os.getenv("HOUSEKEEPER_QUEUE_NAME", "default")
     HOUSEKEEPER_TASK_NAME = os.getenv("HOUSEKEEPER_TASK_NAME", "housekeeper")
     HOUSEKEEPER_TASK_CLASS = "housekeeper.tasks.HousekeeperTask"
+
+    # ---------- Настройки дискового пространства ----------
+    DISK_SPACE_THRESHOLD_GB = int(os.getenv("DISK_SPACE_THRESHOLD_GB", 2))  # Порог свободного места на диске в ГБ
+    HEALTHY_CHECK_INTERVAL = int(os.getenv("HEALTHY_CHECK_INTERVAL", 300))  # Интервал проверок в секундах

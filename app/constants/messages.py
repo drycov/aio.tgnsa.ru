@@ -40,7 +40,7 @@ class Messages(Enum):
     )
     USER_REMOVED_FROM_DB = f"{Symbols.OK.value} Вы удалены из базы."
     USER_REJECTED_FROM_DB = f"{Symbols.INDICATOR_RED.value} Ваш доступ отклонен администратором"
-    NOT_REGISTERED=f"{Symbols.EMOJI_LOCK_MANAGER.value} Вы не зарегистрированы в системе."
+    NOT_REGISTERED = f"{Symbols.EMOJI_LOCK_MANAGER.value} Вы не зарегистрированы в системе."
 
     # Сообщения API токена
     API_TOKEN_CREATION = f"{Symbols.EMOJI_LOCK_MANAGER.value} Создается токен-доступа в приложение"
@@ -122,6 +122,9 @@ class Messages(Enum):
     SHUTDOWN_SIGNAL = "Получен сигнал завершения, бот отключается..."
     DELETE_WEBHOOK = "Удаление вебхука и запуск поллинга..."
     BOT_SHUTDOWN_COMPLETE = "Бот завершил работу корректно."
+    START_BOT_SETUP = "Запуск настройки бота..."
+    REGISTER_HANDLERS = "Запуск обработчиков для регистрации..."
+    BOT_SETUP_COMPLETE = "Настройка бота завершена."
 
 
 class LogMessages(Enum):

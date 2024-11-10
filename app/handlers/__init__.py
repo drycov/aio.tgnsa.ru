@@ -3,6 +3,7 @@ from aiogram import Router
 
 from .admin_approval import router as admin_router
 from .advanced_handler import router as advanced_router  #
+from .advanced_handlers import cidr_router  # Импортируем cidr_router из advanced_handlers
 from .callback_query_handlers import router as callback_router
 from .error_handler import router as error_router  # Подключение обработчика ошибок
 from .message_handler import router as message_router
@@ -22,4 +23,5 @@ def get_handlers_router():
     # router.include_router(error_router)  # Добавляем обработчик ошибок
     router.include_router(registration_router)
     router.include_router(admin_router)
+    router.include_router(cidr_router)  # Добавляем маршрутизаторы для расширенных модулей
     return router

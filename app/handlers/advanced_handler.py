@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 
 from app.constants import MenuLabels
 from app.constants.states import AdvancedCommands
@@ -18,11 +18,25 @@ async def advanced_menu(message: Message, state: FSMContext):
     await message.answer(**display_data)
 
 
-@router.message(F.text == MenuLabels.CIDR_CALC.value)
-async def cidr_calc_command(message: Message, state: FSMContext):
-    display_data = {"text": "CIDR калькулятор готов к работе."}
-    await StateManager.set_state_with_previous(state, AdvancedCommands.CIDR_CALCULATOR, display_data)
-    await message.answer(**display_data)
+# #
+# # @router.message(F.text == MenuLabels.CIDR_CALC.value)
+# # async def cidr_calc_command(message: Message, state: FSMContext):
+# #     display_data = {"text": "CIDR калькулятор готов к работе."}
+# #     await StateManager.set_state_with_previous(state, AdvancedCommands.CIDR_CALCULATOR, display_data)
+# #     await message.answer(**display_data)
+#
+# @router.message(F.text == MenuLabels.CIDR_CALC.value)
+# async def cidr_calc_command(message: Message, state: FSMContext):
+#     display_data = {"text": "Введите IP-адрес сети (в формате CIDR):"}
+#
+#     # Установка состояния с текущей командой и сохранение предыдущего состояния
+#     await StateManager.set_state_with_previous(state, AdvancedCommands.CIDR_CALCULATOR, display_data)
+#
+#     # Отправка сообщения о готовности к работе
+#     # Ожидание ввода пользователя
+#     # Сохранение состояния ожидания IP-адреса
+#     await message.answer(**display_data, reply_markup=ReplyKeyboardRemove())
+#     await state.update_data(waiting_for_subnet=True)
 
 
 @router.message(F.text == MenuLabels.P2P_CALC.value)

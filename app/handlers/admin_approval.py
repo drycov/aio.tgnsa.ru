@@ -4,14 +4,12 @@ from aiogram.types import Message
 from app.bot_instance import bot
 from app.constants import Messages
 from app.models import User
-from app.utils.logger_instance import app_logger
 
 router = Router()
 
 
 @router.message(lambda message: F.text.startswith('/approve_') or F.text.startswith('/reject_'))
 async def admin_approval(message: Message):
-    message.conf["admin_required"] = True
     try:
         action, user_id = message.text.split('_', 1)  # Используем split с maxsplit=1
     except ValueError:
