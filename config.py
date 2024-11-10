@@ -82,7 +82,6 @@ class Config:
 
     # ---------- Логирование ----------
 
-
     # ---------- Redis и кэширование ----------
     REDIS_URL = os.getenv("REDIS_URL", "redis://192.168.1.4:6379/db")
     USE_REDIS = os.getenv("USE_REDIS", "False").lower() == "true"
@@ -132,7 +131,7 @@ class Config:
 
     IS_CONTAINER = os.path.exists('/.dockerenv') or os.getenv("HOUSEKEEPER_CONTAINER_MODE", "False").lower() == "true"
 
-    HOUSEKEEPER_ENABLED = os.getenv("HOUSEKEEPER_ENABLED", "True").lower() == "true"
+    HOUSEKEEPER_ENABLED = os.getenv("HOUSEKEEPER_ENABLED", "False").lower() == "true"
     HOUSEKEEPER_INTERVAL = int(os.getenv("HOUSEKEEPER_INTERVAL", 3600))
     HOUSEKEEPER_DAYS_THRESHOLD = int(os.getenv("HOUSEKEEPER_DAYS_THRESHOLD", 15))
     HOUSEKEEPER_INACTIVITY_THRESHOLD = int(os.getenv("HOUSEKEEPER_INACTIVITY_THRESHOLD", 86400))
@@ -148,5 +147,6 @@ class Config:
     HOUSEKEEPER_TASK_CLASS = "housekeeper.tasks.HousekeeperTask"
 
     # ---------- Настройки дискового пространства ----------
+    HEALTHY_CHECK_ENABLE = os.getenv("HEALTHY_CHECK_ENABLE", "False").lower() == "true"
     DISK_SPACE_THRESHOLD_GB = int(os.getenv("DISK_SPACE_THRESHOLD_GB", 2))  # Порог свободного места на диске в ГБ
     HEALTHY_CHECK_INTERVAL = int(os.getenv("HEALTHY_CHECK_INTERVAL", 300))  # Интервал проверок в секундах

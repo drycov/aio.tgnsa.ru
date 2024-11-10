@@ -6,10 +6,11 @@ from tabulate import tabulate
 
 from app.bot_instance import bot
 from app.constants import Messages, MenuLabels
-from app.constants.states import MainCommands, RegistrationForm
+from app.constants.states import MainCommands, RegistrationForm, TaskPaginationState
+from app.handlers.shedule_handlers.task_manager import view_tasks
 from app.keyboards import on_enter_keyboard
 from app.models import User
-from app.utils import StateManager
+from app.utils import StateManager, CalendarMarkup
 from config import Config
 
 router = Router()
@@ -114,3 +115,86 @@ async def reject_user(callback_query: CallbackQuery, state: FSMContext):
     await StateManager.set_state_with_previous(state, RegistrationForm.first_name)
     await bot.send_message(callback_query.from_user.id, Messages.REGISTER_FIRST_NAME.value,
                            reply_markup=ReplyKeyboardRemove())
+
+
+# Обработчик для навигации по месяцам
+@router.callback_query(F.data.startswith("prev_") | F.data.startswith("next_"))
+async def navigate_month(callback_query: CallbackQuery):
+    _, year, month = callback_query.data.split("_")
+    year, month = int(year), int(month)
+
+    # Определяем направление навигации
+    direction = "next" if "next_" in callback_query.data else "prev"
+
+    # Создаем объект календаря и обновляем месяц
+    calendar = CalendarMarkup(year, month)
+    updated_calendar = calendar.update_calendar(direction)
+
+    # Обновляем сообщение с новым календарем
+    await callback_query.message.edit_reply_markup(reply_markup=updated_calendar)
+    await callback_query.answer()  # Закрываем callback-запрос
+
+
+# @router.callback_query(lambda call: call.data.startswith("view_tasks_"))
+# async def handle_view_tasks_pagination(callback_query: CallbackQuery):
+#     # Извлекаем номер страницы из callback_data
+#     page = int(callback_query.data.split("_")[2])
+#     await view_tasks(callback_query.message, page=page, edit=True)
+#     await callback_query.answer()
+
+# Callback для пагинации с учетом FSM
+@router.callback_query(F.data.startswith("view_tasks_"), TaskPaginationState.viewing_tasks)
+async def paginate_tasks(callback_query: CallbackQuery, state: FSMContext):
+    # Извлекаем номер страницы из callback_data
+    page = int(callback_query.data.split("_")[-1])
+    user_id = int(callback_query.from_user.id)
+
+    # Получаем текущую роль пользователя из состояния FSM
+    user_role = await state.get_data()
+
+    # В зависимости от роли пользователя фильтруем задачи
+    if user_role.get("role") == "creator":
+        await view_tasks(callback_query.message, created_by=user_id, page=page, edit=True)
+    elif user_role.get("role") == "all":
+        await view_tasks(callback_query.message, page=page, edit=True)
+    else:
+        await view_tasks(callback_query.message, assigned_to=user_id, page=page, edit=True)
+
+    # Подтверждаем обработку колбэка
+    await callback_query.answer()
+
+
+# Обработчик для принятия задачи
+@router.callback_query(lambda call: call.data.startswith("accept_task_"))
+async def accept_task(callback_query: CallbackQuery):
+    task_id = callback_query.data.split("_")[-1]
+    # Логика для обработки принятия задачи
+    await callback_query.answer("Задача принята.")
+    await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия
+
+
+# Обработчик для завершения задачи
+@router.callback_query(lambda call: call.data.startswith("complete_task_"))
+async def complete_task(callback_query: CallbackQuery):
+    task_id = callback_query.data.split("_")[-1]
+    # Логика для обработки завершения задачи
+    await callback_query.answer("Задача завершена.")
+    await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия
+
+
+# Обработчик для отзыва задачи
+@router.callback_query(lambda call: call.data.startswith("revoke_task_"))
+async def revoke_task(callback_query: CallbackQuery):
+    task_id = callback_query.data.split("_")[-1]
+    # Логика для обработки отзыва задачи
+    await callback_query.answer("Задача отозвана.")
+    await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия
+
+
+# Обработчик для редактирования задачи
+@router.callback_query(lambda call: call.data.startswith("edit_task_"))
+async def edit_task(callback_query: CallbackQuery):
+    task_id = callback_query.data.split("_")[-1]
+    # Логика для перехода к режиму редактирования задачи
+    await callback_query.answer("Переход к редактированию задачи.")
+    await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия

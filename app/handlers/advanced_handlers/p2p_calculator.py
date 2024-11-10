@@ -14,8 +14,9 @@ router = Router()
 regexp = RegExpUtils()
 
 
-@router.message(F.text, StateFilter(AdvancedCommands.CIDR_CALCULATOR))
-async def process_subnet_input(message: Message, state: FSMContext):
+@router.message(F.text, StateFilter(AdvancedCommands.P2P_CALCULATOR))
+# Обработчик для ввода данных в P2P калькуляторе
+async def process_p2p_input(message: Message, state: FSMContext):
     data = await state.get_data()
 
     # Проверка, находится ли процесс в ожидании ввода IP-адреса
@@ -23,17 +24,18 @@ async def process_subnet_input(message: Message, state: FSMContext):
         subnet = message.text.strip()  # Убираем лишние пробелы
 
         # Проверка формата IP-адреса
-        if not regexp.subnet_check(subnet):
-            await message.reply(Messages.ERROR_SUBNET.value, reply_markup=in_back_keyboard)
+        if not regexp.p2p_check(subnet):
+            await message.reply(Messages.ERROR_P2P.value, reply_markup=in_back_keyboard)
             return
 
-        # Выполнение расчета сети
-        cidr_data = NetworkUtils.subnet_calculate(subnet)
+        # Выполнение расчета P2P-пары
+        p2p_data = NetworkUtils.p2p_calculate(subnet)
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         # Отправка результата пользователю
         await message.answer(
-            f"<b>Расчет IP-сети: <code>{subnet}</code></b>\n\n"
-            f"<pre>{cidr_data}</pre>\n\n"
+            f"<b>Расчет P2P-пары: <code>{subnet}</code></b>\n\n"
+            f"{p2p_data}\n\n"
             f"<i>Выполнено: <code>{current_date}</code></i>",
             reply_markup=in_back_keyboard,
             parse_mode="HTML"

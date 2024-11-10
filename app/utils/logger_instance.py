@@ -2,3 +2,4 @@
 from app.utils.logger import get_app_logger
 
 app_logger = get_app_logger()
+app_logger.info("This message includes the module name automatically.")

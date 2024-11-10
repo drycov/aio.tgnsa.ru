@@ -1,6 +1,9 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message, InlineKeyboardMarkup, InlineKeyboardButton
+
+from app.constants.states import MainCommands
+from app.keyboards import on_enter_keyboard
 
 
 class StateManager:
@@ -39,49 +42,78 @@ class StateManager:
         await state.set_state(new_state)
 
     @staticmethod
-    def serialize_markup(markup: ReplyKeyboardMarkup) -> dict:
-        """Преобразует объект `ReplyKeyboardMarkup` в словарь для сохранения."""
-        return {
-            "keyboard": [[button.text for button in row] for row in markup.keyboard],
-            "resize_keyboard": markup.resize_keyboard,
-            "one_time_keyboard": markup.one_time_keyboard,
-        }
+    def serialize_markup(markup) -> dict:
+        """
+        Преобразует объект `ReplyKeyboardMarkup` или `InlineKeyboardMarkup` в словарь для сохранения.
+        """
+        if isinstance(markup, ReplyKeyboardMarkup):
+            # Сериализация для ReplyKeyboardMarkup
+            return {
+                "keyboard": [[button.text for button in row] for row in markup.keyboard],
+                "resize_keyboard": markup.resize_keyboard,
+                "one_time_keyboard": markup.one_time_keyboard,
+            }
+        elif isinstance(markup, InlineKeyboardMarkup):
+            # Сериализация для InlineKeyboardMarkup
+            return {
+                "inline_keyboard": [[button.text for button in row] for row in markup.inline_keyboard],
+            }
+        else:
+            # Возвращаем None или пустой словарь, если тип markup не поддерживается
+            return {}
 
     @staticmethod
-    def deserialize_markup(data: dict) -> ReplyKeyboardMarkup:
-        """Преобразует словарь обратно в объект `ReplyKeyboardMarkup`."""
-        keyboard = [[KeyboardButton(text=button_text) for button_text in row] for row in data["keyboard"]]
-        return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=data["resize_keyboard"],
-                                   one_time_keyboard=data["one_time_keyboard"])
+    def deserialize_markup(data: dict):
+        """
+        Преобразует словарь обратно в объект `ReplyKeyboardMarkup` или `InlineKeyboardMarkup`.
+        """
+        if "keyboard" in data:
+            # Восстанавливаем объект `ReplyKeyboardMarkup`
+            keyboard = [[KeyboardButton(text=button_text) for button_text in row] for row in data["keyboard"]]
+            return ReplyKeyboardMarkup(
+                keyboard=keyboard,
+                resize_keyboard=data.get("resize_keyboard", True),
+                one_time_keyboard=data.get("one_time_keyboard", False)
+            )
+        elif "inline_keyboard" in data:
+            # Восстанавливаем объект `InlineKeyboardMarkup`
+            inline_keyboard = [[InlineKeyboardButton(text=button_text, callback_data="action") for button_text in row]
+                               for row in data["inline_keyboard"]]
+            return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+        else:
+            # Если формат данных не распознан, возвращаем None или обрабатываем это иначе
+            return None
 
     @staticmethod
     async def handle_back_action(state: FSMContext, message: Message):
         """
-        Обрабатывает действие «Назад», возвращая пользователя к предыдущему состоянию и отображая данные.
+        Обрабатывает действие «Назад», возвращая пользователя к предыдущему состоянию или в начальное состояние с разметкой.
 
         Args:
             state (FSMContext): Контекст FSM для пользователя.
             message (Message): Сообщение, на которое ответит бот.
         """
-        # Получаем данные о предыдущем состоянии и историю отображения
+        # Получаем данные о предыдущем состоянии и истории отображения
         data = await state.get_data()
         previous_state = data.get("previous_state")
         display_history = data.get("display_history", {})
 
-        # Проверяем, есть ли данные для отображения предыдущего состояния
         if previous_state:
+            # Получаем данные для отображения предыдущего состояния
             display_data = display_history.get(previous_state, {})
-            # Устанавливаем текст по умолчанию, если его нет в display_data
             display_data["text"] = display_data.get("text", "Возврат на предыдущий шаг")
+
             # Восстанавливаем разметку, если она была сериализована
             if "reply_markup" in display_data and isinstance(display_data["reply_markup"], dict):
                 display_data["reply_markup"] = StateManager.deserialize_markup(display_data["reply_markup"])
 
-            # Устанавливаем предыдущее состояние
+            # Устанавливаем предыдущее состояние и отправляем сообщение с восстановленными данными
             await state.set_state(previous_state)
-
-            # Отправляем сообщение с восстановленным текстом и клавиатурой
             await message.answer(**display_data)
         else:
-            # Если нет предыдущего состояния, уведомляем пользователя
-            await message.answer("Нет предыдущего состояния для возврата.")
+            # Если предыдущего состояния нет, возвращаемся к начальному состоянию с основной разметкой
+            await state.set_state(MainCommands.START)
+            await message.answer(
+                "Нет предыдущего состояния для возврата. Вы вернулись в главное меню.",
+                reply_markup=on_enter_keyboard  # Устанавливаем разметку главного меню
+            )

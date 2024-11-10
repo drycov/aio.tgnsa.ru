@@ -4,28 +4,40 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Пофиксил назад, исправил регистрацию. Прикутил редис">
-      <change afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/cidr_calculator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/utils/state_manager_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/healthy.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/healthy_api.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/log_parser.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syslog_server.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test_syslog.py" afterDir="false" />
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Добавил цидр">
+      <change afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/p2p_calculator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/ping_network_node.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/handlers/device_handler/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/handlers/device_handler/check_device.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/handlers/shedule_handlers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/handlers/shedule_handlers/task_manager.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/models/Employee.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/models/Task.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/utils/shedule_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/constants/menu_labels.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/menu_labels.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/constants/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/messages.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/constants/states.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/states.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/constants/symbols.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/symbols.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/handlers/admin_approval.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_approval.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/message_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/message_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handlers/cidr_calculator.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/cidr_calculator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/callback_query_handlers.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/callback_query_handlers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/start_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/start_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/keyboards/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/keyboards/advanced_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/advanced_menu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/keyboards/keyboards.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/keyboards.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/keyboards/main_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/main_menu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/utils/logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/logger.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.env" beforeDir="false" afterPath="$PROJECT_DIR$/config.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/logger_instance.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/logger_instance.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/network_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/network_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/state_manager_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/state_manager_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logging_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/logging_config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -66,31 +78,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.healthy_api.executor&quot;: &quot;Run&quot;,
-    &quot;Python.log_parser.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main (1).executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.merge.executor&quot;: &quot;Run&quot;,
-    &quot;Python.syslog_server.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_syslog.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/dev.tgnsa.ru/aio.tgnsa/app/models&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.healthy_api.executor": "Run",
+    "Python.log_parser.executor": "Run",
+    "Python.main (1).executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.merge.executor": "Run",
+    "Python.syslog_server.executor": "Run",
+    "Python.test_syslog.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "D:/dev.tgnsa.ru/aio.tgnsa/app/handlers/advanced_handlers",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\advanced_handlers" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\models" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\constants" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\utils" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\middlewares" />
-      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\keyboards" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\models" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\middlewares" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa" />
@@ -273,7 +286,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731023295924</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Добавил цидр">
+      <option name="closed" value="true" />
+      <created>1731248012806</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1731248012806</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -290,6 +311,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first" />
     <MESSAGE value="Пофиксил назад, исправил регистрацию. Прикутил редис" />
-    <option name="LAST_COMMIT_MESSAGE" value="Пофиксил назад, исправил регистрацию. Прикутил редис" />
+    <MESSAGE value="Добавил цидр" />
+    <option name="LAST_COMMIT_MESSAGE" value="Добавил цидр" />
   </component>
 </project>

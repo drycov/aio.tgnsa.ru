@@ -162,6 +162,8 @@ class NetworkMessages(Enum):
     ERROR_FILE_READ = "Ошибка при чтении файла {file_path}: {error}"
     ERROR_SUBNET_FORMAT = "Ошибка в формате адреса сети."
     ERROR_P2P_FORMAT = "Ошибка в формате P2P адреса."
+    ERROR_IP_MESSAGE = "🆘 Некорректный IP-адрес. Укажите IP в формате A.B.C.D и повторите."
+
     NETWORK_INFO = (
         "Адрес сети: <code>{network}</code>\n"
         "Маска подсети: <code>{netmask}</code>\n"
@@ -170,6 +172,7 @@ class NetworkMessages(Enum):
         "Хостов/Сетей: <code>{size}</code>"
     )
     P2P_INFO = (
+        "Адрес пары: <code>{pair_address}</code>\n"
         "Хост: <code>{host}</code>\n"
         "Шлюз: <code>{gateway}</code>\n"
         "Маска подсети: <code>{netmask}</code>"

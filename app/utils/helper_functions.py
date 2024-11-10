@@ -4,11 +4,13 @@ import json
 import math
 import os
 import time
+import uuid
 from pathlib import Path
 from sys import platform
 from typing import Optional, Any, Dict
 
 from app.constants import NetworkMessages, LogMessages
+from app.models import Task
 from app.utils.logger_instance import app_logger
 
 
@@ -206,3 +208,12 @@ class HelperFunctions:
         except KeyError:
             return f"OID '{name}' не найден в группе '{group}'"
 
+    @staticmethod
+    def generate_task_id(task: Task) -> str:
+        """
+        Генерация уникального идентификатора задачи на основе даты, исполнителя и случайного суффикса.
+        """
+        assignee_part = task.assigned_to  # Идентификатор назначенного сотрудника
+        unique_suffix = uuid.uuid4().hex[:6]  # Случайный суффикс из 6 символов
+
+        return f"{assignee_part}{unique_suffix}"

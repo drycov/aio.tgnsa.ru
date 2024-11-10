@@ -35,6 +35,8 @@ class MenuLabels(Enum):
     DEVICE_CHECK = f"{Symbols.ACTION_SEARCH.value} Проверить устройство"
     DOF = f"{Symbols.TECH_SHIELD.value} Дежурный сотрудник"
     DUTY_SCHEDULE = f"{Symbols.GROUP.value} График дежурств"
+    TASK_MANAGER = f"{Symbols.TECH_LOG.value} Менеджер задач"
+
     SERVICE_REQUEST = f"{Symbols.TECH_INCIDENT.value} Запрос на обслуживание"
     MASS_INCIDENT_ALERT = f"{Symbols.EMOJI_MAGIC_BALL.value} Массовый инцидент"
     MASS_MAILING = f"{Symbols.EMOJI_ANNOUNCEMENT.value} Массовая рассылка"

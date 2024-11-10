@@ -1,14 +1,22 @@
+import inspect
+import json
 import logging
 import socket
 import sys
-import json
 from logging.handlers import SysLogHandler
 
 from logging_config import LoggingConfig
 
 
 class AppLogger:
-    def __init__(self):
+    def __init__(self, name=None):
+        """
+        Инициализирует логгер с именем вызывающего модуля.
+        """
+        # Если name не передан, используем имя модуля, вызвавшего этот класс
+        if name is None:
+            name = inspect.stack()[1].frame.f_globals["__name__"]
+
         log_level = LoggingConfig.LOGGING_LEVEL
         log_format = LoggingConfig.LOGGING_FORMAT
         log_file_path = LoggingConfig.LOG_DIR / LoggingConfig.LOG_FILE
@@ -21,8 +29,8 @@ class AppLogger:
         syslog_message_format = LoggingConfig.SYSLOG_MESSAGE_FORMAT or "{asctime} - {name} - {levelname} - {message}"
         syslog_logging_level = LoggingConfig.SYSLOG_LOGGING_LEVEL
 
-        # Создаем логгер
-        self.logger = logging.getLogger("bot_logger")
+        # Создаем логгер с определенным именем модуля
+        self.logger = logging.getLogger(name)
         self.logger.setLevel(log_level)
 
         # Обработчик для вывода в консоль
@@ -48,7 +56,7 @@ class AppLogger:
                 message_format=syslog_message_format
             )
 
-        self.logger.info("Logger initialized")
+        self.logger.info("Logger initialized in module: " + name)
 
     def setup_syslog_handler(self, host, port, facility, logging_level, message_format):
         """Настройка Syslog-обработчика для логгера."""
@@ -68,7 +76,7 @@ class AppLogger:
         return self.logger
 
 
-# Функция для получения экземпляра логгера
+# Функция для получения экземпляра логгера, автоматически определяя имя вызывающего модуля
 def get_app_logger():
     return AppLogger().get_logger()
 

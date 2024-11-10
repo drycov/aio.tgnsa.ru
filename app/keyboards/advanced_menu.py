@@ -10,7 +10,7 @@ advanced_keyboard = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text=MenuLabels.PING_DEVICE.value),
-            KeyboardButton(text=MenuLabels.MASS_INCIDENT_ALERT.value),
+            # KeyboardButton(text=MenuLabels.MASS_INCIDENT_ALERT.value),
         ],
         [KeyboardButton(text=MenuLabels.BACK.value)],
     ],

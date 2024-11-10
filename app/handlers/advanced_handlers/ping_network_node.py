@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from app.constants import RegExpUtils, Messages
+from app.constants import RegExpUtils, NetworkMessages
 from app.constants.states import AdvancedCommands
 from app.keyboards import in_back_keyboard
 from app.utils import NetworkUtils
@@ -14,26 +14,28 @@ router = Router()
 regexp = RegExpUtils()
 
 
-@router.message(F.text, StateFilter(AdvancedCommands.CIDR_CALCULATOR))
-async def process_subnet_input(message: Message, state: FSMContext):
+@router.message(F.text, StateFilter(AdvancedCommands.DEVICE_PING))
+# Обработчик для ввода данных в P2P калькуляторе
+async def process_ping_node_input(message: Message, state: FSMContext):
     data = await state.get_data()
 
     # Проверка, находится ли процесс в ожидании ввода IP-адреса
-    if data.get('waiting_for_subnet'):
-        subnet = message.text.strip()  # Убираем лишние пробелы
+    if data.get('waiting_for_host'):
+        host = message.text.strip()  # Убираем лишние пробелы
 
-        # Проверка формата IP-адреса
-        if not regexp.subnet_check(subnet):
-            await message.reply(Messages.ERROR_SUBNET.value, reply_markup=in_back_keyboard)
+        # Проверка корректности IP-адреса
+        if not regexp.ip_check(host):
+            await message.reply(NetworkMessages.ERROR_IP_MESSAGE.value, reply_markup=in_back_keyboard)
             return
 
-        # Выполнение расчета сети
-        cidr_data = NetworkUtils.subnet_calculate(subnet)
+        # Выполнение расчета P2P-пары
+        ping_data = NetworkUtils.ping_device_log(host)
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         # Отправка результата пользователю
         await message.answer(
-            f"<b>Расчет IP-сети: <code>{subnet}</code></b>\n\n"
-            f"<pre>{cidr_data}</pre>\n\n"
+            f"<b>Ping device: <code>{host}</code> log</b>\n\n"
+            f"<i>{ping_data}</i>\n\n"
             f"<i>Выполнено: <code>{current_date}</code></i>",
             reply_markup=in_back_keyboard,
             parse_mode="HTML"

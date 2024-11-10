@@ -82,3 +82,4 @@ class Symbols(Enum):
     EMOJI_SANTA = "🎅"  # Специальное приветствие
     EMOJI_ALIEN = "👽"  # Иностранный/неизвестный элемент
     EMOJI_FRIENDLY_LINK = "📥"  # Дружественная ссылка
+    EMOJI_EDIT = "⌨"  # Рассмотрение

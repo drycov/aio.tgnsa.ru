@@ -1,5 +1,5 @@
-import platform
-from typing import Optional
+import asyncio
+from typing import Optional, List
 
 from netaddr import IPNetwork
 from ping3 import ping
@@ -32,9 +32,11 @@ class NetworkUtils:
         """
         Подсчет информации для P2P по IP-адресу и маске.
         """
+
         try:
             p2p_subnet = IPNetwork(network_address)
             return NetworkMessages.P2P_INFO.value.format(
+                pair_address=p2p_subnet[0],
                 host=p2p_subnet[-2],
                 gateway=p2p_subnet[1],
                 netmask=p2p_subnet.netmask
@@ -44,16 +46,57 @@ class NetworkUtils:
             return NetworkMessages.ERROR_P2P_FORMAT.value
 
     @staticmethod
-    def ping_device_log(host: str, count: int = 4) -> Optional[float]:
+    def ping_device_log(host: str, count: int = 4) -> Optional[str]:
         """
         Пинг устройства с логированием.
-        """
-        extra_options = ["-c", str(count)] if platform.system() == "Linux" else ["-n", str(count)]
 
+        Args:
+            host (str): IP-адрес или доменное имя устройства.
+            count (int): Количество попыток пинга.
+
+        Returns:
+            Optional[str]: Лог результатов пинга с указанием времени отклика, либо None, если устройство недоступно.
+        """
         try:
-            result = ping(host, count=count)  # ping3 returns None if unreachable
-            return result
+            results: List[float] = []
+            log_messages = []
+            for i in range(count):
+                response_time = ping(host)
+                if response_time is not None:
+                    response_time_ms = response_time * 1000
+                    results.append(response_time_ms)
+                    log_messages.append(f"Время отклика от {host} (попытка {i + 1}): {response_time_ms:.2f} мс")
+                else:
+                    log_messages.append(f"Попытка {i + 1}: Устройство {host} недоступно.")
+
+            if results:
+                average_ping = sum(results) / len(results)
+                log_messages.append(f"Среднее время отклика от {host}: {average_ping:.2f} мс")
+            else:
+                log_messages.append(f"Устройство {host} недоступно.")
+
+            final_log = "\n".join(log_messages)
+            return final_log
+
         except Exception as error:
-            print(NetworkMessages.ERROR_PING.value.format(error=error))
+            print(f"Ошибка при выполнении пинга: {error}")
             return None
 
+    @staticmethod
+    async def is_alive(host: str) -> bool:
+        """
+        Проверяет доступность устройства по IP-адресу.
+
+        Args:
+            host (str): IP-адрес или доменное имя устройства.
+
+        Returns:
+            bool: True, если устройство доступно, иначе False.
+        """
+        # Выполняем проверку пинга асинхронно
+        try:
+            response = await asyncio.to_thread(ping, host, timeout=1)
+            return response is not None
+        except Exception as e:
+            print(f"Ошибка при проверке доступности: {e}")
+            return False

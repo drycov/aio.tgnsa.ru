@@ -19,6 +19,12 @@ in_back_keyboard = InlineKeyboardMarkup(
     ]
 )
 
+priority_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="Low", callback_data="priority_low"),
+     InlineKeyboardButton(text="Medium", callback_data="priority_medium"),
+     InlineKeyboardButton(text="High", callback_data="priority_high")]
+])
+
 # Клавиатура для отправки контакта
 send_contact_keyboard = ReplyKeyboardMarkup(
     keyboard=[
