@@ -13,7 +13,7 @@ router = Router()
 command_pattern = re.compile(r"^/(approve|reject)_(\d+)$")
 
 
-@router.message(lambda message: command_pattern.match(message.text))
+@router.message(lambda message: message.text and command_pattern.match(message.text))
 async def admin_approval(message: Message):
     match = command_pattern.match(message.text)
     if not match:

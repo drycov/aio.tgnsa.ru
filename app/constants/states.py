@@ -40,6 +40,7 @@ class DeviceCommands(StatesGroup):
 
 
 class TaskCreationState(StatesGroup):
+    TASK_MENU = State()  # Состояние для главного меню создания задачи
     DATE = State()  # Состояние для выбора даты задачи
     END_DATE = State()  # Состояние для выбора даты окончания задачи
     TITLE = State()  # Состояние для ввода названия задачи
@@ -72,5 +73,5 @@ ALL_STATES = (
     DeviceCommands.LLDP_INFORMATION,
 
     # Состояния TaskCreationState
-    TaskCreationState.DATE, TaskCreationState.PRIORITY, TaskCreationState.EMPLOYEE, TaskCreationState.CONFIRMATION
+    TaskCreationState.DATE, TaskCreationState.PRIORITY, TaskCreationState.EMPLOYEE, TaskCreationState.CONFIRMATION,TaskCreationState.TASK_MENU
 )

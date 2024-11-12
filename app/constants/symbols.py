@@ -3,7 +3,7 @@ from enum import Enum
 
 class Symbols(Enum):
     """
-    Перечисление для различных символов, представленных в виде эмодзи, с описанием для каждого символа.
+    Перечисление для различных символов, представленных в виде эмодзи, сгруппированных по категориям.
     """
 
     # Основные статусы соединения
@@ -18,7 +18,7 @@ class Symbols(Enum):
     STATUS_OFFLINE = "🔘"  # Неактивен
 
     # Статусы и состояние кабеля
-    OK = "✅"  # Кабель в норме
+    CABLE_OK = "✅"  # Кабель в норме
     CABLE_CHECKED = "☑️"  # Кабель проверен
     CABLE_CROSSTALK = "🔀"  # Перекрестные помехи
     CABLE_SHORT = "🆘"  # Короткое замыкание
@@ -27,7 +27,7 @@ class Symbols(Enum):
     CABLE_ABNORMAL = "🆎"  # Ненормальное состояние
     CABLE_DISCONNECTED = "❎"  # Кабель отключен
 
-    # Круговые индикаторы статуса
+    # Индикаторы статуса (круги)
     INDICATOR_RED = "🔴"  # Красный круг — критический
     INDICATOR_YELLOW = "🟡"  # Желтый круг — предупреждение
     INDICATOR_GREEN = "🟢"  # Зеленый круг — нормально
@@ -35,7 +35,7 @@ class Symbols(Enum):
     INDICATOR_BLACK = "⚫️"  # Черный круг
     INDICATOR_PURPLE = "🟣"  # Фиолетовый круг
 
-    # Управление и действия
+    # Действия
     ACTION_BACK = "🔙"  # Назад
     ACTION_CONFIRM = "🆗"  # Подтверждение
     ACTION_CANCEL = "🚫"  # Отмена
@@ -43,9 +43,17 @@ class Symbols(Enum):
     ACTION_SEARCH = "🔍"  # Поиск
     ACTION_SETTINGS = "⚙️"  # Настройки
     ACTION_EXIT = "🚪"  # Выход
-    ACTION_MAGIC = "🔥"  # Магическое действие
+    ACTION_ADD = "❇️"  # Добавление
+    ACTION_HELP = "🧾"  # Помощь
+    ACTION_TASKS = "💹"  # Задачи
+    ACTION_USERS = "👥"  # Пользователи
+    ACTION_BROADCAST = "✉️"  # Рассылка
+    ACTION_SYNC = "🔄"  # Синхронизация
+    ACTION_UPGRADE = "⬆️"  # Обновление
+    ACTION_RESET = "♻️"  # Сброс системы
+    ACTION_POWER = "🔌"  # Выключение системы
 
-    # Лабораторные и технические обозначения
+    # Технические обозначения
     TECH_LAB = "🧪"  # Лабораторное тестирование
     TECH_LOCKED = "🔒"  # Заблокировано
     TECH_VLAN = "🔀"  # VLAN
@@ -64,8 +72,8 @@ class Symbols(Enum):
     ROLE_USER = "👤"  # Пользователь
     ROLE_SUPPORT = "🎅"  # Служба поддержки
 
-    # Группы и группы доступа
-    GROUP = "📈"  # Основная группа
+    # Группы и доступы
+    GROUP_PRIMARY = "📈"  # Основная группа
     GROUP_SECONDARY = "📉"  # Вторая группа
     GROUP_UNKNOWN = "👽"  # Неизвестная группа
 
@@ -82,4 +90,7 @@ class Symbols(Enum):
     EMOJI_SANTA = "🎅"  # Специальное приветствие
     EMOJI_ALIEN = "👽"  # Иностранный/неизвестный элемент
     EMOJI_FRIENDLY_LINK = "📥"  # Дружественная ссылка
-    EMOJI_EDIT = "⌨"  # Рассмотрение
+    EMOJI_EDIT = "⌨️"  # Редактирование
+
+    # Команды
+    OK = "✅"

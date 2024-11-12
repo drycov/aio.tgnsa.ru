@@ -1,10 +1,12 @@
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from app.constants import MenuLabels, Messages
+from app.bot_instance import bot
+from app.constants import MenuLabels, Messages, msg_info
 from app.constants.states import DeviceCommands, MainCommands
-from app.keyboards import on_enter_keyboard, admin_keyboard, main_keyboard
+from app.keyboards import on_enter_keyboard, generate_main_keyboard, admin_menu
 from app.models import User
 from app.utils import StateManager
 from app.utils.logger_instance import app_logger
@@ -27,12 +29,9 @@ async def main_menu(message: Message, state: FSMContext):
 
     # Проверка пользователя
     if user:
-        if user.is_admin_user():
-            display_data = {"text": Messages.WELCOME.value, "reply_markup": admin_keyboard}
-            await StateManager.set_state_with_previous(state, MainCommands.MAIN_MENU, )
-            await message.answer(**display_data)
-        elif user.is_allowed_user() and user.is_verified_user():
-            display_data = {"text": Messages.WELCOME.value, "reply_markup": main_keyboard}
+        if user.is_allowed_user() and user.is_verified_user():
+            keyboard = generate_main_keyboard(user.is_admin_user())
+            display_data = {"text": Messages.WELCOME.value, "reply_markup": keyboard}
             await StateManager.set_state_with_previous(state, MainCommands.MAIN_MENU, display_data)
             await message.answer(**display_data)
         else:
@@ -66,7 +65,8 @@ async def port_info_command(message: Message, state: FSMContext):
 
 @router.message(F.text == MenuLabels.ADMIN_PANEL.value)
 async def admin_panel_command(message: Message, state: FSMContext):
-    display_data = {"text": "Администрирование.", "reply_markup": admin_keyboard}
+    keyboard = admin_menu()  # Создаем клавиатуру для администратора
+    display_data = {"text": "Администрирование.", "reply_markup": keyboard}
     await StateManager.set_state_with_previous(state, MainCommands.ADMIN_PANEL, display_data)
     await message.answer(**display_data)
 
@@ -100,3 +100,11 @@ async def back_command(message: Message, state: FSMContext):
         app_logger.warning(f"Ошибка удаления сообщения: {e}")
 
     # Возвращаемся к предыдущему состоянию, используя сохраненные данные
+
+
+@router.message(F.text == MenuLabels.SYSTEM_INFO.value)
+@router.message(Command("info"))
+async def system_info_command(message: Message, state: FSMContext):
+    bot_info = await bot.get_me()
+    info_message = msg_info(bot_info)
+    await message.reply(info_message)

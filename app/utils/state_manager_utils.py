@@ -77,8 +77,13 @@ class StateManager:
             )
         elif "inline_keyboard" in data:
             # Восстанавливаем объект `InlineKeyboardMarkup`
-            inline_keyboard = [[InlineKeyboardButton(text=button_text, callback_data="action") for button_text in row]
-                               for row in data["inline_keyboard"]]
+            inline_keyboard = [
+                [
+                    InlineKeyboardButton(text=button_text, callback_data=f"callback_{button_text}")
+                    for button_text in row
+                ]
+                for row in data["inline_keyboard"]
+            ]
             return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
         else:
             # Если формат данных не распознан, возвращаем None или обрабатываем это иначе

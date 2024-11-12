@@ -9,7 +9,7 @@ from app.constants import Messages, MenuLabels
 from app.constants.states import MainCommands, RegistrationForm, TaskPaginationState
 from app.handlers.shedule_handlers.task_manager import view_tasks
 from app.keyboards import on_enter_keyboard
-from app.models import User
+from app.models import User, Task
 from app.utils import StateManager, CalendarMarkup
 from config import Config
 
@@ -168,33 +168,54 @@ async def paginate_tasks(callback_query: CallbackQuery, state: FSMContext):
 @router.callback_query(lambda call: call.data.startswith("accept_task_"))
 async def accept_task(callback_query: CallbackQuery):
     task_id = callback_query.data.split("_")[-1]
-    # Логика для обработки принятия задачи
-    await callback_query.answer("Задача принята.")
-    await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия
+    task = Task.update_task_status(task_id, "accepted")
+    if task:
+        await callback_query.answer("Задача принята.")
+        await view_tasks(callback_query.message,task_id=task_id, edit=True)
+
+    else:
+        await callback_query.answer("Ошибка при принятии задачи.", show_alert=True)
+        await view_tasks(callback_query.message,task_id=task_id, edit=True)
+
 
 
 # Обработчик для завершения задачи
 @router.callback_query(lambda call: call.data.startswith("complete_task_"))
 async def complete_task(callback_query: CallbackQuery):
     task_id = callback_query.data.split("_")[-1]
-    # Логика для обработки завершения задачи
-    await callback_query.answer("Задача завершена.")
-    await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия
+    task = Task.update_task_status(task_id, "completed")
+    if task:
+        await callback_query.answer("Задача завершена.")
+        await callback_query.message.edit_reply_markup()
+        await view_tasks(callback_query.message,task_id=task_id, edit=True)
+
+    else:
+        await callback_query.answer("Ошибка при завершении задачи.", show_alert=True)
+        await view_tasks(callback_query.message,task_id=task_id, edit=True)
+
 
 
 # Обработчик для отзыва задачи
 @router.callback_query(lambda call: call.data.startswith("revoke_task_"))
 async def revoke_task(callback_query: CallbackQuery):
     task_id = callback_query.data.split("_")[-1]
-    # Логика для обработки отзыва задачи
-    await callback_query.answer("Задача отозвана.")
-    await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия
+    task = Task.update_task_status(task_id, "revoked")
+    if task:
+        await callback_query.answer("Задача отозвана.")
+        await callback_query.message.edit_reply_markup()
+
+        await view_tasks(callback_query.message,task_id=task_id, edit=True)
+
+    else:
+        await callback_query.answer("Ошибка при отзыве задачи.", show_alert=True)
+        await view_tasks(callback_query.message,task_id=task_id, edit=True)
+
 
 
 # Обработчик для редактирования задачи
 @router.callback_query(lambda call: call.data.startswith("edit_task_"))
 async def edit_task(callback_query: CallbackQuery):
     task_id = callback_query.data.split("_")[-1]
-    # Логика для перехода к режиму редактирования задачи
+    # Здесь можно перейти в режим редактирования задачи, например, запрашивать новые данные
     await callback_query.answer("Переход к редактированию задачи.")
     await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия

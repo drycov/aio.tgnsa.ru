@@ -1,5 +1,6 @@
 from enum import Enum
 
+from config import Config
 from .symbols import Symbols
 
 
@@ -177,3 +178,21 @@ class NetworkMessages(Enum):
         "Шлюз: <code>{gateway}</code>\n"
         "Маска подсети: <code>{netmask}</code>"
     )
+
+    # Функция для формирования сообщения с информацией о боте
+
+
+def msg_info(context):
+    return (
+        f"❖ Имя бота: {context.first_name}\n"
+        f"❖ Адрес бота: @{context.username}\n"
+        f"❖ Версия: {Config.VERSION}\n"
+        f"❖ Имя разработчика: {Config.vendor_info['botVendor']}\n\n"
+        f"Контакты для связи:\n"
+        f"  📧 E-Mail: {Config.vendor_info['botVendorEMailContact']}\n"
+        f'  🕼 Telegram: <a href="https://t.me/{Config.vendor_info['botVendorTGContact']}">{Config.vendor_info['botVendorTGContact']}</a>\n'
+        f"  ✆ WhatsApp: {Config.vendor_info['botVendorWContact']}\n\n"
+        f"Лицензионное соглашение: {Config.license}\n"
+    )
+
+#    🕼 Telegram: <a href="https://t.me/ITISIDevRykov">ITISIDevRykov</a>

@@ -43,7 +43,8 @@ class CalendarMarkup:
         ])
 
         # Создаем и возвращаем клавиатуру с собранными строками
-        return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+        return InlineKeyboardMarkup(inline_keyboard=inline_keyboard,    resize_keyboard=True,
+)
 
     def navigate_month(self, direction: str):
         """

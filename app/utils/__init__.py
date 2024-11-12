@@ -3,7 +3,7 @@
 from .device_utils import DeviceModelFilter
 from .helper_functions import HelperFunctions
 from .network_utils import NetworkUtils
-from .shedule_utils import CalendarMarkup
+from .calendar_markup import CalendarMarkup
 from .snmp_functions import SNMPFunctions
 from .state_manager_utils import StateManager
 

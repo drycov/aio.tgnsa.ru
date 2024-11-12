@@ -66,6 +66,19 @@ class Task(BaseModel):
             app_logger.error(f"Error updating task {task_id}: {error}")
             raise
 
+
+    @classmethod
+    def update_task_assigned(cls, task_id: str, ) -> Optional["Task"]:
+        try:
+            task_ref = db.reference(f'tasks/{task_id}')
+            task_ref.update({"assigned_to": 0})
+            updated_task = task_ref.get()
+            app_logger.info(f"Task {task_id} status revoked.")
+            return cls(**updated_task) if updated_task else None
+        except Exception as error:
+            app_logger.error(f"Error updating task {task_id}: {error}")
+            raise
+
     @classmethod
     def delete(cls, task_id: str) -> None:
         try:

@@ -48,7 +48,15 @@ class Config:
     BASE_DIR = basedir
     DATA_PATH = os.getenv("DATA_PATH", basedir / "data")
     DEBUG = os.getenv("DEBUG", "False").lower() in ["true", "1"]
-
+    # ---------- Настройки бота ----------
+    license = "MIT"  # Например, укажите нужную лицензию
+    vendor_info = {
+        "botVendor": "Denis Rykov",
+        "botVendorTGContact":"@ITISIDevRykov",
+        "botVendorContact": "https://t.me/ITISIDevRykov",
+        "botVendorEMailContact": "d.rykov@ttc.kz",
+        "botVendorWContact": "+7-771-051-5252"
+    }
     # ---------- Локализация и время ----------
     DEFAULT_LOCALE = os.getenv("DEFAULT_LOCALE", "en")
     DEFAULT_TIMEZONE = os.getenv("DEFAULT_TIMEZONE", "UTC")
@@ -65,8 +73,9 @@ class Config:
                                       "https://ttcnsa-default-rtdb.asia-southeast1.firebasedatabase.app")
 
     # MongoDB
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://user:password@cluster.mongodb.net")
-    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "ttcNSA")
+    MONGO_URI = os.getenv("MONGO_URI",
+                          "mongodb+srv://ttc-ttcnsa:3Gm69K7l5R6v0CNT@cluster0.c48ewsz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "tgnsa_ru")
 
     # SQLite (локальная база данных)
     SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI", f"sqlite:///{paths['data'] / 'app.db'}")
