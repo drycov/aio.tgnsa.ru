@@ -4,38 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Добавил таск манеджер">
-      <change afterPath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/methods/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/constants/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/messages.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/admin_handler/admin_commands.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_commands.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/main_handlers/main_commands.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/main_handlers/main_commands.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/message_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/message_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards/keyboards.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/keyboards.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/middlewares/auth_middleware.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/middlewares/auth_middleware.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/User.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/device_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/device_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/snmp_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/snmp_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/state_manager_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/state_manager_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.env" beforeDir="false" afterPath="$PROJECT_DIR$/config.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/device_config.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/device_config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/interfaceList.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/interfaceList.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/new.oid.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/new.oid.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/oid.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/oid.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-    </list>
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Переписал и сменил либу snmp. Реализовал работу с port_check" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -317,7 +286,23 @@
       <option name="project" value="LOCAL" />
       <updated>1731569400667</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Переписал и сменил либу snmp. Реализовал работу с port_check">
+      <option name="closed" value="true" />
+      <created>1731622907705</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1731622907705</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Переписал и сменил либу snmp. Реализовал работу с port_check">
+      <option name="closed" value="true" />
+      <created>1731622976423</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1731622976423</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -336,6 +321,7 @@
     <MESSAGE value="Пофиксил назад, исправил регистрацию. Прикутил редис" />
     <MESSAGE value="Добавил цидр" />
     <MESSAGE value="Добавил таск манеджер" />
-    <option name="LAST_COMMIT_MESSAGE" value="Добавил таск манеджер" />
+    <MESSAGE value="Переписал и сменил либу snmp. Реализовал работу с port_check" />
+    <option name="LAST_COMMIT_MESSAGE" value="Переписал и сменил либу snmp. Реализовал работу с port_check" />
   </component>
 </project>
