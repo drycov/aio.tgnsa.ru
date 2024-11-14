@@ -3,7 +3,7 @@ from datetime import datetime
 from random import randint
 from typing import Optional, List, Union
 
-from firebase_admin import db
+from firebase_admin import db, exceptions
 from pydantic import BaseModel, ValidationError
 
 from app.utils.logger_instance import app_logger
@@ -105,20 +105,29 @@ class User(BaseModel):
             user_ref = db.reference(f'users/{tg_id}')
             user_snapshot = user_ref.get()
 
-            # Логируем, если данные отсутствуют
+            # Логирование, если данные отсутствуют или формат неверен
             if not isinstance(user_snapshot, dict):
                 app_logger.warning(f"Пользователь с tg_id {tg_id} не найден или данные не в ожидаемом формате.")
                 return None
 
-            # Логируем, если обязательные поля отсутствуют
+            # Проверка на обязательные поля
             missing_fields = [field for field in ["tg_id", "first_name", "last_name"] if field not in user_snapshot]
             if missing_fields:
                 app_logger.warning(f"Отсутствуют обязательные поля для tg_id {tg_id}: {missing_fields}")
                 return None
 
+            # Валидация модели
             return cls.model_validate(user_snapshot)
+
         except ValidationError as e:
-            app_logger.error(f"Ошибка валидации при создании пользователя: {e}")
+            app_logger.error(f"Ошибка валидации при создании пользователя с tg_id {tg_id}: {e}")
+            return None
+        except exceptions.FirebaseError as firebase_error:
+            app_logger.error(f"Ошибка Firebase: {firebase_error}")
+            return None
+        except ValueError as value_error:
+            # Обработка ошибок формата токена или его валидации
+            app_logger.error(f"Ошибка валидации JWT токена: {value_error}")
             return None
         except Exception as error:
             app_logger.error(f"Ошибка при получении пользователя с tg_id {tg_id}: {error}")

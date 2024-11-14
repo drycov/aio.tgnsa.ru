@@ -9,6 +9,8 @@ from pathlib import Path
 from sys import platform
 from typing import Optional, Any, Dict
 
+from pysnmp.proto.rfc1902 import OctetString, TimeTicks
+
 from app.constants import NetworkMessages, LogMessages
 from app.models import Task
 from app.utils.logger_instance import app_logger
@@ -48,25 +50,70 @@ class HelperFunctions:
         return "MacOS" if platform.system() == "Darwin" else platform.system()
 
     @staticmethod
-    def format_human_date(date: datetime.datetime) -> str:
-        """Форматирование даты в строку в формате 'гггг-мм-дд чч:мм:сс'."""
-        return date.strftime("%Y-%m-%d %H:%M:%S")
+    def format_human_date(date: datetime.datetime, show_time: bool = True) -> str:
+        """Форматирование даты в строку в формате 'гггг-мм-дд чч:мм:сс' или 'гггг-мм-дд'."""
+        return date.strftime("%Y-%m-%d %H:%M:%S") if show_time else date.strftime("%Y-%m-%d")
 
     @staticmethod
-    def format_human_date_long(date: datetime.datetime) -> str:
+    def format_human_date_long(date: datetime.datetime, show_time: bool = True) -> str:
         """Форматирование даты в строку с полным названием месяца 'гггг месяц дд, чч:мм:сс'."""
-        return date.strftime("%Y %B %d, %H:%M:%S")
+        return date.strftime("%Y %B %d, %H:%M:%S") if show_time else date.strftime("%Y %B %d")
 
     @staticmethod
-    def format_date_2digit(date: datetime.datetime) -> str:
+    def format_date_2digit(date: datetime.datetime, show_time: bool = True) -> str:
         """Форматирование даты в строку с двухзначными днями и месяцами 'гг-мм-дд чч:мм:сс'."""
-        return date.strftime("%y-%m-%d %H:%M:%S")
+        return date.strftime("%y-%m-%d %H:%M:%S") if show_time else date.strftime("%y-%m-%d")
 
     @staticmethod
     def seconds_to_str(uptime: int) -> str:
-        """Преобразование секунд в строку в формате 'дни часы минуты секунды'."""
-        return f"{int(uptime / 86400):02} дней {int((uptime % 86400) / 3600):02} часов " \
-               f"{int((uptime % 3600) / 60):02} минут {int(uptime % 60):02} секунд"
+        """
+        Преобразует значение TimeTicks в строку в формате 'годы месяцы недели дни часы минуты секунды'.
+        """
+        # Переводим TimeTicks в секунды
+        if isinstance(uptime, TimeTicks):
+            total_seconds = int(uptime) / 100  # Преобразование TimeTicks в секунды
+
+        total_seconds = int(uptime) / 100  # Преобразование TimeTicks в секунды
+
+        # Определяем величины времени
+        seconds_in_year = 31536000  # 365 дней
+        seconds_in_month = 2592000  # 30 дней
+        seconds_in_week = 604800  # 7 дней
+        seconds_in_day = 86400
+        seconds_in_hour = 3600
+        seconds_in_minute = 60
+
+        # Вычисляем годы, месяцы, недели, дни, часы, минуты, секунды
+        years = int(total_seconds // seconds_in_year)
+        total_seconds %= seconds_in_year
+        months = int(total_seconds // seconds_in_month)
+        total_seconds %= seconds_in_month
+        weeks = int(total_seconds // seconds_in_week)
+        total_seconds %= seconds_in_week
+        days = int(total_seconds // seconds_in_day)
+        total_seconds %= seconds_in_day
+        hours = int(total_seconds // seconds_in_hour)
+        total_seconds %= seconds_in_hour
+        minutes = int(total_seconds // seconds_in_minute)
+        seconds = int(total_seconds % seconds_in_minute)
+
+        # Формируем строку с результатом, добавляя только непустые значения
+        result = []
+        if years > 0:
+            result.append(f"{years} {'год' if years == 1 else 'лет' if years >= 5 else 'года'}")
+        if months > 0:
+            result.append(f"{months} {'месяц' if months == 1 else 'месяцев' if months >= 5 else 'месяца'}")
+        if weeks > 0:
+            result.append(f"{weeks} {'неделя' if weeks == 1 else 'недель' if weeks >= 5 else 'недели'}")
+        if days > 0:
+            result.append(f"{days} {'день' if days == 1 else 'дней' if days >= 5 else 'дня'}")
+        if hours > 0:
+            result.append(f"{hours:02} часов")
+        if minutes > 0:
+            result.append(f"{minutes:02} минут")
+        result.append(f"{seconds:02} секунд")  # Секунды всегда отображаются
+
+        return ' '.join(result)
 
     @staticmethod
     def generate_verification_code(length: int = 6) -> str:
@@ -142,7 +189,7 @@ class HelperFunctions:
             return None
 
     @staticmethod
-    def load_oids(file_path: str) -> dict:
+    def load_oids() -> dict:
         from config import Config  # Импорт внутри функции
 
         """
@@ -217,3 +264,53 @@ class HelperFunctions:
         unique_suffix = uuid.uuid4().hex[:6]  # Случайный суффикс из 6 символов
 
         return f"{assignee_part}{unique_suffix}"
+
+    @staticmethod
+    def to_string(value, encoding='utf-8'):
+        """
+        Преобразует значение типа OctetString, bytes или hex-строку в обычную строку.
+        Если значение уже является строкой, возвращает его без изменений.
+        """
+
+        # Преобразуем значение из OctetString в строку
+        if isinstance(value, OctetString):
+            # Получаем строковое представление из OctetString
+            value = value.prettyPrint().encode('latin1').decode(encoding)
+
+        # Преобразуем значение из bytes в строку
+        elif isinstance(value, bytes):
+            value = value.decode(encoding)
+
+        # Проверяем, является ли строка шестнадцатеричной после преобразования
+        if isinstance(value, str):
+            if HelperFunctions.is_hex_string(value):
+                try:
+                    # Если строка в hex-формате, преобразуем её в текст
+                    if value.startswith("0x"):
+                        value = value[2:]
+                    value = bytes.fromhex(value).decode(encoding)
+                except (ValueError, UnicodeDecodeError) as e:
+                    # Оставляем исходное значение и логируем ошибку, если декодировать не удалось
+                    print(f"Ошибка при декодировании hex: {e}")
+                    pass
+
+        return value  # Возвращаем преобразованное значение или исходное, если оно не требует изменений
+
+    @staticmethod
+    def is_hex_string(s: str) -> bool:
+        """
+        Проверяет, является ли строка шестнадцатеричным значением.
+        """
+        # Убираем префикс "0x" в начале, если он есть
+        if s.startswith("0x"):
+            s = s[2:]
+
+        # Проверяем, что строка состоит только из hex-символов и имеет чётную длину
+        if len(s) % 2 == 0 and all(c in "0123456789abcdefABCDEF" for c in s):
+            try:
+                # Пробуем декодировать строку как hex
+                bytes.fromhex(s)
+                return True
+            except ValueError:
+                return False
+        return False

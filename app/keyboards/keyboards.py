@@ -1,6 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-from app.constants import MenuLabels
+from app.constants import MenuLabels, PriorityMessages
 
 # Клавиатура для кнопки входа
 on_enter_keyboard = ReplyKeyboardMarkup(
@@ -20,9 +20,9 @@ in_back_keyboard = InlineKeyboardMarkup(
 )
 
 priority_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="Low", callback_data="priority_low"),
-     InlineKeyboardButton(text="Medium", callback_data="priority_medium"),
-     InlineKeyboardButton(text="High", callback_data="priority_high")]
+    [InlineKeyboardButton(text=PriorityMessages.PRIORITY_LOW.value, callback_data="priority_low")],
+    [InlineKeyboardButton(text=PriorityMessages.PRIORITY_MEDIUM.value, callback_data="priority_medium")],
+    [InlineKeyboardButton(text=PriorityMessages.PRIORITY_HIGH.value, callback_data="priority_high")]
 ])
 
 # Клавиатура для отправки контакта

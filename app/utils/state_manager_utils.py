@@ -2,41 +2,46 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message, InlineKeyboardMarkup, InlineKeyboardButton
 
+from app.constants import MenuLabels
 from app.constants.states import MainCommands
 from app.keyboards import on_enter_keyboard
 
 
 class StateManager:
     @staticmethod
-    async def set_state_with_previous(state: FSMContext, new_state: State, display_data: dict = None):
+    async def set_state_with_previous(state: FSMContext, new_state: State, display_data: dict = None,
+                                      action: str = None):
         """
         Устанавливает новое состояние, сохраняя текущее состояние как предыдущее
-        и добавляя данные для отображения, если состояние изменилось.
+        и добавляя данные для отображения и записи action history, если состояние изменилось.
 
         Args:
             state (FSMContext): Объект контекста FSM.
             new_state (State): Новое состояние для установки.
             display_data (dict, optional): Данные для отображения, которые нужно сохранить.
+            action (str, optional): Специфическое действие, которое нужно сохранить в истории действий.
         """
         # Получаем текущее состояние
         current_state = await state.get_state()
 
         # Если состояние изменилось, сохраняем текущее как предыдущее и добавляем данные для отображения
         if current_state != str(new_state):  # Преобразуем `new_state` в строку для сравнения
-
             session_data = await state.get_data()
             display_history = session_data.get("display_history", {})
+            action_history = session_data.get("action_history", {})
 
             # Сериализуем разметку, если она присутствует в `display_data`
             if display_data and "reply_markup" in display_data:
                 display_data["reply_markup"] = StateManager.serialize_markup(display_data["reply_markup"])
 
-            # Сохраняем `display_data` для нового состояния в строковом формате
+            # Сохраняем `display_data` и `action` для нового состояния
             if current_state:
                 display_history[str(new_state.state)] = display_data or {}
+                action_history[str(new_state.state)] = action or None
 
             # Обновляем данные сессии с предыдущим состоянием и историей отображения
-            await state.update_data(previous_state=str(current_state), display_history=display_history)
+            await state.update_data(previous_state=str(current_state), display_history=display_history,
+                                    action_history=action_history)
 
         # Устанавливаем новое состояние
         await state.set_state(new_state)
@@ -52,6 +57,9 @@ class StateManager:
                 "keyboard": [[button.text for button in row] for row in markup.keyboard],
                 "resize_keyboard": markup.resize_keyboard,
                 "one_time_keyboard": markup.one_time_keyboard,
+                "selective": markup.selective,
+                "is_persistent": markup.is_persistent,
+                "input_field_placeholder": markup.input_field_placeholder,
             }
         elif isinstance(markup, InlineKeyboardMarkup):
             # Сериализация для InlineKeyboardMarkup
@@ -72,8 +80,12 @@ class StateManager:
             keyboard = [[KeyboardButton(text=button_text) for button_text in row] for row in data["keyboard"]]
             return ReplyKeyboardMarkup(
                 keyboard=keyboard,
-                resize_keyboard=data.get("resize_keyboard", True),
-                one_time_keyboard=data.get("one_time_keyboard", False)
+                parse_mode=data.get("parse_mode"),
+                one_time_keyboard_reply=data.get("one_time_keyboard_reply"),
+                selective=data.get("selective"),
+                is_persistent=data.get("is_persistent"),
+                input_field_placeholder=data.get("input_field_placeholder"),
+
             )
         elif "inline_keyboard" in data:
             # Восстанавливаем объект `InlineKeyboardMarkup`
@@ -92,20 +104,20 @@ class StateManager:
     @staticmethod
     async def handle_back_action(state: FSMContext, message: Message):
         """
-        Обрабатывает действие «Назад», возвращая пользователя к предыдущему состоянию или в начальное состояние с разметкой.
-
-        Args:
-            state (FSMContext): Контекст FSM для пользователя.
-            message (Message): Сообщение, на которое ответит бот.
+        Обрабатывает действие «Назад», возвращая пользователя к предыдущему состоянию или в начальное состояние с разметкой,
+        при этом избегая возврата к состояниям ввода.
         """
         # Получаем данные о предыдущем состоянии и истории отображения
         data = await state.get_data()
         previous_state = data.get("previous_state")
         display_history = data.get("display_history", {})
+        action_history = data.get("action_history", {})
 
-        if previous_state:
-            # Получаем данные для отображения предыдущего состояния
+        if previous_state and action_history.get(previous_state) not in ["input_field", "input",
+                                                                         None]:
+            # Получаем данные для отображения и действия предыдущего состояния
             display_data = display_history.get(previous_state, {})
+            action_data = action_history.get(previous_state, None)
             display_data["text"] = display_data.get("text", "Возврат на предыдущий шаг")
 
             # Восстанавливаем разметку, если она была сериализована
@@ -115,10 +127,11 @@ class StateManager:
             # Устанавливаем предыдущее состояние и отправляем сообщение с восстановленными данными
             await state.set_state(previous_state)
             await message.answer(**display_data)
+
         else:
-            # Если предыдущего состояния нет, возвращаемся к начальному состоянию с основной разметкой
+            # Если предыдущего состояния нет или оно связано с полем ввода, возвращаемся к начальному состоянию
             await state.set_state(MainCommands.START)
             await message.answer(
-                "Нет предыдущего состояния для возврата. Вы вернулись в главное меню.",
+                text=MenuLabels.MAIN_MENU.value,
                 reply_markup=on_enter_keyboard  # Устанавливаем разметку главного меню
             )

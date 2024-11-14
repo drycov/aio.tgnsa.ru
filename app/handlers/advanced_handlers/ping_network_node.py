@@ -33,7 +33,7 @@ async def process_ping_node_input(message: Message, state: FSMContext):
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Отправка результата пользователю
-        await message.answer(
+        await message.reply(
             f"<b>Ping device: <code>{host}</code> log</b>\n\n"
             f"<i>{ping_data}</i>\n\n"
             f"<i>Выполнено: <code>{current_date}</code></i>",

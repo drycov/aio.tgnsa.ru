@@ -37,7 +37,7 @@ def admin_menu() -> ReplyKeyboardMarkup:
             KeyboardButton(text=MenuLabels.SEND_BROADCAST.value),
         ],
         [KeyboardButton(text=MenuLabels.SYSTEM_SETTINGS.value)],
-        [KeyboardButton(text=MenuLabels.EXIT.value)],
+        [KeyboardButton(text=MenuLabels.BACK.value)],
     ]
     return ReplyKeyboardMarkup(
         keyboard=keyboard,

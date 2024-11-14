@@ -30,14 +30,12 @@ async def process_subnet_input(message: Message, state: FSMContext):
         # Выполнение расчета сети
         cidr_data = NetworkUtils.subnet_calculate(subnet)
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # Отправка результата пользователю
-        await message.answer(
-            f"<b>Расчет IP-сети: <code>{subnet}</code></b>\n\n"
-            f"<pre>{cidr_data}</pre>\n\n"
-            f"<i>Выполнено: <code>{current_date}</code></i>",
-            reply_markup=in_back_keyboard,
-            parse_mode="HTML"
-        )
-
-        # Сброс состояния после выполнения
+        display_data = {
+            "text":
+                f"<b>Расчет IP-сети: <code>{subnet}</code></b>\n\n"
+                f"<pre>{cidr_data}</pre>\n\n"
+                f"<i>Выполнено: <code>{current_date}</code></i>",
+            "reply_markup": in_back_keyboard
+        }
+        await message.reply(**display_data, parse_mode="HTML")
         await state.clear()

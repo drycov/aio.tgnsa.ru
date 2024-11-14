@@ -6,10 +6,13 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from app.constants import Messages
+from app.bot_instance import bot
+from app.constants import Messages, MenuLabels, msg_info
 from app.constants.states import MainCommands, ALL_STATES
 from app.keyboards import on_enter_keyboard
+from app.models import User
 from app.utils import StateManager, CalendarMarkup
+from app.utils.logger_instance import app_logger
 
 # Создаем маршрутизатор для регистрации обработчиков
 router = Router()
@@ -18,7 +21,6 @@ router = Router()
 @router.message(Command("start"))
 async def start_handler(message: Message, state: FSMContext):
     await state.clear()  # Сбрасываем состояние для чистого начала
-
     display_data = {"text": Messages.PLEASE_ENTER.value, "reply_markup": on_enter_keyboard}
 
     # Устанавливаем состояние и сохраняем display_data через StateManager
@@ -31,16 +33,6 @@ async def start_handler(message: Message, state: FSMContext):
     await message.delete()
 
 
-# Обработчик для команды /cancel, который отменяет текущее состояние
-@router.message(F.text == "/cancel", StateFilter(*ALL_STATES))
-async def cancel_command(message: Message, state: FSMContext):
-    await StateManager.handle_back_action(state, message)
-
-    # Удаляем предыдущее сообщение пользователя (если это нужно по логике)
-    await message.delete()
-    await state.clear()
-
-
 @router.message(F.text == "/schedule")
 async def schedule_command(message: Message):
     now = datetime.now()
@@ -48,3 +40,21 @@ async def schedule_command(message: Message):
 
     await message.answer("Выберите дату для планирования работ:",
                          reply_markup=calendar_markup)
+
+
+@router.message(F.text == MenuLabels.SYSTEM_INFO.value)
+@router.message(Command("info"))
+async def system_info_command(message: Message, state: FSMContext):
+    bot_info = await bot.get_me()
+    info_message = msg_info(bot_info)
+    await message.reply(info_message)
+
+
+# Обработчик для команды /cancel, который отменяет текущее состояние
+@router.message(F.Command("cancel", StateFilter(*ALL_STATES)))
+async def cancel_command(message: Message, state: FSMContext):
+    await StateManager.handle_back_action(state, message)
+
+    # Удаляем предыдущее сообщение пользователя (если это нужно по логике)
+    await message.delete()
+    await state.clear()

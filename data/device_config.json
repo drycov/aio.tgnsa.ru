@@ -77,6 +77,14 @@
     "adsl": false,
     "fibers": 28
   },
+  "MES2324": {
+    "name": "Eltex MES2324 AC",
+    "interface_key": "eltex_interfaces",
+    "interface_list_key": "interface_list_28p",
+    "ddm": true,
+    "adsl": false,
+    "fibers": 4
+  },
   "MES2324P": {
     "name": "Eltex MES2324P",
     "interface_key": "eltex_interfaces",

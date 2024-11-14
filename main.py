@@ -27,11 +27,20 @@ try:
     if not firebase_admin._apps:
         serviceAccountKey = Path(Config.BASE_DIR) / "serviceAccountKey.json"
         app_logger.info(f"Начало инициализации Firebase с файлом ключа: {serviceAccountKey}")
+
+        # Проверка существования файла
+        if not serviceAccountKey.exists():
+            app_logger.error(f"Файл serviceAccountKey.json не найден по пути: {serviceAccountKey}")
+            sys.exit(1)
+
         cred = credentials.Certificate(serviceAccountKey)
         firebase_admin.initialize_app(cred, {
             'databaseURL': Config.FIREBASE_DATABASE_URL
         })
         app_logger.info("Firebase успешно инициализирован")
+except FileNotFoundError as fnf_error:
+    app_logger.error(f"Файл serviceAccountKey.json не найден: {fnf_error}")
+    sys.exit(1)
 except Exception as e:
     app_logger.error(f"Ошибка при инициализации Firebase: {e}")
     sys.exit(1)

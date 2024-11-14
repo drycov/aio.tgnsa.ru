@@ -34,7 +34,7 @@ class Symbols(Enum):
     INDICATOR_BLUE = "🔵"  # Синий круг
     INDICATOR_BLACK = "⚫️"  # Черный круг
     INDICATOR_PURPLE = "🟣"  # Фиолетовый круг
-
+    INDICATOR_WHITE = "⚪"  # Белый круг
     # Действия
     ACTION_BACK = "🔙"  # Назад
     ACTION_CONFIRM = "🆗"  # Подтверждение

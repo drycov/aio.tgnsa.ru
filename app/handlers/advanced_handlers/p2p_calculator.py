@@ -33,7 +33,7 @@ async def process_p2p_input(message: Message, state: FSMContext):
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Отправка результата пользователю
-        await message.answer(
+        await message.reply(
             f"<b>Расчет P2P-пары: <code>{subnet}</code></b>\n\n"
             f"{p2p_data}\n\n"
             f"<i>Выполнено: <code>{current_date}</code></i>",

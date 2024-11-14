@@ -52,13 +52,13 @@ class Config:
     license = "MIT"  # Например, укажите нужную лицензию
     vendor_info = {
         "botVendor": "Denis Rykov",
-        "botVendorTGContact":"@ITISIDevRykov",
+        "botVendorTGContact": "@ITISIDevRykov",
         "botVendorContact": "https://t.me/ITISIDevRykov",
         "botVendorEMailContact": "d.rykov@ttc.kz",
         "botVendorWContact": "+7-771-051-5252"
     }
     # ---------- Локализация и время ----------
-    DEFAULT_LOCALE = os.getenv("DEFAULT_LOCALE", "en")
+    DEFAULT_LOCALE = os.getenv("DEFAULT_LOCALE", "ru_RU.UTF-8")
     DEFAULT_TIMEZONE = os.getenv("DEFAULT_TIMEZONE", "UTC")
 
     # ---------- Параметры бота ----------

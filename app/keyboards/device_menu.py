@@ -1,4 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 from app.constants import MenuLabels
 
 # Клавиатура для админа
@@ -13,7 +14,7 @@ device_keyboard = ReplyKeyboardMarkup(
             KeyboardButton(text=MenuLabels.CABLE_LENGTH_MEASURE.value),
         ],
         [KeyboardButton(text=MenuLabels.DEVICE_LLDP.value)],
-        [KeyboardButton(text=MenuLabels.EXIT.value)],
+        [KeyboardButton(text=MenuLabels.BACK.value)],
     ],
     resize_keyboard=True,
     one_time_keyboard=False  # Это позволяет клавиатуре оставаться на экране

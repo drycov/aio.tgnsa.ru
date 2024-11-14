@@ -55,6 +55,7 @@ class Messages(Enum):
     # Сообщения об ошибках
     ERROR_SUBNET = f"{Symbols.CABLE_SHORT.value} Это не CIDR. Укажите IP в формате A.B.C.D / Mask(0 - 32) и повторите."
     ERROR_P2P = f"{Symbols.CABLE_SHORT.value} Это не P2P. Укажите IP в формате A.B.C.D / Mask(30) и повторите."
+
     ERROR_NO_ACL = f"{Symbols.STATUS_WARNING.value} Нет прав"
     ERROR_ACTION = "Нет прав для доступа в меню:"
     ERROR_GENERAL = f"<b>{Symbols.STATUS_CRITICAL.value} Произошла ошибка, попробуйте позже!</b>"
@@ -142,6 +143,11 @@ class LogMessages(Enum):
     MODEL_NOT_FOUND = "Модель устройства для данных '{dirty_data}' не найдена."
     CONFIG_NOT_FOUND = "Конфигурация для модели '{model_key}' не найдена, возвращаются значения по умолчанию."
     FILTERING_MODEL = "Фильтрация модели устройства для данных: {dirty_data}"
+    GET_SINGLE_OID_ACTION = "Получение одиночного OID"
+    GET_SYNC_SINGLE_OID_ACTION = "Синхронное получение одиночного OID"
+    CHECK_SNMP_ACTION = "Проверка SNMP-сообщества"
+    GET_MULTI_OID_ACTION = "Получение нескольких значений OID"
+    SET_SNMP_OID_ACTION = "Установка значения OID через SNMP"
 
 
 class ErrorMessages(Enum):
@@ -172,12 +178,26 @@ class NetworkMessages(Enum):
         "Последний хост: <code>{last}</code>\n"
         "Хостов/Сетей: <code>{size}</code>"
     )
+    DEVICE_INFO = (
+        f"<i>Статус устройства:</i> <code>{Symbols.OK.value} Доступен</code>\n"
+        "<i>IP устройства:</i> <code>{host}</code>\n"
+        "<i>Имя устройства:</i> <code>{sw_sys_name}</code>\n"
+        "<i>Модель устройства:</i> <code>{sw_model}</code>\n"
+        "<i>UpTime:</i> <code>{sw_up_time}</code> (<code>{up_time}</code>)"
+    )
     P2P_INFO = (
         "Адрес пары: <code>{pair_address}</code>\n"
         "Хост: <code>{host}</code>\n"
         "Шлюз: <code>{gateway}</code>\n"
         "Маска подсети: <code>{netmask}</code>"
     )
+
+
+class PriorityMessages(Enum):
+    PRIORITY_LOW = "Низкий приоритет"
+    PRIORITY_MEDIUM = "Средний приоритет"
+    PRIORITY_HIGH = "Высокий приоритет"
+    PRIORITY_NORMAL = "Нормальный приоритет"
 
     # Функция для формирования сообщения с информацией о боте
 

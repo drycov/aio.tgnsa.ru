@@ -98,7 +98,10 @@ async def set_task_end_date(callback_query: types.CallbackQuery, state: FSMConte
     await state.update_data(task_end_date=end_date)
 
     await state.set_state(TaskCreationState.TITLE)
-    await callback_query.message.edit_text("Введите заголовок задачи:")
+    await callback_query.message.edit_text(
+        "Введите заголовок задачи:\n<code>Пример: Создание отчета по емкости</code>",
+        parse_mode="HTML"
+    )
     await callback_query.answer()
 
 
@@ -106,7 +109,10 @@ async def set_task_end_date(callback_query: types.CallbackQuery, state: FSMConte
 async def set_task_title(message: Message, state: FSMContext):
     await state.update_data(task_title=message.text)
     await state.set_state(TaskCreationState.DESCRIPTION)
-    await message.answer("Введите описание задачи:")
+    await message.answer(
+        "Введите описание задачи:\n<code>Пример: Подготовить отчет по задействованной емкости за прошедший месяц. Включить данные о исправных и вышедших из строя коммутаторах.</code>",
+        parse_mode="HTML"
+    )
 
 
 @router.message(StateFilter(TaskCreationState.DESCRIPTION))
@@ -157,8 +163,12 @@ async def assign_employee(callback_query: types.CallbackQuery, state: FSMContext
         return
 
     # Конвертация дат в datetime
-    task_start_date = datetime.fromisoformat(data["task_start_date"])
-    task_end_date = datetime.fromisoformat(data["task_end_date"])
+    try:
+        task_start_date = datetime.fromisoformat(data["task_start_date"])
+        task_end_date = datetime.fromisoformat(data["task_end_date"])
+    except ValueError as e:
+        await callback_query.message.answer(f"Ошибка формата даты: {e}")
+        return
 
     # Создание экземпляра задачи
     task = Task(
@@ -178,20 +188,21 @@ async def assign_employee(callback_query: types.CallbackQuery, state: FSMContext
     # Уведомление назначенного сотрудника о задаче
     await notify_assignee(task, callback_query.bot)
 
-    # Ответ о создании задачи
-    await callback_query.message.edit_text(
-        f"<b>Задача успешно создана!</b>\n\n"
-        f"<b>Дата начала:</b> {task.date}\n"
-        f"<b>Дата окончания:</b> {task.end_date}\n"
-        f"<b>Приоритет:</b> {task.priority}\n"
+    # Формирование и отправка сообщения о создании задачи
+    task_info = (
+        f"<b>Задача</b> успешно создана!\n\n"
+        f"<b>Название:</b> {task.title}\n"
+        f"<b>Дата начала:</b> {HelperFunctions.format_human_date(task.date, show_time=False)}\n"
+        f"<b>Дата окончания:</b> {HelperFunctions.format_human_date(task.end_date, show_time=False)}\n"
+        f"<b>Приоритет:</b> {task.priority.get_icon()} {task.priority.get_message()}\n"
         f"<b>Сотрудник:</b> {employee_id}\n"
-        f"<b>Описание:</b> {task.description}",
-        reply_markup=in_back_keyboard,
-        parse_mode="HTML"
+        f"<b>Описание:</b> {task.description}"
     )
+
+    await callback_query.message.edit_text(task_info, reply_markup=in_back_keyboard, parse_mode="HTML")
     await callback_query.answer()
     await state.clear()
-
+    
 
 # Функция сохранения задачи в Firestore
 
@@ -203,31 +214,40 @@ def save_task_to_firestore(task: Task):
     task_data['date'] = task.date.isoformat()
     task_data['end_date'] = task.end_date.isoformat()
     task_data['created_by'] = task.created_by
+    task_data['task_id'] = task_id  # Добавление task_id в data
 
     task_ref.set(task_data)
+    return task_id
 
 
 async def notify_assignee(task: Task, bot):
-    assignee = None  # Инициализация assignee для избежания ошибок использования неинициализированной переменной
     try:
-        assignee_id = int(task.assigned_to)  # Преобразование в int
+        # Преобразование assigned_to в int и проверка на корректность ID
+        assignee_id = int(task.assigned_to)
         assignee = User.get_by_tg_id(assignee_id)
 
-        if assignee:  # Проверка, что assignee был найден
-            await bot.send_message(
-                assignee.tg_id,
-                f"Вам назначена новая задача:\nДата: {task.date}\nОписание: {task.description}\nПриоритет: {task.priority}"
-            )
-        else:
+        if not assignee:
             print(f"Сотрудник с ID {assignee_id} не найден.")
+            return
 
-    except TelegramAPIError as e:
-        if assignee and "bot was blocked by the user" in str(e):
-            print(f"Не удалось уведомить сотрудника {assignee.tg_id}, бот заблокирован.")
-        else:
-            print(f"Ошибка при уведомлении: {e}")
+        # Формирование сообщения и отправка уведомления
+        message = (
+            f"Вам назначена новая задача:\n"
+            f"Дата: {HelperFunctions.format_human_date(task.date, show_time=False)}\n"
+            f"Описание: {task.description}\n"
+            f"Приоритет: {task.priority.get_icon()} {task.priority.get_message()}"
+        )
+        await bot.send_message(assignee.tg_id, message)
+
     except ValueError:
         print("Ошибка преобразования assigned_to в int. Убедитесь, что assigned_to содержит корректный ID.")
+
+    except TelegramAPIError as e:
+        # Проверка, заблокировал ли пользователь бота
+        if "bot was blocked by the user" in str(e):
+            print(f"Не удалось уведомить сотрудника {assignee_id}, бот заблокирован.")
+        else:
+            print(f"Ошибка при уведомлении: {e}")
 
 
 async def notify_task_approach(task: Task, bot):
@@ -294,7 +314,7 @@ def get_navigation_and_action_keyboard(task_data: dict, user_id: int, page: int,
 
 
 async def view_tasks(message: types.Message, created_by: Optional[int] = None, assigned_to: Optional[int] = None,
-                     task_id: Optional[str] = None, page: int = 1, edit: bool = False):
+                     task_id: Optional[str] = None, page: int = 1, edit: bool = False, action=None):
     tasks_ref = db.reference('tasks')
     tasks_per_page = 3  # Количество задач на одной странице
     user_id = message.from_user.id
@@ -351,22 +371,23 @@ async def view_tasks(message: types.Message, created_by: Optional[int] = None, a
 
     # Формируем информацию о задачах с учетом статуса и добавлением иконки
     tasks_info = "\n\n".join([
-        f"{get_status_icon(task.get('status'))} Задача: /task_{key}\n"
-        f"{'Дата начала: ' + task.get('date', 'не задано') + '\n' if task.get('status') != 'revoked' or task_id == key else ''}"
-        f"{'Дата окончания: ' + task.get('end_date', 'не задано') + '\n' if task.get('status') != 'revoked' or task_id == key else ''}"
-        f"{'Описание: ' + task.get('description', 'не указано') + '\n' if task.get('status') != 'revoked' or task_id == key else ''}"
-        f"{'Приоритет: ' + task.get('priority', 'не задан') + '\n' if task.get('status') != 'revoked' or task_id == key else ''}"
-        # Информация об исполнителе, если статус не "revoked"
-        f"{'Исполнитель: <a href=\"tg://user?id=' + str(task.get('assigned_to', 0)) + '\">' + (User.get_by_tg_id(task.get('assigned_to', 0)).first_name if User.get_by_tg_id(task.get('assigned_to', 0)) else 'не назначен') + ' ' + (User.get_by_tg_id(task.get('assigned_to', 0)).last_name if User.get_by_tg_id(task.get('assigned_to', 0)) else '') + '</a>\n' if task.get('status') != 'revoked' else ''}"
-        # Информация о создателе задачи
-        f"Создатель: <a href='tg://user?id={task.get('created_by', 0)}'>" +
-        (User.get_by_tg_id(task.get('created_by', 0)).first_name if User.get_by_tg_id(
-            task.get('created_by', 0)) else 'не указан') + ' ' +
-        (User.get_by_tg_id(task.get('created_by', 0)).last_name if User.get_by_tg_id(
-            task.get('created_by', 0)) else '') + "</a>\n"
+        f"{get_status_icon(task.get('status'))} Задача: <i>/task_{key}</i>\n"
+        f"{'Имя: ' + task.get('title', 'не указано') + '\n' if task.get('status') != 'revoked' or task_id else ''}"
+        f"{'C ' + HelperFunctions.format_human_date(datetime.fromisoformat(task.get('date', 'не задано')), show_time=False) + ' по ' + HelperFunctions.format_human_date(datetime.fromisoformat(task.get('end_date', 'не задано')), show_time=False) + '\n' if task.get('status') != 'revoked' or task_id == key else ''}"
+        f"{'Описание: ' + task.get('description', 'не указано') + '\n' if task.get('status') != 'revoked' or task_id == key or action == 'view' else ''}"
+        f"{'Приоритет: <b>' + PriorityLevel.get_priority_level(task.get('priority', 'low')) + '</b>\n' if task.get('status') != 'revoked' or task_id == key else ''}"
+
+        # Проверка наличия assigned_user для ссылки Исполнитель
+        f"{('Исполнитель: <i><a href=\"tg://user?id=' + str(task.get('assigned_to')) + '\">' + (assigned_user.first_name if assigned_user else 'не назначен') + ' ' + (assigned_user.last_name if assigned_user else '') + '</a> </i>\n') if task.get('status') != 'revoked' and task.get('assigned_to') else 'Исполнитель: не назначен\n'}"
+
+        # Проверка наличия created_user для ссылки Создатель
+        f"{('Создатель:<i> <a href=\"tg://user?id=' + str(task.get('created_by')) + '\">' + (created_user.first_name if created_user else 'не указан') + ' ' + (created_user.last_name if created_user else '') + '</a></i>\n') if action == 'view' and task.get('created_by') else 'Создатель: не указан\n'}"
+
         for idx, (key, task) in enumerate(tasks_to_display)
         if isinstance(task, dict)
-        and (task_id == key or task.get("status") != "revoked")
+           and (task_id == key or task.get("status") != "revoked")
+        for assigned_user in [User.get_by_tg_id(task.get('assigned_to', 0))]
+        for created_user in [User.get_by_tg_id(task.get('created_by', 0))]
     ])
 
     # Создаем кнопки навигации
