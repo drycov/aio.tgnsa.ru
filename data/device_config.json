@@ -52,11 +52,6 @@
   },
   "Huawei Integrated Access Software": {
     "name": "Huawei SmartAX MA5616",
-    "interface_key": "s2700_interfaces",
-    "interface_list_key": "interface_list_huawei2700",
-    "ddm": false,
-    "adsl": true,
-    "fibers": 2
   },
   "DGS-3420-28SC": {
     "name": "Dlink DGS-3420-28SC"
@@ -308,7 +303,7 @@
   "SNR-S2982G-24TE": {
     "name": "SNR S2982G 24T",
     "interface_key": "eltex_interfaces",
-    "interface_list_key": "interface_list_10p",
+    "interface_list_key": "interface_list_28p",
     "ddm": true,
     "adsl": false,
     "fibers": 2

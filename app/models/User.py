@@ -1,12 +1,14 @@
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from random import randint
 from typing import Optional, List, Union
 
+import jwt
 from firebase_admin import db, exceptions
 from pydantic import BaseModel, ValidationError
 
 from app.utils.logger_instance import app_logger
+from config import Config
 
 
 class User(BaseModel):
@@ -203,6 +205,40 @@ class User(BaseModel):
         except Exception as error:
             app_logger.error(f"Error fetching admin users: {error}")
             raise
+
+    @staticmethod
+    def generate_jwt(user_id: int, secret_key: str = Config.SECRET_KEY, expires_in: int = 60) -> str:
+        """
+        Генерирует JWT токен с информацией о пользователе.
+        :param user_id: Идентификатор пользователя (tg_id).
+        :param secret_key: Секретный ключ для подписи токена.
+        :param expires_in: Время жизни токена в минутах (по умолчанию 60 минут).
+        :return: Строка JWT токенsа.
+        """
+        payload = {
+            'user_id': user_id,
+            'exp': datetime.now(timezone.utc) + timedelta(minutes=expires_in),
+            'iat': datetime.now(timezone.utc)
+        }
+        return jwt.encode(payload, secret_key, algorithm='HS256')
+
+    @staticmethod
+    def decode_jwt(token: str, secret_key: str) -> Optional[dict]:
+        """
+        Декодирует JWT токен и возвращает данные пользователя, если токен валиден.
+        :param token: JWT токен.
+        :param secret_key: Секретный ключ для проверки подписи токена.
+        :return: Словарь с данными пользователя или None, если токен недействителен.
+        """
+        try:
+            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+            return payload
+        except jwt.ExpiredSignatureError:
+            app_logger.warning("JWT токен просрочен.")
+            return None
+        except jwt.InvalidTokenError:
+            app_logger.error("Неверный JWT токен.")
+            return None
 
     class Config:
         json_schema_extra = {

@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 
 from config import Config
@@ -160,7 +161,14 @@ class ErrorMessages(Enum):
     BAD_REQUEST = "Запрос не может быть выполнен. Проверьте корректность введенных данных."
     TELEGRAM_API_ERROR = "Ошибка Telegram API: {exception}"
     UNKNOWN_ERROR_USER = "Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
-
+    @staticmethod
+    def error_message(msg=None):
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        msg_text = msg or "Во время выполнения функции произошла ошибка"
+        return (
+            f"<b>Ошибка {Symbols.ACTION_ERROR.value}</b> <pre>{msg_text}</pre>\n"
+            f"<i>Выполнено: <code>{current_date}</code></i>"
+        )
 
 class NetworkMessages(Enum):
     ERROR_SUBNET_CALCULATION = "Ошибка в вычислении подсети: {error}"
@@ -191,6 +199,9 @@ class NetworkMessages(Enum):
         "Шлюз: <code>{gateway}</code>\n"
         "Маска подсети: <code>{netmask}</code>"
     )
+
+    # Сообщение об ошибке
+
 
 
 class PriorityMessages(Enum):

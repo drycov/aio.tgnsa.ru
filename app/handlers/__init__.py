@@ -4,7 +4,7 @@ from aiogram import Router
 # Импортируем все маршрутизаторы, сгруппированные по функциональности
 from .admin_handler import admin_router, admin_callback_router
 from .advanced_handlers import cidr_router, p2p_router, ping_router, advanced_router
-from .device_handlers import check_device_router, device_command_router
+from .device_handlers import check_device_router, device_command_router, device_port_router
 from .error_handler import router as error_router
 from .main_handlers import main_callback_router, main_commands_router, registration_router
 from .message_handler import router as message_router
@@ -17,9 +17,9 @@ routers = [
     start_router,  # Стартовый обработчик
     main_callback_router,  # Обработчик основных callback
     task_callback_router,  # Обработчик callback для задач
-    admin_callback_router, #
-    check_device_router, # Обработчик для проверки устройства
-    device_command_router, #
+    admin_callback_router,  #
+    check_device_router,  # Обработчик для проверки устройства
+    device_command_router,  #
     main_commands_router,  # Основные команды
     message_router,  # Обработчик сообщений
     advanced_router,  # Расширенные модули
@@ -28,9 +28,11 @@ routers = [
     cidr_router,  # CIDR-калькулятор
     ping_router,  # Пинг
     test_router,  # Тестовые модули
-    # error_router, # Обработчик ошибок (раскомментируйте при необходимости)
     registration_router,  # Обработчик регистрации
-    task_router  # Обработчик задач
+    task_router,  # Обработчик задач
+    device_port_router,  # Обработчик портов устройств
+    # error_router, # Обработчик ошибок (раскомментируйте при необходимости)
+
 ]
 
 

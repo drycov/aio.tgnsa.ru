@@ -6,10 +6,13 @@ import os
 import time
 import uuid
 from pathlib import Path
-from sys import platform
+import platform
 from typing import Optional, Any, Dict
 
-from pysnmp.proto.rfc1902 import OctetString, TimeTicks
+from puresnmp.types import TimeTicks
+from pyasn1.type.univ import OctetString
+from pyasn1_modules.rfc1902 import Counter32
+from tabulate import tabulate
 
 from app.constants import NetworkMessages, LogMessages
 from app.models import Task
@@ -45,8 +48,7 @@ class HelperFunctions:
         return os.getenv("DEV_TOKEN") if os.getenv("APP_TYPE") == "DEV" else os.getenv("PROD_TOKEN")
 
     @staticmethod
-    def get_os_type() -> str:
-        """Определение типа операционной системы."""
+    def get_os_name():
         return "MacOS" if platform.system() == "Darwin" else platform.system()
 
     @staticmethod
@@ -65,15 +67,17 @@ class HelperFunctions:
         return date.strftime("%y-%m-%d %H:%M:%S") if show_time else date.strftime("%y-%m-%d")
 
     @staticmethod
-    def seconds_to_str(uptime: int) -> str:
+    def seconds_to_str(uptime) -> str:
         """
-        Преобразует значение TimeTicks в строку в формате 'годы месяцы недели дни часы минуты секунды'.
+        Преобразует значение TimeTicks или timedelta в строку в формате 'годы месяцы недели дни часы минуты секунды'.
         """
-        # Переводим TimeTicks в секунды
+        # Проверка типа uptime и преобразование в секунды
         if isinstance(uptime, TimeTicks):
             total_seconds = int(uptime) / 100  # Преобразование TimeTicks в секунды
-
-        total_seconds = int(uptime) / 100  # Преобразование TimeTicks в секунды
+        elif isinstance(uptime, datetime.timedelta):
+            total_seconds = int(uptime.total_seconds())  # Преобразование timedelta в секунды
+        else:
+            total_seconds = int(uptime)  # Если uptime уже в секундах
 
         # Определяем величины времени
         seconds_in_year = 31536000  # 365 дней
@@ -179,7 +183,6 @@ class HelperFunctions:
         try:
             with file_path.open("r", encoding="utf-8") as file:
                 data = json.load(file)
-                # app_logger.info(f"Загружены данные из файла {file_path}")
                 return data.get(key)
         except FileNotFoundError:
             app_logger.error(f"Файл {file_path} не найден.")
@@ -271,16 +274,15 @@ class HelperFunctions:
         Преобразует значение типа OctetString, bytes или hex-строку в обычную строку.
         Если значение уже является строкой, возвращает его без изменений.
         """
-
+        if isinstance(value, (Counter32, OctetString)):
+            return value.prettyPrint()  # возвращает строковое значение
         # Преобразуем значение из OctetString в строку
         if isinstance(value, OctetString):
             # Получаем строковое представление из OctetString
             value = value.prettyPrint().encode('latin1').decode(encoding)
-
         # Преобразуем значение из bytes в строку
         elif isinstance(value, bytes):
             value = value.decode(encoding)
-
         # Проверяем, является ли строка шестнадцатеричной после преобразования
         if isinstance(value, str):
             if HelperFunctions.is_hex_string(value):
@@ -314,3 +316,19 @@ class HelperFunctions:
             except ValueError:
                 return False
         return False
+
+    @staticmethod
+    def table_formatted_output(results, head=None):
+        """
+        Форматирует результаты в таблицу с опциональным заголовком.
+
+        Args:
+            results (list of lists): Данные для отображения в таблице.
+            head (list of str, optional): Заголовки столбцов таблицы. По умолчанию None.
+
+        Returns:
+            str: Строковое представление таблицы.
+        """
+        # Создаем таблицу с помощью `tabulate`
+        table_string = tabulate(results, headers=head, tablefmt="plain", stralign="center")
+        return table_string

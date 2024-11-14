@@ -1,16 +1,28 @@
 import re
 
-from aiogram import Router
+from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from app.bot_instance import bot
-from app.constants import Messages
+from app.constants import Messages, MenuLabels
+from app.constants.states import MainCommands
+from app.keyboards import admin_menu
 from app.models import User
+from app.utils import StateManager
 
 router = Router()
 
 # Регулярное выражение для проверки формата команды
 command_pattern = re.compile(r"^/(approve|reject)_(\d+)$")
+
+
+@router.message(F.text == MenuLabels.ADMIN_PANEL.value)
+async def admin_panel_command(message: Message, state: FSMContext):
+    keyboard = admin_menu()  # Создаем клавиатуру для администратора
+    display_data = {"text": "Администрирование.", "reply_markup": keyboard}
+    await StateManager.set_state_with_previous(state, MainCommands.ADMIN_PANEL, display_data)
+    await message.answer(**display_data)
 
 
 @router.message(lambda message: message.text and command_pattern.match(message.text))

@@ -1,9 +1,10 @@
 import json
+import traceback
 from typing import Any, List
 
-from pysnmp.hlapi.v1arch.asyncio.slim import Slim
-from pysnmp.smi.rfc1902 import ObjectType, ObjectIdentity
+from puresnmp import Client, V2C, PyWrapper
 
+from config import Config
 from .helper_functions import HelperFunctions
 from .logger_instance import app_logger
 from ..bot_instance import SNMP_OID_SYSOBJECTID
@@ -17,33 +18,34 @@ class SNMPFunctions:
 
     @staticmethod
     async def get_single_oid(host: str, oid: str, community: str) -> Any:
-        action = LogMessages.GET_SINGLE_OID_ACTION.value
+        action = f"{__name__}.get_single_oid"
         current_date = HelperFunctions.get_current_date()
+        # Проверка OID на наличие некорректных значений
+        oid_parts = oid.split(".")
+        if any(int(part) < 0 for part in oid_parts if part.isdigit()):
+            error_data = {
+                "date": current_date,
+                "action": action,
+                "host": host,
+                "oid": oid,
+                "error": "OID содержит отрицательные значения, что недопустимо",
+                "trace": traceback.format_exc()
+            }
+            app_logger.error(json.dumps(error_data, ensure_ascii=False))
+            return None
         try:
-            # Используем Slim как контекстный менеджер для выполнения SNMP-запроса
-            with Slim() as slim:
-                error_indication, error_status, error_index, var_binds = await slim.get(
-                    community,
-                    host,
-                    161,
-                    ObjectType(ObjectIdentity(str(oid)))
-                )
-
-                if error_indication:
-                    app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_indication))
-                    return None
-                if error_status:
-                    app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_status.prettyPrint()))
-                    return None
-                return var_binds[0][1]
-
+            client = PyWrapper(Client(host, V2C(community)))
+            result = await client.get(oid)
+            return result
         except Exception as e:
             error_data = {
                 "date": current_date,
                 "action": action,
                 "host": host,
                 "oid": oid,
-                "error": str(e)
+                "error": str(e),
+                "trace": traceback.format_exc()
+
             }
             for key, value in error_data.items():
                 if isinstance(value, bytes):
@@ -52,132 +54,86 @@ class SNMPFunctions:
             app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
             return None
 
-    # @staticmethod
-    # def get_sync_single_oid(host: str, oid: str, community: str) -> Any:
-    #     action = LogMessages.GET_SYNC_SINGLE_OID_ACTION.value
-    #     try:
-    #         iterator = getCmd(SnmpEngine(),
-    #                           CommunityData(community),
-    #                           UdpTransportTarget((host, 161)),
-    #                           ContextData(),
-    #                           ObjectType(ObjectIdentity(oid)),
-    #                           timeout=5, retries=1)
-    #         error_indication, error_status, error_index, var_binds = next(iterator)
-    #
-    #         if error_indication:
-    #             app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_indication))
-    #             return None
-    #         if error_status:
-    #             app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_status.prettyPrint()))
-    #             return None
-    #
-    #         return var_binds[0][1]
-    #
-    #     except Exception as e:
-    #         app_logger.error(json.dumps({
-    #             "date": HelperFunctions.get_current_date(),
-    #             "action": action,
-    #             "host": host,
-    #             "oid": oid,
-    #             "error": str(e)
-    #         }))
-    #         app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
-    #         return None
-
     @staticmethod
     async def check_snmp(host: str, communities: List[str]) -> str:
-        action = LogMessages.CHECK_SNMP_ACTION.value
+        action = f"{__name__}.check_snmp"
         oid = SNMP_OID_SYSOBJECTID
 
         for community in communities:
-            print(f"Проверка community: {community}")
             try:
                 result = await SNMPFunctions.get_single_oid(host, oid, community)
                 if result:
-                    print(f"SNMP доступен с community: {community}")
                     return community
-                else:
-                    print(f"SNMP недоступен с community: {community}")
+
             except Exception as e:
                 app_logger.error(json.dumps({
                     "date": HelperFunctions.get_current_date(),
                     "action": action,
                     "host": host,
                     "community": community,
-                    "error": str(e)
+                    "error": str(e),
+                    "trace": traceback.format_exc()
+
                 }, ensure_ascii=False))
-                print(f"Ошибка при проверке community '{community}': {e}")
 
         app_logger.info(LogMessages.SNMP_UNAVAILABLE.value.format(action=action, host=host))
         return "public"  # Возврат значения по умолчанию, если все communities недоступны
 
-    # @staticmethod
-    # async def get_multi_oid(host: str, oid: str, community: str) -> list:
-    #     action = LogMessages.GET_MULTI_OID_ACTION.value
-    #     results = []
-    #
-    #     try:
-    #         iterator = nextCmd(SnmpEngine(),
-    #                            CommunityData(community),
-    #                            UdpTransportTarget((host, 161)),
-    #                            ContextData(),
-    #                            ObjectType(ObjectIdentity(oid)),
-    #                            timeout=5, lexicographicMode=False)
-    #
-    #         for error_indication, error_status, error_index, var_binds in iterator:
-    #             if error_indication:
-    #                 app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_indication))
-    #                 return []
-    #             if error_status:
-    #                 app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_status.prettyPrint()))
-    #                 return []
-    #
-    #             results.extend([str(var_bind[1]) for var_bind in var_binds])
-    #
-    #         return results
-    #
-    #     except Exception as e:
-    #         app_logger.error(json.dumps({
-    #             "date": HelperFunctions.get_current_date(),
-    #             "action": action,
-    #             "host": host,
-    #             "oid": oid,
-    #             "error": str(e)
-    #         }, ensure_ascii=False))
-    #         app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
-    #         return []
-    #
-    # @staticmethod
-    # async def set_snmp_oid(host: str, oid: str, value: Any, community: str = None) -> Any:
-    #     community = community or Config.SNMP_RW_COMMUNITY
-    #     action = LogMessages.SET_SNMP_OID_ACTION.value
-    #
-    #     try:
-    #         iterator = setCmd(SnmpEngine(),
-    #                           CommunityData(community),
-    #                           UdpTransportTarget((host, 161)),
-    #                           ContextData(),
-    #                           ObjectType(ObjectIdentity(oid), Integer(value)),
-    #                           timeout=5)
-    #
-    #         error_indication, error_status, error_index, var_binds = next(iterator)
-    #
-    #         if error_indication:
-    #             app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_indication))
-    #             return None
-    #         if error_status:
-    #             app_logger.error(LogMessages.SNMP_ERROR.value.format(error=error_status.prettyPrint()))
-    #             return None
-    #
-    #         return var_binds[0][1]
-    #
-    #     except Exception as e:
-    #         app_logger.error(json.dumps({
-    #             "date": HelperFunctions.get_current_date(),
-    #             "action": action,
-    #             "host": host,
-    #             "oid": oid,
-    #             "error": str(e)
-    #         }, ensure_ascii=False))
-    #         app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
-    #         return None
+    @staticmethod
+    async def get_multi_oid(host: str, oid: str, community: str) -> list:
+        action = LogMessages.GET_MULTI_OID_ACTION.value
+        current_date = HelperFunctions.get_current_date()
+
+        results = []
+        oid_parts = oid.split(".")
+        if any(int(part) < 0 for part in oid_parts if part.isdigit()):
+            error_data = {
+                "date": current_date,
+                "action": action,
+                "host": host,
+                "oid": oid,
+                "error": "OID содержит отрицательные значения, что недопустимо",
+                "trace": traceback.format_exc()
+            }
+            app_logger.error(json.dumps(error_data, ensure_ascii=False))
+            return []
+        try:
+            client = PyWrapper(Client(host, V2C(community)))
+            result = client.walk(oid)
+            async for row in result:
+                results.append(row)
+            return results
+        except Exception as e:
+            # Логирование ошибок
+            app_logger.error(json.dumps({
+                "date": HelperFunctions.get_current_date(),
+                "action": action,
+                "host": host,
+                "oid": oid,
+                "error": str(e),
+                "trace": traceback.format_exc()
+
+            }, ensure_ascii=False))
+            app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
+            return []
+
+    async def set_snmp_oid(host: str, oid: str, value: Any, community: str = None) -> Any:
+        community = community or Config.SNMP_RW_COMMUNITIES
+        action = f"{__name__}.set_snmp_oid"
+        try:
+            client = PyWrapper(Client(host, V2C(community)))
+            result = await client.set(oid, value)
+            return result
+        except Exception as e:
+            # Логирование ошибок
+            app_logger.error(json.dumps({
+                "date": HelperFunctions.get_current_date(),
+                "action": action,
+                "host": host,
+                "oid": oid,
+                "error": str(e),
+                "trace": traceback.format_exc()
+
+            }, ensure_ascii=False))
+            app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
+            return

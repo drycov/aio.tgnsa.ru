@@ -23,6 +23,7 @@ def setup_bot():
     app_logger.info(Messages.REGISTER_HANDLERS.value)
     dp.include_router(router)
     dp.update.middleware(CallbackAnswerMiddleware())  # Aiogram 3.x использует новый способ для middleware
+    dp.update.middleware(AuthMiddleware())  # Aiogram 3.x использует новый способ для middleware
 
     Config.DEBUG = True
     if Config.DEBUG:

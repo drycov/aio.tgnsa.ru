@@ -202,7 +202,7 @@ async def assign_employee(callback_query: types.CallbackQuery, state: FSMContext
     await callback_query.message.edit_text(task_info, reply_markup=in_back_keyboard, parse_mode="HTML")
     await callback_query.answer()
     await state.clear()
-    
+
 
 # Функция сохранения задачи в Firestore
 
@@ -309,7 +309,7 @@ def get_navigation_and_action_keyboard(task_data: dict, user_id: int, page: int,
                 InlineKeyboardButton(text=f"{Symbols.EMOJI_EDIT.value} Редактировать задачу",
                                      callback_data=f"edit_task_{task_id}")
             ])
-
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text=MenuLabels.BACK.value, callback_data="back")])
     return keyboard
 
 

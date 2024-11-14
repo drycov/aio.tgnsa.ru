@@ -4,7 +4,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message, InlineKe
 
 from app.constants import MenuLabels
 from app.constants.states import MainCommands
-from app.keyboards import on_enter_keyboard
+from app.keyboards import on_enter_keyboard, generate_main_keyboard
 
 
 class StateManager:
@@ -112,7 +112,10 @@ class StateManager:
         previous_state = data.get("previous_state")
         display_history = data.get("display_history", {})
         action_history = data.get("action_history", {})
-
+        is_online = data.get("is_online", False)
+        is_admin = data.get("is_admin", False)
+        auth_token = data.get("auth_token", None)
+        
         if previous_state and action_history.get(previous_state) not in ["input_field", "input",
                                                                          None]:
             # Получаем данные для отображения и действия предыдущего состояния
@@ -129,9 +132,18 @@ class StateManager:
             await message.answer(**display_data)
 
         else:
-            # Если предыдущего состояния нет или оно связано с полем ввода, возвращаемся к начальному состоянию
-            await state.set_state(MainCommands.START)
-            await message.answer(
-                text=MenuLabels.MAIN_MENU.value,
-                reply_markup=on_enter_keyboard  # Устанавливаем разметку главного меню
-            )
+            if is_online:
+                # Если пользователь находится в сети, возвращаемся к начальному состоянию
+                await state.set_state(MainCommands.MAIN_MENU)
+                keyboard = generate_main_keyboard(is_admin)
+                await message.answer(
+                    text=MenuLabels.MAIN_MENU.value,
+                    reply_markup=keyboard  # Устанавливаем разметку главного меню
+                )
+            else:
+                # Если предыдущего состояния нет или оно связано с полем ввода, возвращаемся к начальному состоянию
+                await state.set_state(MainCommands.START)
+                await message.answer(
+                    text=MenuLabels.ENTER.value,
+                    reply_markup=on_enter_keyboard  # Устанавливаем разметку главного меню
+                )

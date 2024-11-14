@@ -3,9 +3,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from app.constants import Messages, MenuLabels
-from app.constants.states import MainCommands, DeviceCommands
-from app.keyboards import generate_main_keyboard, on_enter_keyboard, \
-    admin_menu
+from app.constants.states import MainCommands
+from app.keyboards import generate_main_keyboard, on_enter_keyboard
 from app.models import User
 from app.utils import StateManager
 from app.utils.logger_instance import app_logger
@@ -33,6 +32,8 @@ async def main_menu(message: Message, state: FSMContext):
             display_data = {"text": Messages.WELCOME.value, "reply_markup": keyboard}
             await StateManager.set_state_with_previous(state, MainCommands.MAIN_MENU, display_data)
             await message.answer(**display_data)
+            await state.update_data(user_id=tg_id, is_online=True, token=user.generate_jwt(tg_id),
+                                    is_admin=user.is_admin_user())
         else:
             display_data = {"text": Messages.ACCESS_DENIED.value, "reply_markup": on_enter_keyboard}
             await message.answer(**display_data)
@@ -46,17 +47,6 @@ async def main_menu(message: Message, state: FSMContext):
         await message.delete()
     except Exception as e:
         app_logger.warning(f"Ошибка удаления сообщения: {e}")
-
-
-
-
-
-@router.message(F.text == MenuLabels.ADMIN_PANEL.value)
-async def admin_panel_command(message: Message, state: FSMContext):
-    keyboard = admin_menu()  # Создаем клавиатуру для администратора
-    display_data = {"text": "Администрирование.", "reply_markup": keyboard}
-    await StateManager.set_state_with_previous(state, MainCommands.ADMIN_PANEL, display_data)
-    await message.answer(**display_data)
 
 
 # Команда "Выход"
@@ -75,5 +65,7 @@ async def exit_command(message: Message, state: FSMContext):
         await state.clear()  # Полный выход из состояния
         await message.answer(Messages.PLEASE_ENTER.value, reply_markup=on_enter_keyboard)
         await state.set_state(MainCommands.START)  # Установка состояния "Главное меню"
+        await state.update_data(user_id=message.from_user.id, is_online=True, is_admin=False, token="")
+
     except Exception as e:
         app_logger.error(f"Ошибка при выполнении команды выхода: {e}")

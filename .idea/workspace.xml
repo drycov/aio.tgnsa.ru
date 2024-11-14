@@ -5,39 +5,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Добавил таск манеджер">
-      <change afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_commands.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/device_handlers/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/device_handlers/device_command.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/main_handlers/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/main_handlers/main_callback.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/main_handlers/main_commands.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/handlers/task_handlers/task_callback.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/methods/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_instance.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_instance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/constants/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/constants/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/messages.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/constants/symbols.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/symbols.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/admin_approval.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/advanced_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handlers/cidr_calculator.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/cidr_calculator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handlers/p2p_calculator.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/p2p_calculator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/advanced_handlers/ping_network_node.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/advanced_handlers/ping_network_node.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/callback_query_handlers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handler/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handler/check_device.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_callback.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/admin_handler/admin_commands.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_commands.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/main_handlers/main_commands.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/main_handlers/main_commands.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/handlers/message_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/message_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/registration_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/main_handlers/registration_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/shedule_handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/task_handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/shedule_handlers/task_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/start_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/start_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards/device_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/device_menu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/keyboards/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/keyboards/keyboards.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/keyboards.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards/main_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/main_menu.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/Task.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/Task.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/middlewares/auth_middleware.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/middlewares/auth_middleware.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/models/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/User.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/utils/device_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/device_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/utils/snmp_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/snmp_functions.py" afterDir="false" />
@@ -45,8 +31,10 @@
       <change beforePath="$PROJECT_DIR$/config.env" beforeDir="false" afterPath="$PROJECT_DIR$/config.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data/device_config.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/device_config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/serviceAccountKey.json" beforeDir="false" afterPath="$PROJECT_DIR$/serviceAccountKey.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/interfaceList.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/interfaceList.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/new.oid.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/new.oid.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/oid.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/oid.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,23 +74,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.exporter.executor": "Run",
-    "Python.healthy_api.executor": "Run",
-    "Python.log_parser.executor": "Run",
-    "Python.main (1).executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.merge.executor": "Run",
-    "Python.syslog_server.executor": "Run",
-    "Python.test_syslog.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "D:/dev.tgnsa.ru/aio.tgnsa/app/handlers/admin_handler",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.exporter.executor&quot;: &quot;Run&quot;,
+    &quot;Python.healthy_api.executor&quot;: &quot;Run&quot;,
+    &quot;Python.log_parser.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.merge.executor&quot;: &quot;Run&quot;,
+    &quot;Python.syslog_server.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_syslog.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/dev.tgnsa.ru/aio.tgnsa/app/handlers/admin_handler&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\admin_handler" />
@@ -112,11 +101,11 @@
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\bot\utils" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\device_handlers" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\advanced_handlers" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\main_handler" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\models" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\middlewares" />
-      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app" />
     </key>
   </component>
   <component name="RunManager" selected="Python.main">
@@ -243,7 +232,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-d7ad00fb9fc3-c546a90a8094-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-242.23726.102" />
+        <option value="bundled-python-sdk-fb887030ada0-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.21565.199" />
       </set>
     </attachedChunks>
   </component>
@@ -320,7 +309,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731412560952</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Добавил таск манеджер">
+      <option name="closed" value="true" />
+      <created>1731569400667</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1731569400667</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

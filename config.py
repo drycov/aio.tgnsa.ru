@@ -48,6 +48,7 @@ class Config:
     BASE_DIR = basedir
     DATA_PATH = os.getenv("DATA_PATH", basedir / "data")
     DEBUG = os.getenv("DEBUG", "False").lower() in ["true", "1"]
+    SECRET_KEY = os.getenv("SECRET_KEY")
     # ---------- Настройки бота ----------
     license = "MIT"  # Например, укажите нужную лицензию
     vendor_info = {
@@ -133,7 +134,7 @@ class Config:
 
     # ---------- Списки исключений ----------
     EXCLUDED_SUBSTRINGS = os.getenv("EXCLUDED_SUBSTRINGS",
-                                    "Vl,vl,Loop,Lo,null,Nu,me,loop,tunne,oob,stack-port,noSuchInstance").split(",")
+                                    "Vl,VLAN,vl,Loop,Lo,null,Nu,me,loop,tunne,oob,stack-port,noSuchInstance").split(",")
 
     # ---------- Настройки Housekeeper ----------
     # Указатель на контейнерное окружение

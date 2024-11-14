@@ -10,6 +10,13 @@ on_enter_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=False  # Оставляет клавиатуру видимой
 )
+on_back_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text=MenuLabels.BACK.value)],
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=False  # Оставляет клавиатуру видимой
+)
 on_enter_keyboard.input_field_placeholder = MenuLabels.ENTER.value
 
 # Inline-кнопка "Назад"

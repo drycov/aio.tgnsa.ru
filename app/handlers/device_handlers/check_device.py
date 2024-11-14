@@ -8,7 +8,7 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from app.constants import RegExpUtils, NetworkMessages
 from app.constants.states import DeviceCommands
 from app.keyboards import in_back_keyboard, device_keyboard
-from app.utils import NetworkUtils, SNMPFunctions, DeviceModelFilter, StateManager
+from app.utils import NetworkUtils, SNMPFunctions, StateManager, DeviceUtils
 from app.utils.logger_instance import app_logger
 from config import Config
 
@@ -36,7 +36,6 @@ async def process_host_input(message: Message, state: FSMContext):
         if is_alive:
             # Проверка доступного SNMP-сообщества
             community = await SNMPFunctions.check_snmp(host, Config.SNMP_COMMUNITIES)
-            print(community)
             if community:
                 # Сохранение данных в состоянии
                 await state.update_data(host=host, community=community)
@@ -46,28 +45,45 @@ async def process_host_input(message: Message, state: FSMContext):
                     reply_markup=ReplyKeyboardRemove()
                 )
                 # Получение информации об устройстве
-                device_info = await DeviceModelFilter.get_basic_info(host, community)
+                # Получение информации об устройстве
+                device_info = await DeviceUtils.get_basic_info(host, community)
 
-                if device_info:
+                # Проверка, что device_info не None и содержит необходимые ключи
+                if device_info and all(
+                        key in device_info for key in ['host', 'sw_sys_name', 'sw_model', 'sw_up_time', 'up_time']):
+                    device_info_message = NetworkMessages.DEVICE_INFO.value.format(
+                        host=device_info.get('host', 'Неизвестный хост'),
+                        sw_sys_name=device_info.get('sw_sys_name', 'Неизвестное имя'),
+                        sw_model=device_info.get('sw_model', 'Неизвестная модель'),
+                        sw_up_time=device_info.get('sw_up_time', 'Неизвестное время работы системы'),
+                        up_time=device_info.get('up_time', 'Неизвестное время работы')
+                    )
+
+                    # Обновление состояния с данными устройства
+                    await state.update_data(
+                        model=device_info.get('sw_model', 'Неизвестная модель'),
+                        device_data=device_info.get('device_data', {})
+                    )
+
                     # Подготовка данных для отображения
                     display_data = {
-                        "text": f"<b>Информация об устройстве: <code>{host}</code></b>\n\n  "
-                                f"<pre>{device_info}</pre>\n\n"
+                        "text": f"<pre>{device_info_message}</pre>\n\n"
                                 f"<i>Выполнено: <code>{current_date}</code></i>",
                         "reply_markup": device_keyboard
                     }
-                    # Переход в состояние ADMIN_PANEL с отображением данных
-                    await message.reply(**display_data)
-                    await StateManager.set_state_with_previous(state, DeviceCommands.MENU, display_data,'' )
-                    await state.update_data(waiting_for_ip=False)
-
-
                 else:
-                    # Обработка, если информация об устройстве не получена
-                    await message.reply(
-                        "Не удалось получить информацию об устройстве.",
-                        reply_markup=in_back_keyboard
-                    )
+                    # Обработка ситуации, когда данные об устройстве отсутствуют или неполные
+                    device_info_message = "Информация об устройстве недоступна или неполная."
+                    display_data = {
+                        "text": f"<pre>{device_info_message}</pre>\n\n"
+                                f"<i>Выполнено: <code>{current_date}</code></i>",
+                        "reply_markup": device_keyboard
+                    }
+
+                # Переход в состояние ADMIN_PANEL с отображением данных
+                await message.reply(**display_data)
+                await StateManager.set_state_with_previous(state, DeviceCommands.MENU, display_data, '')
+                await state.update_data(waiting_for_ip=False)
             else:
                 # Сообщение, если SNMP-сообщество не найдено
                 await message.reply(
