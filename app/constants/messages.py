@@ -214,6 +214,9 @@ class PriorityMessages(Enum):
 
 
 def msg_info(context):
+    tg_contact = Config.vendor_info['botVendorTGContact']
+
+
     return (
         f"❖ Имя бота: {context.first_name}\n"
         f"❖ Адрес бота: @{context.username}\n"
@@ -221,7 +224,7 @@ def msg_info(context):
         f"❖ Имя разработчика: {Config.vendor_info['botVendor']}\n\n"
         f"Контакты для связи:\n"
         f"  📧 E-Mail: {Config.vendor_info['botVendorEMailContact']}\n"
-        f'  🕼 Telegram: <a href="https://t.me/{Config.vendor_info['botVendorTGContact']}">{Config.vendor_info['botVendorTGContact']}</a>\n'
+        f'  🕼 Telegram: <a href="https://t.me/{tg_contact}">{tg_contact}</a>\n'
         f"  ✆ WhatsApp: {Config.vendor_info['botVendorWContact']}\n\n"
         f"Лицензионное соглашение: {Config.license}\n"
     )

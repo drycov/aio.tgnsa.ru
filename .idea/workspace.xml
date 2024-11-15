@@ -4,18 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Переписал и сменил либу snmp. Реализовал работу с port_check">
-      <change afterPath="$PROJECT_DIR$/app/handlers/device_handlers/vlan_show.py" afterDir="false" />
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Переписал и сменил">
+      <change afterPath="$PROJECT_DIR$/aio_tgnsa.service" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/device_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/device_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/network_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/network_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/snmp_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/snmp_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -322,7 +313,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731623125857</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Переписал и сменил">
+      <option name="closed" value="true" />
+      <created>1731660744186</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1731660744186</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -342,6 +341,7 @@
     <MESSAGE value="Добавил цидр" />
     <MESSAGE value="Добавил таск манеджер" />
     <MESSAGE value="Переписал и сменил либу snmp. Реализовал работу с port_check" />
-    <option name="LAST_COMMIT_MESSAGE" value="Переписал и сменил либу snmp. Реализовал работу с port_check" />
+    <MESSAGE value="Переписал и сменил" />
+    <option name="LAST_COMMIT_MESSAGE" value="Переписал и сменил" />
   </component>
 </project>

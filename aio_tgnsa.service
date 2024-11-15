@@ -1,0 +1,14 @@
+[Unit]
+Description=Aio Tgnsa Service
+After=network.target
+
+[Service]
+User=your_user
+Group=your_group
+WorkingDirectory=/opt/aio.tgnsa.ru
+ExecStart=/opt/aio.tgnsa.ru/venv/bin/python main.py
+Restart=always
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
