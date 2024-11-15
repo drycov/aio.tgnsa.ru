@@ -5,6 +5,7 @@ from netaddr import IPNetwork
 from ping3 import ping
 
 from app.constants import NetworkMessages
+from app.utils import HelperFunctions
 
 
 class NetworkUtils:
@@ -14,6 +15,7 @@ class NetworkUtils:
         """
         Подсчет информации о сети по IP-адресу и маске.
         """
+        action = f"{__name__}.subnet_calculate"
         try:
             subnet = IPNetwork(network_address)
             return NetworkMessages.NETWORK_INFO.value.format(
@@ -24,7 +26,7 @@ class NetworkUtils:
                 size=subnet.size - 2
             )
         except Exception as error:
-            print(NetworkMessages.ERROR_SUBNET_CALCULATION.value.format(error=error))
+            HelperFunctions.log_error(action, network_address, error)
             return NetworkMessages.ERROR_SUBNET_FORMAT.value
 
     @staticmethod
@@ -32,6 +34,7 @@ class NetworkUtils:
         """
         Подсчет информации для P2P по IP-адресу и маске.
         """
+        action = f"{__name__}.p2p_calculate"
 
         try:
             p2p_subnet = IPNetwork(network_address)
@@ -42,7 +45,7 @@ class NetworkUtils:
                 netmask=p2p_subnet.netmask
             )
         except Exception as error:
-            print(NetworkMessages.ERROR_P2P_CALCULATION.value.format(error=error))
+            HelperFunctions.log_error(action, network_address, error)
             return NetworkMessages.ERROR_P2P_FORMAT.value
 
     @staticmethod
@@ -57,6 +60,8 @@ class NetworkUtils:
         Returns:
             Optional[str]: Лог результатов пинга с указанием времени отклика, либо None, если устройство недоступно.
         """
+        action = f"{__name__}.ping_device_log"
+
         try:
             results: List[float] = []
             log_messages = []
@@ -79,7 +84,7 @@ class NetworkUtils:
             return final_log
 
         except Exception as error:
-            print(f"Ошибка при выполнении пинга: {error}")
+            HelperFunctions.log_error(action, host, error)
             return None
 
     @staticmethod
@@ -94,9 +99,11 @@ class NetworkUtils:
             bool: True, если устройство доступно, иначе False.
         """
         # Выполняем проверку пинга асинхронно
+        action = f"{__name__}.is_alive"
+
         try:
             response = await asyncio.to_thread(ping, host, timeout=1)
             return response is not None
         except Exception as e:
-            print(f"Ошибка при проверке доступности: {e}")
+            HelperFunctions.log_error(action, host, e)
             return False

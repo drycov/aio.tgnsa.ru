@@ -28,7 +28,7 @@ class SNMPFunctions:
                 "action": action,
                 "host": host,
                 "oid": oid,
-                "error": "OID содержит отрицательные значения, что недопустимо",
+                "error": "OID содержит отрицательные     значения, что недопустимо",
                 "trace": traceback.format_exc()
             }
             app_logger.error(json.dumps(error_data, ensure_ascii=False))
@@ -38,20 +38,7 @@ class SNMPFunctions:
             result = await client.get(oid)
             return result
         except Exception as e:
-            error_data = {
-                "date": current_date,
-                "action": action,
-                "host": host,
-                "oid": oid,
-                "error": str(e),
-                "trace": traceback.format_exc()
-
-            }
-            for key, value in error_data.items():
-                if isinstance(value, bytes):
-                    error_data[key] = value.decode('utf-8')
-            app_logger.error(json.dumps(error_data, ensure_ascii=False))
-            app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
+            HelperFunctions.log_error(action, host, e)
             return None
 
     @staticmethod
@@ -66,17 +53,7 @@ class SNMPFunctions:
                     return community
 
             except Exception as e:
-                app_logger.error(json.dumps({
-                    "date": HelperFunctions.get_current_date(),
-                    "action": action,
-                    "host": host,
-                    "community": community,
-                    "error": str(e),
-                    "trace": traceback.format_exc()
-
-                }, ensure_ascii=False))
-
-        app_logger.info(LogMessages.SNMP_UNAVAILABLE.value.format(action=action, host=host))
+                HelperFunctions.log_error(action, host, e)
         return "public"  # Возврат значения по умолчанию, если все communities недоступны
 
     @staticmethod
@@ -104,17 +81,7 @@ class SNMPFunctions:
                 results.append(row)
             return results
         except Exception as e:
-            # Логирование ошибок
-            app_logger.error(json.dumps({
-                "date": HelperFunctions.get_current_date(),
-                "action": action,
-                "host": host,
-                "oid": oid,
-                "error": str(e),
-                "trace": traceback.format_exc()
-
-            }, ensure_ascii=False))
-            app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
+            HelperFunctions.log_error(action, host, e)
             return []
 
     async def set_snmp_oid(host: str, oid: str, value: Any, community: str = None) -> Any:
@@ -126,14 +93,5 @@ class SNMPFunctions:
             return result
         except Exception as e:
             # Логирование ошибок
-            app_logger.error(json.dumps({
-                "date": HelperFunctions.get_current_date(),
-                "action": action,
-                "host": host,
-                "oid": oid,
-                "error": str(e),
-                "trace": traceback.format_exc()
-
-            }, ensure_ascii=False))
-            app_logger.error(LogMessages.ACTION_FAILED.value.format(action=action, host=host, oid=oid))
+            HelperFunctions.log_error(action, host, e)
             return

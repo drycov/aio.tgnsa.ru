@@ -3,12 +3,14 @@ import hashlib
 import json
 import math
 import os
+import platform
 import time
+import traceback
 import uuid
 from pathlib import Path
-import platform
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 
+from prettytable import PrettyTable
 from puresnmp.types import TimeTicks
 from pyasn1.type.univ import OctetString
 from pyasn1_modules.rfc1902 import Counter32
@@ -332,3 +334,46 @@ class HelperFunctions:
         # Создаем таблицу с помощью `tabulate`
         table_string = tabulate(results, headers=head, tablefmt="plain", stralign="center")
         return table_string
+
+    def generate_vlan_table(vlan_data: List[List[Any]]) -> str:
+        """
+        Генерация таблицы VLAN с ID, именем и портами.
+
+        :param vlan_data: Список данных VLAN в формате [[VLAN ID, VLAN NAME, PORTS], ...]
+        :return: Строка с таблицей
+        """
+        table = PrettyTable()
+        table.field_names = ["VLAN ID", "VLAN NAME", "PORTS"]
+
+        for vlan_id, vlan_name, ports in vlan_data:
+            table.add_row([vlan_id, vlan_name, ", ".join(map(str, ports))])
+
+        return table.get_string()
+
+    @staticmethod
+    def decode_ports(bit_string: bytes) -> List[int]:
+        active_ports = []
+        for byte_index, byte in enumerate(bit_string):
+            for bit_index in range(8):
+                if byte & (1 << bit_index):
+                    active_ports.append(byte_index * 8 + bit_index + 1)  # Порты начинаются с 1
+        return active_ports
+
+    @staticmethod
+    def log_error(action: str, host: str, error: Exception) -> None:
+        """
+        Логирование ошибок в едином формате.
+        """
+        error_data = {
+            "date": HelperFunctions.get_current_date(),
+            "action": action,
+            "host": host,
+            "error": str(error),
+            "trace": traceback.format_exc()
+        }
+        for key, value in error_data.items():
+            if isinstance(value, bytes):
+                error_data[key] = value.decode('utf-8')
+        # Сериализация в JSON с ensure_ascii=False
+        error_message = json.dumps(error_data, ensure_ascii=False)
+        app_logger.error(error_message)

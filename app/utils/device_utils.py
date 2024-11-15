@@ -1,14 +1,14 @@
 import asyncio
-import datetime
 import json
-import traceback
 from typing import Any, Dict, List, Optional
 
-from app.constants import LogMessages, Symbols
+from app.constants import LogMessages, Symbols, ErrorMessages
 from config import Config
 from .helper_functions import HelperFunctions
 from .logger_instance import app_logger
 from .snmp_functions import SNMPFunctions
+
+current_date = HelperFunctions.get_current_date()
 
 
 class DeviceUtils:
@@ -18,25 +18,69 @@ class DeviceUtils:
         Получает диапазон интерфейсов устройства с помощью SNMP.
         """
         # OID для имен интерфейсов. Обычно для интерфейсов используется .1.3.6.1.2.1.2.2.1.2 (ifDescr)
+        action = f"{__name__}.get_interface_range"
         oid_ifDescr = '.1.3.6.1.2.1.2.2.1.2'
-        task = asyncio.create_task(SNMPFunctions.get_multi_oid(host, oid_ifDescr, community))
-        interface_names = HelperFunctions.to_string(await task)
+        try:
+            task = asyncio.create_task(SNMPFunctions.get_multi_oid(host, oid_ifDescr, community))
+            interface_names = HelperFunctions.to_string(await task)
 
-        # Преобразование значений с учетом типа
-        return [
-            index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1])
-            for index in interface_names
-        ]
+            # Преобразование значений с учетом типа
+            return [
+                index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1])
+                for index in interface_names
+            ]
+        except Exception as err:
+            HelperFunctions.log_error(action, host, err)
+            return []
 
     async def get_interface_list(host: str, community: str) -> List[int]:
         """
         Получает список идентификаторов интерфейсов устройства с помощью SNMP.
         """
         # OID для индексов интерфейсов: обычно .1.3.6.1.2.1.2.2.1.1 (ifIndex)
+        action = f"{__name__}.get_interface_list"
         oid_ifIndex = '.1.3.6.1.2.1.2.2.1.1'
-        task = asyncio.create_task(SNMPFunctions.get_multi_oid(host, oid_ifIndex, community))
-        interface_indices = HelperFunctions.to_string(await task)
-        return [int(index[1]) for index in interface_indices]
+        try:
+            task = asyncio.create_task(SNMPFunctions.get_multi_oid(host, oid_ifIndex, community))
+            interface_indices = HelperFunctions.to_string(await task)
+            return [int(index[1]) for index in interface_indices]
+        except Exception as err:
+            HelperFunctions.log_error(action, host, err)
+            return []
+
+    async def process_vlan_entry(host: str, community: str, results=None):
+        if results is None:
+            results = []
+        joid = HelperFunctions.load_oids()
+
+        action = f"{__name__}.process_vlan_entry"
+        oid_vlan_list = joid["basic_oids"]["oid_vlan_list"]
+        oid_vlan_id = joid["basic_oids"]["oid_vlan_id"]
+        try:
+            vlan_name = await SNMPFunctions.get_multi_oid(host, oid_vlan_list, community)
+        except Exception as err:
+            HelperFunctions.log_error(action, host, err)
+            return
+
+        try:
+            vlan_id = await SNMPFunctions.get_multi_oid(host, oid_vlan_id, community)
+        except Exception as err:
+            HelperFunctions.log_error(action, host, err)
+            return
+
+        if not vlan_name or not vlan_id:
+            raise Exception(ErrorMessages.error_message(host))
+
+            # Преобразуем списки PyVarBind в словари для удобства
+        vlan_id_dict = {entry.oid.split('.')[-1]: entry.value for entry in vlan_id}
+        vlan_name_dict = {
+            entry.oid.split('.')[-1]: entry.value.decode('utf-8') if isinstance(entry.value, bytes) else entry.value
+            for entry in vlan_name}
+
+        for key, vlan_name in vlan_name_dict.items():
+            vlan_id = vlan_id_dict.get(key)
+            if vlan_id is not None:
+                results.append([vlan_id, vlan_name])
 
     # Загрузка объединенного словаря с конфигурациями устройств
     device_data = HelperFunctions.load_device_data()
@@ -95,40 +139,6 @@ class DeviceUtils:
             "fibers": 0
         }
 
-    # dev_config = DeviceUtils.device_data.get(model)
-    # print(f"Найдена конфигурация {dev_config} для модели {model}")
-
-    # for model_key, model_info in device_data.items():
-    #     print("{} {}".format(model_key, model_info))
-    #
-    #     if model_key in model:
-    #         print(f"Найдена конфигурация {model_info} для модели {model}")
-    #         return model_info
-    #     if not model_info:
-    #         app_logger.warning(LogMessages.CONFIG_NOT_FOUND.value.format(model_key=model_key))
-    #         return {
-    #             "interfaceRange": "auto",
-    #             "interfaceList": "auto",
-    #             "ddm": False,
-    #             "adsl": False,
-    #             "fibers": 0
-    #         }
-    #     # Загрузка интерфейсных данных для конфигурации модели
-    #     interface_key = model_info.get("interface_key")
-    #     print("Ключ для interfaceRange:{} ".format(interface_key))
-    #     interface_list_key = model_info.get("interface_list_key")
-    #     print("Ключ для interfaceList".format(interface_list_key))
-    #
-    #     return {
-    #         "interfaceRange": HelperFunctions.load_interface_data(interface_key,
-    #                                                               "interfaceRange") if interface_key else "auto",
-    #         "interfaceList": HelperFunctions.load_interface_data(interface_list_key,
-    #                                                              "interfaceList") if interface_list_key else "auto",
-    #         "ddm": model_info.get("ddm", False),
-    #         "adsl": model_info.get("adsl", False),
-    #         "fibers": model_info.get("fibers", 0)
-    #     }
-
     @staticmethod
     async def get_port_status(
             host: str,
@@ -139,7 +149,6 @@ class DeviceUtils:
     ):
         results = []
         action = f"{__name__}.get_port_status"
-        current_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         joid = HelperFunctions.load_oids()
         # Определяем descr_oid в зависимости от модели
         descr_oid = (
@@ -219,27 +228,13 @@ class DeviceUtils:
                     fix_int_descr
                 ])
 
-            # Логирование успешного выполнения
-            message = {
-                "date": current_date,
-                "action": action,
-                "host": host,
-                "status": "done"
-            }
-            app_logger.info(message)
             return results
 
         except Exception as e:
             # Логирование ошибки
-            error_message = {
-                "date": current_date,
-                "action": action,
-                "host": host,
-                "error": str(e),
-                "trace": traceback.format_exc()
-            }
-            app_logger.error(error_message)
-            return error_message
+            HelperFunctions.log_error(action, host, e)
+
+            return
 
     @staticmethod
     async def get_basic_info(host: str, community: str) -> Any | None:
@@ -249,7 +244,6 @@ class DeviceUtils:
         Получает базовую информацию об устройстве через SNMP.
         """
         action = "get_basic_info"
-        current_date = datetime.datetime.now().isoformat()
 
         app_logger.info(json.dumps({
             "date": current_date,
@@ -290,20 +284,18 @@ class DeviceUtils:
 
 
         except Exception as e:
-            # Проверка и декодирование байтов в строку, если необходимо
-            error_data = {
-                "date": current_date,
-                "action": action,
-                "host": host,
-                "error": str(e),
-                "trace": traceback.format_exc()
+            HelperFunctions.log_error(action, host, e)
 
-            }
-            # Преобразуем значения в error_data в строки, если они имеют тип bytes
-            for key, value in error_data.items():
-                if isinstance(value, bytes):
-                    error_data[key] = value.decode('utf-8')
-            # Сериализация в JSON с ensure_ascii=False
-            error_message = json.dumps(error_data, ensure_ascii=False)
-            app_logger.error(error_message)
+            return None
+
+    @staticmethod
+    async def get_vlan_list(host: str, community: str):
+        results = []
+        action = f"{__name__}.get_port_status"
+        try:
+            await DeviceUtils.process_vlan_entry(host, community, results)
+            return results
+            # return HelperFunctions.table_formatted_output(results, ["Vlan ID", "Vlan NAME"])
+        except Exception as e:
+            HelperFunctions.log_error(action, host, e)
             return None

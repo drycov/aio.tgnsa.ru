@@ -77,7 +77,7 @@ async def process_host_input(message: Message, state: FSMContext):
                     display_data = {
                         "text": f"<pre>{device_info_message}</pre>\n\n"
                                 f"<i>Выполнено: <code>{current_date}</code></i>",
-                        "reply_markup": device_keyboard
+                        "reply_markup": in_back_keyboard
                     }
 
                 # Переход в состояние ADMIN_PANEL с отображением данных

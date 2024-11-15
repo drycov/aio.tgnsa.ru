@@ -3,15 +3,14 @@ from datetime import datetime
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, ReplyKeyboardRemove, CallbackQuery
 
-from app.constants import MenuLabels, Symbols, ErrorMessages
-from ...keyboards import in_back_keyboard
-from ...utils import HelperFunctions, DeviceUtils
-from ...utils.logger_instance import app_logger
+from app.constants import MenuLabels, ErrorMessages
+from app.keyboards import in_back_keyboard
+from app.utils import HelperFunctions, DeviceUtils
+from app.utils.logger_instance import app_logger
 
 router = Router()
-
 # Максимальное количество строк на одной странице
 ROWS_PER_PAGE = 20
 
@@ -41,38 +40,21 @@ async def generate_pagination_keyboard(page: int, total_pages: int) -> InlineKey
     return keyboard
 
 
-@router.message(F.text == MenuLabels.PORT_STATUS.value)
-async def port_info(message: Message, state: FSMContext):
+@router.message(F.text == MenuLabels.VLAN_LIST.value)
+async def vlan_list(message: Message, state: FSMContext):
     # Устанавливаем текущие и предыдущие ID контекста
     data = await state.get_data()
     host = data.get('host')
     community = data.get('community')
-    model = data.get('model')
-    port_if_list = data.get('device_data', {}).get('interfaceList', [])
-    port_if_range = data.get('device_data', {}).get('interfaceRange', [])
-    action = f"{__name__}.port_info"
+    action = f"{__name__}.vlan_list"
     current_date = HelperFunctions.get_current_date()
-
-    # Получаем диапазоны интерфейсов
-    if port_if_range == 'auto':
-        port_if_range = await DeviceUtils.get_interface_range(host, community)
-    if port_if_list == 'auto':
-        port_if_list = await DeviceUtils.get_interface_list(host, community)
-
     await message.answer(
-        f"Проверка портов на устройстве: <code>{host}</code>",
+        f"Список VLAN на устройстве: <code>{host}</code>",
         reply_markup=ReplyKeyboardRemove(),
         parse_mode="HTML"
     )
-
     try:
-        # Получение состояния портов
-        port_status = await DeviceUtils.get_port_status(host, port_if_list, port_if_range, community, model)
-        state_info = (
-            f"P.S. Состояния: {Symbols.OK.value} - Линк есть, {Symbols.CABLE_CHECKED.value} - Линка нет, "
-            f"{Symbols.STATUS_ADMIN_DISABLED.value} - Порт выключен, {Symbols.CABLE_NOT_PRESENT.value} - Неизвестно"
-        )
-
+        vlans = await DeviceUtils.get_vlan_list(host, community)
         # Логирование успешного выполнения
         message_log = {
             "date": current_date,
@@ -81,19 +63,13 @@ async def port_info(message: Message, state: FSMContext):
             "status": "done"
         }
         app_logger.info(message_log)
-
         # Форматируем таблицу и разбиваем на страницы
-        table_output = HelperFunctions.table_formatted_output(port_status, ["IF", "St.", "Errors", "Description"])
+        table_output = HelperFunctions.table_formatted_output(vlans, ["Vlan ID", "Vlan NAME"])
         table_lines = table_output.splitlines()
         total_pages = (len(table_lines) - 1) // ROWS_PER_PAGE + 1  # Рассчитываем количество страниц
         page = 1
-
-        # Сохраняем данные о страницах в состоянии
         await state.update_data(table_lines=table_lines, total_pages=total_pages, page=page)
-
-        # Отправляем первую страницу
-        await send_page(message, state, page, total_pages, host, current_date, state_info)
-
+        await send_page(message, state, page, total_pages, host, current_date)
     except Exception as e:
         # Логирование ошибки
         error_log = {
@@ -112,8 +88,7 @@ async def port_info(message: Message, state: FSMContext):
         )
 
 
-async def send_page(message: Message, state: FSMContext, page: int, total_pages: int, host: str, current_date: str,
-                    state_info: str):
+async def send_page(message: Message, state: FSMContext, page: int, total_pages: int, host: str, current_date: str):
     """Отправляет одну страницу с состоянием портов."""
     data = await state.get_data()
     table_lines = data.get('table_lines', [])
@@ -123,8 +98,8 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
 
     # Сообщение с текущей страницей
     full_message = (
-        f"Состояние портов на устройстве: <code>{host}</code>\n"
-        f"<code>{page_content}\n\n{state_info}</code>\n\n"
+        f"Список VLAN на устройстве: <code>{host}</code>\n"
+        f"<code>{page_content}\n\n</code>\n\n"
         f"<i>Страница {page} из {total_pages}</i>\n"
         f"<i>Выполнено: <code>{current_date}</code></i>"
     )
@@ -142,12 +117,8 @@ async def pagination_callback(callback: CallbackQuery, state: FSMContext):
     total_pages = data.get('total_pages', 1)
     host = data.get('host')
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    state_info = (
-        f"P.S. Состояния: {Symbols.OK.value} - Линк есть, {Symbols.CABLE_CHECKED.value} - Линка нет, "
-        f"{Symbols.STATUS_ADMIN_DISABLED.value} - Порт выключен, {Symbols.CABLE_NOT_PRESENT.value} - Неизвестно"
-    )
 
     # Обновляем текущую страницу и отправляем новую страницу
     await state.update_data(page=page)
-    await send_page(callback.message, state, page, total_pages, host, current_date, state_info)
+    await send_page(callback.message, state, page, total_pages, host, current_date)
     await callback.answer()
