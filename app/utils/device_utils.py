@@ -29,8 +29,8 @@ class DeviceUtils:
                 index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1])
                 for index in interface_names
             ]
-        except Exception as err:
-            HelperFunctions.log_error(action, host, err)
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return []
 
     async def get_interface_list(host: str, community: str) -> List[int]:
@@ -44,8 +44,8 @@ class DeviceUtils:
             task = asyncio.create_task(SNMPFunctions.get_multi_oid(host, oid_ifIndex, community))
             interface_indices = HelperFunctions.to_string(await task)
             return [int(index[1]) for index in interface_indices]
-        except Exception as err:
-            HelperFunctions.log_error(action, host, err)
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return []
 
     async def process_vlan_entry(host: str, community: str, results=None):
@@ -58,14 +58,14 @@ class DeviceUtils:
         oid_vlan_id = joid["basic_oids"]["oid_vlan_id"]
         try:
             vlan_name = await SNMPFunctions.get_multi_oid(host, oid_vlan_list, community)
-        except Exception as err:
-            HelperFunctions.log_error(action, host, err)
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return
 
         try:
             vlan_id = await SNMPFunctions.get_multi_oid(host, oid_vlan_id, community)
-        except Exception as err:
-            HelperFunctions.log_error(action, host, err)
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return
 
         if not vlan_name or not vlan_id:
@@ -232,7 +232,7 @@ class DeviceUtils:
 
         except Exception as e:
             # Логирование ошибки
-            HelperFunctions.log_error(action, host, e)
+            HelperFunctions.log_error(action=action, host=host, error=e)
 
             return
 
@@ -284,7 +284,7 @@ class DeviceUtils:
 
 
         except Exception as e:
-            HelperFunctions.log_error(action, host, e)
+            HelperFunctions.log_error(action=action, host=host, error=e)
 
             return None
 
@@ -297,5 +297,5 @@ class DeviceUtils:
             return results
             # return HelperFunctions.table_formatted_output(results, ["Vlan ID", "Vlan NAME"])
         except Exception as e:
-            HelperFunctions.log_error(action, host, e)
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return None

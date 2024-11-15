@@ -25,8 +25,8 @@ class NetworkUtils:
                 last=subnet[-2],
                 size=subnet.size - 2
             )
-        except Exception as error:
-            HelperFunctions.log_error(action, network_address, error)
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=network_address, error=e)
             return NetworkMessages.ERROR_SUBNET_FORMAT.value
 
     @staticmethod
@@ -44,8 +44,8 @@ class NetworkUtils:
                 gateway=p2p_subnet[1],
                 netmask=p2p_subnet.netmask
             )
-        except Exception as error:
-            HelperFunctions.log_error(action, network_address, error)
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=network_address, error=e)
             return NetworkMessages.ERROR_P2P_FORMAT.value
 
     @staticmethod
@@ -83,8 +83,8 @@ class NetworkUtils:
             final_log = "\n".join(log_messages)
             return final_log
 
-        except Exception as error:
-            HelperFunctions.log_error(action, host, error)
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return None
 
     @staticmethod
@@ -105,5 +105,5 @@ class NetworkUtils:
             response = await asyncio.to_thread(ping, host, timeout=1)
             return response is not None
         except Exception as e:
-            HelperFunctions.log_error(action, host, e)
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return False

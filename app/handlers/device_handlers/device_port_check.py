@@ -1,4 +1,3 @@
-import traceback
 from datetime import datetime
 
 from aiogram import Router, F
@@ -6,8 +5,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from app.constants import MenuLabels, Symbols, ErrorMessages
+from ...constants.states import DeviceCommands
 from ...keyboards import in_back_keyboard
-from ...utils import HelperFunctions, DeviceUtils
+from ...utils import HelperFunctions, DeviceUtils, StateManager
 from ...utils.logger_instance import app_logger
 
 router = Router()
@@ -96,14 +96,7 @@ async def port_info(message: Message, state: FSMContext):
 
     except Exception as e:
         # Логирование ошибки
-        error_log = {
-            "date": current_date,
-            "action": action,
-            "userId": data.get('userId'),
-            "error": str(e),
-            "traceback": traceback.format_exc()}
-        app_logger.error(error_log)
-
+        HelperFunctions.log_error(action=action, host=host, error=e)
         # Отправка сообщения об ошибке
         await message.answer(
             ErrorMessages.UNKNOWN_ERROR_USER.value,
@@ -131,7 +124,10 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
 
     # Клавиатура для пагинации
     pagination_keyboard = await generate_pagination_keyboard(page, total_pages)
-    await message.answer(full_message, reply_markup=pagination_keyboard, parse_mode="HTML")
+    display_data = {"text": full_message, "reply_markup": pagination_keyboard}
+    await StateManager.set_state_with_previous(state, DeviceCommands.PORT_INFORMATION, display_data)
+
+    await message.answer(**display_data, parse_mode="HTML")
 
 
 @router.callback_query(F.data.startswith("page_"))

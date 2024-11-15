@@ -5,7 +5,6 @@ import math
 import os
 import platform
 import time
-import traceback
 import uuid
 from pathlib import Path
 from typing import Optional, Any, Dict, List
@@ -214,6 +213,7 @@ class HelperFunctions:
 
     @staticmethod
     def load_device_data() -> Dict[str, Dict[str, Any]]:
+        action = f"{__name__}.load_device_data"
         from config import Config  # Импорт внутри функции
 
         """
@@ -224,10 +224,12 @@ class HelperFunctions:
             with file_path.open("r", encoding="utf-8") as file:
                 # app_logger.info(f"Загружены данные устройства из файла {file_path}")
                 return json.load(file)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
+            HelperFunctions.log_error(action=action, error=e)
             app_logger.error(LogMessages.FILE_NOT_FOUND.value.format(file_path=file_path))
             return {}
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            HelperFunctions.log_error(action=action, error=e)
             app_logger.error(LogMessages.JSON_DECODE_ERROR.value.format(file_path=file_path))
             return {}
 
@@ -359,21 +361,30 @@ class HelperFunctions:
                     active_ports.append(byte_index * 8 + bit_index + 1)  # Порты начинаются с 1
         return active_ports
 
-    @staticmethod
-    def log_error(action: str, host: str, error: Exception) -> None:
+    def log_error(*, action: str, error: Exception, host: Optional[str] = None) -> None:
         """
-        Логирование ошибок в едином формате.
+        Логирование ошибок в едином формате. Используйте именованные параметры для гибкости.
         """
+        import json
+        import traceback
+
+        # Формируем словарь с ошибкой
         error_data = {
             "date": HelperFunctions.get_current_date(),
             "action": action,
-            "host": host,
             "error": str(error),
             "trace": traceback.format_exc()
         }
+
+        # Добавляем "host", только если он не None
+        if host is not None:
+            error_data["host"] = host
+
+        # Преобразуем значения bytes в строки, если есть
         for key, value in error_data.items():
             if isinstance(value, bytes):
                 error_data[key] = value.decode('utf-8')
+
         # Сериализация в JSON с ensure_ascii=False
         error_message = json.dumps(error_data, ensure_ascii=False)
         app_logger.error(error_message)

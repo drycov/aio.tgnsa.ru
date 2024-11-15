@@ -38,7 +38,7 @@ class SNMPFunctions:
             result = await client.get(oid)
             return result
         except Exception as e:
-            HelperFunctions.log_error(action, host, e)
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return None
 
     @staticmethod
@@ -53,7 +53,7 @@ class SNMPFunctions:
                     return community
 
             except Exception as e:
-                HelperFunctions.log_error(action, host, e)
+                HelperFunctions.log_error(action=action, host=host, error=e)
         return "public"  # Возврат значения по умолчанию, если все communities недоступны
 
     @staticmethod
@@ -81,7 +81,7 @@ class SNMPFunctions:
                 results.append(row)
             return results
         except Exception as e:
-            HelperFunctions.log_error(action, host, e)
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return []
 
     async def set_snmp_oid(host: str, oid: str, value: Any, community: str = None) -> Any:
@@ -93,5 +93,5 @@ class SNMPFunctions:
             return result
         except Exception as e:
             # Логирование ошибок
-            HelperFunctions.log_error(action, host, e)
+            HelperFunctions.log_error(action=action, host=host, error=e)
             return

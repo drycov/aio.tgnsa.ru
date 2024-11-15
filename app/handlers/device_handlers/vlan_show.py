@@ -1,4 +1,3 @@
-import traceback
 from datetime import datetime
 
 from aiogram import Router, F
@@ -6,8 +5,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, ReplyKeyboardRemove, CallbackQuery
 
 from app.constants import MenuLabels, ErrorMessages
+from app.constants.states import DeviceCommands
 from app.keyboards import in_back_keyboard
-from app.utils import HelperFunctions, DeviceUtils
+from app.utils import HelperFunctions, DeviceUtils, StateManager
 from app.utils.logger_instance import app_logger
 
 router = Router()
@@ -71,14 +71,7 @@ async def vlan_list(message: Message, state: FSMContext):
         await state.update_data(table_lines=table_lines, total_pages=total_pages, page=page)
         await send_page(message, state, page, total_pages, host, current_date)
     except Exception as e:
-        # Логирование ошибки
-        error_log = {
-            "date": current_date,
-            "action": action,
-            "userId": data.get('userId'),
-            "error": str(e),
-            "traceback": traceback.format_exc()}
-        app_logger.error(error_log)
+        HelperFunctions.log_error(action=action, host=host, error=e)
 
         # Отправка сообщения об ошибке
         await message.answer(
@@ -103,10 +96,12 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
         f"<i>Страница {page} из {total_pages}</i>\n"
         f"<i>Выполнено: <code>{current_date}</code></i>"
     )
-
     # Клавиатура для пагинации
     pagination_keyboard = await generate_pagination_keyboard(page, total_pages)
-    await message.answer(full_message, reply_markup=pagination_keyboard, parse_mode="HTML")
+    display_data = {"text": full_message, "reply_markup": pagination_keyboard}
+    await StateManager.set_state_with_previous(state, DeviceCommands.VLAN_INFORMATION, display_data)
+
+    await message.answer(**display_data, parse_mode="HTML")
 
 
 @router.callback_query(F.data.startswith("page_"))

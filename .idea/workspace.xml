@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="fix  f'  🕼 Telegram: &lt;a href=&quot;https://t.me/{tg_contact}&quot;&gt;{tg_contact}&lt;/a&gt;\n'">
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="fixed error">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.env" beforeDir="false" afterPath="$PROJECT_DIR$/config.env" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -329,7 +330,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731661650138</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="fixed error">
+      <option name="closed" value="true" />
+      <created>1731662247670</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1731662247670</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -351,6 +360,7 @@
     <MESSAGE value="Переписал и сменил либу snmp. Реализовал работу с port_check" />
     <MESSAGE value="Переписал и сменил" />
     <MESSAGE value="fix  f'   Telegram: &lt;a href=&quot;https://t.me/{tg_contact}&quot;&gt;{tg_contact}&lt;/a&gt;\n'" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix  f'   Telegram: &lt;a href=&quot;https://t.me/{tg_contact}&quot;&gt;{tg_contact}&lt;/a&gt;\n'" />
+    <MESSAGE value="fixed error" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed error" />
   </component>
 </project>
