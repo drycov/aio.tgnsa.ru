@@ -174,10 +174,10 @@ async def assign_employee(callback_query: types.CallbackQuery, state: FSMContext
     task = Task(
         date=task_start_date,
         end_date=task_end_date,
-        created_by=str(data["user_id"]),
-        assigned_to=employee_id,
+        created_by=data["user_id"],
+        assigned_to=int(employee_id),
         title=data["task_title"],
-        priority=PriorityLevel[data["task_priority"].upper()],
+        priority=PriorityLevel.from_str(data["task_priority"]),
         status="planned",
         description=data["task_description"]
     )
@@ -221,6 +221,7 @@ def save_task_to_firestore(task: Task):
 
 
 async def notify_assignee(task: Task, bot):
+    global assignee_id
     try:
         # Преобразование assigned_to в int и проверка на корректность ID
         assignee_id = int(task.assigned_to)
@@ -369,25 +370,35 @@ async def view_tasks(message: types.Message, created_by: Optional[int] = None, a
         }
         return status_icons.get(status, "❔")  # Возвращает "❔", если статус неизвестен
 
+    def format_task_info(key, task, task_id, action):
+        """Форматирует информацию о задаче."""
+        status_icon = get_status_icon(task.get('status'))
+        task_title = task.get('title', 'не указано')
+        start_date = HelperFunctions.format_human_date(datetime.fromisoformat(task.get('date', 'не задано')),
+                                                       show_time=False)
+        end_date = HelperFunctions.format_human_date(datetime.fromisoformat(task.get('end_date', 'не задано')),
+                                                     show_time=False)
+        description = task.get('description', 'не указано')
+        priority = PriorityLevel.get_priority_level(task.get('priority', 'low'))
+
+        # Форматируем строки
+        title_line = f"Имя: {task_title}\n" if task.get('status') != 'revoked' or task_id else ""
+        date_line = f"C {start_date} по {end_date}\n" if task.get('status') != 'revoked' or task_id == key else ""
+        description_line = f"Описание: {description}\n" if task.get(
+            'status') != 'revoked' or task_id == key or action == 'view' else ""
+        priority_line = f"Приоритет: <b>{priority}</b>\n" if task.get('status') != 'revoked' or task_id == key else ""
+
+        # Возвращаем форматированную информацию о задаче
+        return (
+            f"{status_icon} Задача: <i>/task_{key}</i>\n"
+            f"{title_line}{date_line}{description_line}{priority_line}"
+        )
+
     # Формируем информацию о задачах с учетом статуса и добавлением иконки
     tasks_info = "\n\n".join([
-        f"{get_status_icon(task.get('status'))} Задача: <i>/task_{key}</i>\n"
-        f"{'Имя: ' + task.get('title', 'не указано') + '\n' if task.get('status') != 'revoked' or task_id else ''}"
-        f"{'C ' + HelperFunctions.format_human_date(datetime.fromisoformat(task.get('date', 'не задано')), show_time=False) + ' по ' + HelperFunctions.format_human_date(datetime.fromisoformat(task.get('end_date', 'не задано')), show_time=False) + '\n' if task.get('status') != 'revoked' or task_id == key else ''}"
-        f"{'Описание: ' + task.get('description', 'не указано') + '\n' if task.get('status') != 'revoked' or task_id == key or action == 'view' else ''}"
-        f"{'Приоритет: <b>' + PriorityLevel.get_priority_level(task.get('priority', 'low')) + '</b>\n' if task.get('status') != 'revoked' or task_id == key else ''}"
-
-        # Проверка наличия assigned_user для ссылки Исполнитель
-        f"{('Исполнитель: <i><a href=\"tg://user?id=' + str(task.get('assigned_to')) + '\">' + (assigned_user.first_name if assigned_user else 'не назначен') + ' ' + (assigned_user.last_name if assigned_user else '') + '</a> </i>\n') if task.get('status') != 'revoked' and task.get('assigned_to') else 'Исполнитель: не назначен\n'}"
-
-        # Проверка наличия created_user для ссылки Создатель
-        f"{('Создатель:<i> <a href=\"tg://user?id=' + str(task.get('created_by')) + '\">' + (created_user.first_name if created_user else 'не указан') + ' ' + (created_user.last_name if created_user else '') + '</a></i>\n') if action == 'view' and task.get('created_by') else 'Создатель: не указан\n'}"
-
+        format_task_info(key, task, task_id, action)
         for idx, (key, task) in enumerate(tasks_to_display)
-        if isinstance(task, dict)
-           and (task_id == key or task.get("status") != "revoked")
-        for assigned_user in [User.get_by_tg_id(task.get('assigned_to', 0))]
-        for created_user in [User.get_by_tg_id(task.get('created_by', 0))]
+        if isinstance(task, dict) and (task_id == key or task.get("status") != "revoked")
     ])
 
     # Создаем кнопки навигации
