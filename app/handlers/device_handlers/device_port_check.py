@@ -35,7 +35,7 @@ async def generate_pagination_keyboard(page: int, total_pages: int) -> InlineKey
         InlineKeyboardButton(text="Вперёд ➡️", callback_data=f"page_{page + 1}") if page < total_pages else None
     ]
 
-    # Фильтрация None-элементов и добавление кнопок в клавиатуру
+    # Фильтрация None и добавление кнопок
     keyboard.inline_keyboard.append([button for button in navigation_buttons if button])
     keyboard.inline_keyboard.append([InlineKeyboardButton(text=MenuLabels.BACK.value, callback_data="back")])
     return keyboard
@@ -117,7 +117,7 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
     # Сообщение с текущей страницей
     full_message = (
         f"Состояние портов на устройстве: <code>{host}</code>\n"
-        f"<code>{page_content}\n\n{state_info}</code>\n\n"
+        f"<pre>{page_content}\n\n{state_info}</pre>\n\n"
         f"<i>Страница {page} из {total_pages}</i>\n"
         f"<i>Выполнено: <code>{current_date}</code></i>"
     )

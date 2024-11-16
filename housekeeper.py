@@ -2,7 +2,7 @@ import asyncio
 import os
 import time
 
-from app.bot_instance import redis_client
+from app.bot_instance import storage
 from app.utils.logger_instance import app_logger
 from config import Config
 from logging_config import LoggingConfig
@@ -66,10 +66,10 @@ class Housekeeper:
         try:
             current_time = int(time.time())
             keys_pattern = "fsm:*:last_activity"
-            keys = await redis_client.keys(keys_pattern)
+            keys = await storage.keys(keys_pattern)
 
             for key in keys:
-                last_activity = await redis_client.get(key)
+                last_activity = await storage.get(key)
                 if last_activity:
                     last_activity = int(last_activity)
                     inactivity_period = current_time - last_activity
@@ -77,9 +77,9 @@ class Housekeeper:
                     if inactivity_period > self.inactivity_threshold:
                         # Удаляем данные пользователя
                         user_id = key.decode().split(":")[1]
-                        await redis_client.delete(key)
-                        await redis_client.delete(f"fsm:{user_id}:state")
-                        await redis_client.delete(f"fsm:{user_id}:data")
+                        await storage.delete(key)
+                        await storage.delete(f"fsm:{user_id}:state")
+                        await storage.delete(f"fsm:{user_id}:data")
 
                         app_logger.info(
                             f"Удалены данные неактивного пользователя {user_id} после {inactivity_period} секунд неактивности.")

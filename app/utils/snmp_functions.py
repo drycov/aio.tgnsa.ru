@@ -7,7 +7,6 @@ from puresnmp import Client, V2C, PyWrapper
 from config import Config
 from .helper_functions import HelperFunctions
 from .logger_instance import app_logger
-from ..bot_instance import SNMP_OID_SYSOBJECTID
 from ..constants import LogMessages
 
 
@@ -44,11 +43,12 @@ class SNMPFunctions:
     @staticmethod
     async def check_snmp(host: str, communities: List[str]) -> str:
         action = f"{__name__}.check_snmp"
-        oid = SNMP_OID_SYSOBJECTID
+        joid = HelperFunctions.load_oids()
+        sysObjectID = joid["basic_oids"]["oid_sysObjectID"]
 
         for community in communities:
             try:
-                result = await SNMPFunctions.get_single_oid(host, oid, community)
+                result = await SNMPFunctions.get_single_oid(host, sysObjectID, community)
                 if result:
                     return community
 

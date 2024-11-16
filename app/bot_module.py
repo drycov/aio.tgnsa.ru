@@ -2,7 +2,7 @@
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 
 from app import handlers
-from app.bot_instance import dp, bot, redis_client
+from app.bot_instance import dp, bot
 from app.constants import Messages
 from app.middlewares import CustomLoggingMiddleware, RateLimitMiddleware, UserActivityMiddleware, AuthMiddleware
 from app.utils.logger_instance import app_logger  # Предполагаем, что app_logger уже инициализирован
@@ -63,10 +63,5 @@ async def graceful_shutdown():
     # Закрытие HTTP-сессии бота
     await bot.session.close()
     app_logger.info("HTTP-сессия бота закрыта.")
-
-    # Закрытие соединения Redis
-    app_logger.info("Закрытие соединения с Redis...")
-    await redis_client.close()
-    app_logger.info("Соединение с Redis закрыто.")
 
     app_logger.info("Работа бота завершена.")

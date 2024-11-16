@@ -1,8 +1,9 @@
 import time
+
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from aiogram.types import Message, CallbackQuery
 
-from app.bot_instance import redis_client
+from app.bot_instance import storage
 from app.utils.logger_instance import app_logger
 
 
@@ -17,7 +18,7 @@ class UserActivityMiddleware(BaseMiddleware):
             last_activity_key = f"fsm:{user_id}:last_activity"
 
             # Асинхронный вызов для получения времени последней активности
-            last_activity = await redis_client.get(last_activity_key)
+            last_activity = await storage.get(last_activity_key)
             if last_activity:
                 last_activity = int(last_activity)
                 inactivity_period = current_time - last_activity
@@ -33,7 +34,7 @@ class UserActivityMiddleware(BaseMiddleware):
                 app_logger.info(f"User {user_id} активен впервые.")
 
             # Асинхронное обновление времени последней активности и установка времени хранения данных
-            await redis_client.set(last_activity_key, current_time, ex=3600)  # Данные удалятся через 1 час неактивности
+            await storage.set(last_activity_key, current_time, ex=3600)  # Данные удалятся через 1 час неактивности
 
         # Передаем обработку события дальше
         return await handler(event, data)
@@ -44,7 +45,7 @@ class UserActivityMiddleware(BaseMiddleware):
         Асинхронная проверка, является ли пользователь активным.
         """
         last_activity_key = f"fsm:{user_id}:last_activity"
-        last_activity = await redis_client.get(last_activity_key)
+        last_activity = await storage.get(last_activity_key)
         if last_activity:
             inactivity_period = int(time.time()) - int(last_activity)
             return inactivity_period <= UserActivityMiddleware.INACTIVITY_THRESHOLD

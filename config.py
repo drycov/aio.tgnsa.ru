@@ -74,9 +74,10 @@ class Config:
                                       "https://ttcnsa-default-rtdb.asia-southeast1.firebasedatabase.app")
 
     # MongoDB
-    MONGO_URI = os.getenv("MONGO_URI",
-                          "mongodb+srv://ttc-ttcnsa:3Gm69K7l5R6v0CNT@cluster0.c48ewsz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "tgnsa_ru")
+    USE_MONGODB = os.getenv("USE_MONGODB", "False").lower() == "true"
+    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+
+    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "fsm-aio")
 
     # SQLite (локальная база данных)
     SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI", f"sqlite:///{paths['data'] / 'app.db'}")
@@ -93,7 +94,7 @@ class Config:
     # ---------- Логирование ----------
 
     # ---------- Redis и кэширование ----------
-    REDIS_URL = os.getenv("REDIS_URL", "redis://192.168.1.4:6379/db")
+    REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/db")
     USE_REDIS = os.getenv("USE_REDIS", "False").lower() == "true"
     CACHE_TYPE = os.getenv("CACHE_TYPE", "SimpleCache")
     # Парсинг REDIS_URL для настройки переменных конфигурации RQ

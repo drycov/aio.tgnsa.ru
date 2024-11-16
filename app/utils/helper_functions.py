@@ -4,6 +4,7 @@ import json
 import math
 import os
 import platform
+import re
 import time
 import uuid
 from pathlib import Path
@@ -212,6 +213,26 @@ class HelperFunctions:
             return {}
 
     @staticmethod
+    def fix_trailing_commas(file_path: Path):
+        """
+        Убирает лишние запятые перед закрывающими символами в JSON-файле.
+        """
+        try:
+            with file_path.open("r", encoding="utf-8") as file:
+                content = file.read()
+
+            # Удаляем запятые перед закрывающими скобками
+            fixed_content = re.sub(r",\s*([\}\]])", r"\1", content)
+
+            with file_path.open("w", encoding="utf-8") as file:
+                file.write(fixed_content)
+
+            app_logger.info(f"Файл {file_path} успешно исправлен от лишних запятых.")
+        except Exception as ex:
+            app_logger.error(f"Ошибка при исправлении файла {file_path}: {ex}")
+            raise
+
+    @staticmethod
     def load_device_data() -> Dict[str, Dict[str, Any]]:
         action = f"{__name__}.load_device_data"
         from config import Config  # Импорт внутри функции
@@ -220,6 +241,7 @@ class HelperFunctions:
         Загружает данные обо всех моделях и их конфигурациях из объединенного JSON-файла.
         """
         file_path = Path(Config.DATA_PATH) / 'device_config.json'
+        HelperFunctions.fix_trailing_commas(file_path)
         try:
             with file_path.open("r", encoding="utf-8") as file:
                 # app_logger.info(f"Загружены данные устройства из файла {file_path}")

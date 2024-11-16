@@ -3,7 +3,7 @@ import shutil
 
 from firebase_admin import db
 
-from app.bot_instance import redis_client
+from app.bot_instance import storage
 from app.utils.logger_instance import app_logger
 from config import Config
 
@@ -96,7 +96,7 @@ class Healthy:
         Проверяет доступность Redis.
         """
         try:
-            await redis_client.ping()
+            await storage.ping()
             return True
         except Exception as e:
             app_logger.error(f"Redis не доступен: {e}")
