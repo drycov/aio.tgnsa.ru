@@ -16,6 +16,7 @@ from config import Config
 
 parse_mode = DefaultBotProperties(parse_mode=ParseMode.HTML)
 
+
 def initialize_storage():
     """
     Инициализация хранилища FSM с поддержкой Redis, MongoDB или памяти.

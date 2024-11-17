@@ -59,7 +59,7 @@ async def port_info(message: Message, state: FSMContext):
     if port_if_list == 'auto':
         port_if_list = await DeviceUtils.get_interface_list(host, community)
 
-    await message.answer(
+    await message.reply(
         f"Проверка портов на устройстве: <code>{host}</code>",
         reply_markup=ReplyKeyboardRemove(),
         parse_mode="HTML"
@@ -124,14 +124,10 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
 
     # Клавиатура для пагинации
     pagination_keyboard = await generate_pagination_keyboard(page, total_pages)
-    print(pagination_keyboard)
     display_data = {"text": full_message, "reply_markup": pagination_keyboard}
-    print(full_message)
-    print(display_data)
-
     await StateManager.set_state_with_previous(state, DeviceCommands.PORT_INFORMATION, display_data)
 
-    await message.answer(**display_data, parse_mode="HTML")
+    await message.reply(text=full_message, reply_markup=pagination_keyboard, parse_mode="HTML")
 
 
 @router.callback_query(F.data.startswith("page_"))

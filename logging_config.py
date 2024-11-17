@@ -6,14 +6,14 @@ from dotenv import load_dotenv
 
 # Определение базовой директории и конфигурационного файла
 basedir = Path(__file__).resolve().parent
-config_env_path = basedir / "config.env"
+config_env_path = basedir / ".env"
 
-# Загрузка переменных окружения из .env и config.env (если он существует)
+# Загрузка переменных окружения из .env и .env (если он существует)
 load_dotenv()  # Загрузка из .env
 
 if config_env_path.exists():
-    click.secho("Импортирование окружения из файла config.env", fg="green")
-    load_dotenv(dotenv_path=config_env_path, override=True)  # Переопределение переменных из config.env
+    click.secho("Импортирование окружения из файла .env", fg="green")
+    load_dotenv(dotenv_path=config_env_path, override=True)  # Переопределение переменных из .env
 
 
 class LoggingConfig:
@@ -30,9 +30,9 @@ class LoggingConfig:
     USE_SYSLOG = os.getenv("USE_SYSLOG", "True").lower() in ["true", "1"]
     SYSLOG_HOST = os.getenv("SYSLOG_HOST", "127.0.0.1")
     SYSLOG_PORT = int(os.getenv("SYSLOG_PORT", 514))
-    SYSLOG_FACILITY = os.getenv("SYSLOG_FACILITY", "local0")
+    SYSLOG_FACILITY = os.getenv("SYSLOG_FACILITY", "local7")
     SYSLOG_MESSAGE_FORMAT = os.getenv("SYSLOG_MESSAGE_FORMAT", "{asctime} - {name} - {levelname} - {message}")
-    SYSLOG_LOGGING_LEVEL = os.getenv("SYSLOG_LOGGING_LEVEL", "INFO")
+    SYSLOG_LOGGING_LEVEL = os.getenv("SYSLOG_LOGGING_LEVEL", "WARNING")
 
     @classmethod
     def ensure_log_dir_exists(cls):

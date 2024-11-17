@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery, ReplyKeyboardRemove, FSInputFile
 from tabulate import tabulate
 
 from app.bot_instance import bot
@@ -8,11 +8,14 @@ from app.constants import Messages
 from app.constants.states import MainCommands, RegistrationForm
 from app.keyboards import on_enter_keyboard
 from app.models import User
-from app.utils import StateManager
+from app.utils import StateManager, HelperFunctions
 from app.utils.logger_instance import app_logger
 from config import Config
+from healthy import Healthy
+from logging_config import LoggingConfig
 
 router = Router()
+health_checker = Healthy()
 
 
 @router.callback_query(lambda c: c.data == "approve_user")
@@ -96,3 +99,90 @@ async def reject_user(callback_query: CallbackQuery, state: FSMContext):
     await StateManager.set_state_with_previous(state, RegistrationForm.first_name)
     await bot.send_message(callback_query.from_user.id, Messages.REGISTER_FIRST_NAME.value,
                            reply_markup=ReplyKeyboardRemove())
+
+
+@router.callback_query(lambda c: c.data == "check_components")
+async def check_components(callback_query: CallbackQuery):
+    """
+    Проверка состояния всех компонентов.
+    """
+    await bot.answer_callback_query(callback_query.id)
+    statuses = await health_checker.get_all_statuses()
+    response = "\n".join([f"{name}: {status}" for name, status in statuses.items()])
+    await bot.send_message(callback_query.from_user.id, f"Статусы компонентов:\n{response}")
+
+
+@router.callback_query(lambda c: c.data == "reload_checks")
+async def reload_checks(callback_query: CallbackQuery):
+    """
+    Перезагрузка проверок здоровья.
+    """
+    await bot.answer_callback_query(callback_query.id)
+    await health_checker.perform_health_checks()
+    await bot.send_message(callback_query.from_user.id, "Проверки здоровья успешно перезагружены!")
+
+
+@router.callback_query(lambda c: c.data == "get_logs")
+async def get_logs(callback_query: CallbackQuery):
+    """
+    Получение логов.
+    """
+    await bot.answer_callback_query(callback_query.id)
+    # Пример получения логов (здесь можно настроить свои пути к лог-файлам)
+    log_path = LoggingConfig.LOG_DIR / LoggingConfig.LOG_FILE
+    try:
+        # Используем InputFile для отправки файла
+        # Используем FSInputFile для отправки файла
+        log_file = FSInputFile(log_path)
+        await bot.send_document(callback_query.from_user.id, document=log_file)
+    except FileNotFoundError:
+        await bot.send_message(callback_query.from_user.id, "Файл логов не найден.")
+    except Exception as e:
+        HelperFunctions.log_error(action=f"{__name__}.get_logs", error=e)
+        await bot.send_message(callback_query.from_user.id, f"Произошла ошибка: {str(e)}")
+
+
+@router.callback_query(lambda c: c.data == "get_health")
+async def send_system_health(callback_query: CallbackQuery):
+    """
+    Отправляет здоровье системы в Telegram.
+    """
+    # Выполняем проверки здоровья
+    await health_checker.perform_health_checks()
+    system_health = health_checker.calculate_system_health()
+
+    # Заменяем статусы на иконки
+    status_icons = {
+        "OK": "✅",
+        "FAILED": "❌",
+        "ERROR": "⚠️",
+        "N/A": "❔",
+    }
+
+    await bot.answer_callback_query(callback_query.id)
+
+    # Формируем сообщение
+    report = f"<b>Общее состояние системы:</b> {status_icons[system_health['system_status']]}\n\n"
+
+    if system_health["failed_components"]:
+        report += "<b>Неуспешные компоненты:</b>\n"
+        report += "\n".join(f"  - {component}" for component in system_health["failed_components"])
+        report += "\n\n"
+
+    if system_health["error_components"]:
+        report += "<b>Ошибки компонентов:</b>\n"
+        report += "\n".join(f"  - {component}" for component in system_health["error_components"])
+        report += "\n\n"
+
+    report += "<b>Детали:</b><pre>\n"
+    for name, details in system_health["details"].items():
+        status_icon = status_icons.get(details["status"], "❔")
+        report += (
+            f"<b>{name}</b>:\n"
+            f"  - Статус: {status_icon}\n"
+            f"  - Детали: {details['details']}\n"
+        )
+    report += "</pre>\n"
+
+    # Отправляем отчет в виде сообщения
+    await bot.send_message(callback_query.from_user.id, report, parse_mode="HTML")

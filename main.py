@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 import firebase_admin
-from aiogram import Bot, Dispatcher
 from firebase_admin import credentials
 
 from app import start_bot, graceful_shutdown
@@ -15,8 +14,6 @@ from healthy_api import run as run_health_api
 from housekeeper import Housekeeper
 
 # Настройка бота и диспетчера
-bot = Bot(token=Config.API_TOKEN)
-dp = Dispatcher()
 
 # Создание экземпляров для фоновых задач
 housekeeper = Housekeeper()

@@ -36,7 +36,7 @@ def admin_menu() -> ReplyKeyboardMarkup:
             KeyboardButton(text=MenuLabels.VIEW_USERS.value),
             KeyboardButton(text=MenuLabels.SEND_BROADCAST.value),
         ],
-        [KeyboardButton(text=MenuLabels.SYSTEM_SETTINGS.value)],
+        [KeyboardButton(text="Статус системы")],
         [KeyboardButton(text=MenuLabels.BACK.value)],
     ]
     return ReplyKeyboardMarkup(
@@ -44,6 +44,19 @@ def admin_menu() -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         one_time_keyboard=False
     )
+
+
+def system_info_menu() -> InlineKeyboardMarkup:
+    """Создаем клавиатуру для информации о системе"""
+    keyboard = InlineKeyboardMarkup(row_width=2, inline_keyboard=[])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text="Состояние системы", callback_data="get_health")])
+
+    keyboard.inline_keyboard.append(
+        [InlineKeyboardButton(text="Проверить компоненты", callback_data="check_components"),
+         InlineKeyboardButton(text="Перезагрузить проверки", callback_data="reload_checks"), ])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text="Получить логи", callback_data="get_logs")])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text=MenuLabels.BACK.value, callback_data="back")])
+    return keyboard
 
 
 # Клавиатура подтверждения действий

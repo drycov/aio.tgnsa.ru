@@ -15,6 +15,7 @@ class RegistrationForm(StatesGroup):
 class MainCommands(StatesGroup):
     START = State()
     MAIN_MENU = State()  # Ясность в названии
+    SYSTEM_MENU = State()
     ADMIN_PANEL = State()  # Ясное название для раздела администрирования
 
 

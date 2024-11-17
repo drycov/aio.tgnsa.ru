@@ -7,7 +7,7 @@ from aiogram.types import Message
 from app.bot_instance import bot
 from app.constants import Messages, MenuLabels
 from app.constants.states import MainCommands
-from app.keyboards import admin_menu
+from app.keyboards import admin_menu, system_info_menu
 from app.models import User
 from app.utils import StateManager
 
@@ -23,6 +23,14 @@ async def admin_panel_command(message: Message, state: FSMContext):
     display_data = {"text": "Администрирование.", "reply_markup": keyboard}
     await StateManager.set_state_with_previous(state, MainCommands.ADMIN_PANEL, display_data)
     await message.answer(**display_data)
+
+
+@router.message(F.text == "Статус системы")
+async def system_panel_command(message: Message, state: FSMContext):
+    keyboard = system_info_menu()  # Создаем клавиатуру для администратора
+    display_data = {"text": "Статус системы."}
+    await StateManager.set_state_with_previous(state, MainCommands.SYSTEM_MENU, display_data)
+    await message.answer(**display_data, reply_markup=keyboard)
 
 
 @router.message(lambda message: message.text and command_pattern.match(message.text))

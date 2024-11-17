@@ -101,7 +101,7 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
     display_data = {"text": full_message, "reply_markup": pagination_keyboard}
     await StateManager.set_state_with_previous(state, DeviceCommands.VLAN_INFORMATION, display_data)
 
-    await message.answer(**display_data)
+    await message.reply(text=full_message, reply_markup=pagination_keyboard, parse_mode="HTML")
 
 
 @router.callback_query(F.data.startswith("page_"))

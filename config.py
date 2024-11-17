@@ -9,17 +9,27 @@ from loguru import logger
 
 # Получение экземпляра логгера
 
-# Загрузка переменных окружения из .env и config.env
+# Загрузка переменных окружения из .env и .env
 load_dotenv()
 basedir = Path(__file__).resolve().parent
-config_env_path = basedir / "config.env"
+config_env_path = basedir / ".env"
+# Проверка существования файла и импортирование переменных окружения
 if config_env_path.exists():
-    logger.info("Импортирование окружения из файла config.env")
+    logger.info("Импортирование окружения из файла .env")
     with config_env_path.open() as f:
         for line in f:
-            var = line.strip().split("=")
-            if len(var) == 2:
-                os.environ[var[0]] = var[1].replace('"', "")
+            # Убираем пробельные символы и игнорируем пустые строки или комментарии
+            line = line.strip()
+            if line and not line.startswith("#"):
+                var = line.split("=")
+                if len(var) == 2:
+                    key, value = var
+                    # Убираем возможные кавычки вокруг значений
+                    os.environ[key] = value.replace('"', '').replace("'", "")
+                else:
+                    logger.warning(f"Некорректная строка в .env: {line}")
+else:
+    logger.error(f"Файл {config_env_path} не существует.")
 
 # Полные пути к директориям
 paths = {
@@ -49,6 +59,8 @@ class Config:
     DATA_PATH = os.getenv("DATA_PATH", basedir / "data")
     DEBUG = os.getenv("DEBUG", "False").lower() in ["true", "1"]
     SECRET_KEY = os.getenv("SECRET_KEY")
+    GATEWAY_IP = os.getenv("GATEWAY_IP")
+
     # ---------- Настройки бота ----------
     license = "MIT"  # Например, укажите нужную лицензию
     vendor_info = {
@@ -74,7 +86,7 @@ class Config:
                                       "https://ttcnsa-default-rtdb.asia-southeast1.firebasedatabase.app")
 
     # MongoDB
-    USE_MONGODB = os.getenv("USE_MONGODB", "False").lower() == "true"
+    USE_MONGODB = os.getenv("USE_MONGODB", "False").lower() in ("true", "1", "yes", "True")
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 
     MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "fsm-aio")
@@ -95,7 +107,7 @@ class Config:
 
     # ---------- Redis и кэширование ----------
     REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/db")
-    USE_REDIS = os.getenv("USE_REDIS", "False").lower() == "true"
+    USE_REDIS = os.getenv("USE_REDIS", "False").lower() in ("true", "1", "yes", "True")
     CACHE_TYPE = os.getenv("CACHE_TYPE", "SimpleCache")
     # Парсинг REDIS_URL для настройки переменных конфигурации RQ
     if PYTHON_VERSION == 3:
@@ -160,4 +172,5 @@ class Config:
     # ---------- Настройки дискового пространства ----------
     HEALTHY_CHECK_ENABLE = os.getenv("HEALTHY_CHECK_ENABLE", "False").lower() == "true"
     DISK_SPACE_THRESHOLD_GB = int(os.getenv("DISK_SPACE_THRESHOLD_GB", 2))  # Порог свободного места на диске в ГБ
+    RAM_USAGE_THRESHOLD_PERCENT = int(os.getenv("RAM_USAGE_THRESHOLD_PERCENT", 80))  # Порог использования RAM в процентах
     HEALTHY_CHECK_INTERVAL = int(os.getenv("HEALTHY_CHECK_INTERVAL", 300))  # Интервал проверок в секундах

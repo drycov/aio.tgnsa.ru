@@ -1,6 +1,6 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, Message
 
 from app.constants import MenuLabels
 from app.constants.states import MainCommands
@@ -114,36 +114,49 @@ class StateManager:
         action_history = data.get("action_history", {})
         is_online = data.get("is_online", False)
         is_admin = data.get("is_admin", False)
-        auth_token = data.get("auth_token", None)
-        
-        if previous_state and action_history.get(previous_state) not in ["input_field", "input",
-                                                                         None]:
-            # Получаем данные для отображения и действия предыдущего состояния
-            display_data = display_history.get(previous_state, {})
-            action_data = action_history.get(previous_state, None)
-            display_data["text"] = display_data.get("text", "Возврат на предыдущий шаг")
 
-            # Восстанавливаем разметку, если она была сериализована
-            if "reply_markup" in display_data and isinstance(display_data["reply_markup"], dict):
-                display_data["reply_markup"] = StateManager.deserialize_markup(display_data["reply_markup"])
-
-            # Устанавливаем предыдущее состояние и отправляем сообщение с восстановленными данными
-            await state.set_state(previous_state)
-            await message.answer(**display_data)
-
+        # Проверка на предыдущее состояние
+        if previous_state and action_history.get(previous_state) not in ["input_field", "input", None]:
+            await StateManager._handle_previous_state(previous_state, display_history, action_history, state, message)
         else:
-            if is_online:
-                # Если пользователь находится в сети, возвращаемся к начальному состоянию
-                await state.set_state(MainCommands.MAIN_MENU)
-                keyboard = generate_main_keyboard(is_admin)
-                await message.answer(
-                    text=MenuLabels.MAIN_MENU.value,
-                    reply_markup=keyboard  # Устанавливаем разметку главного меню
-                )
-            else:
-                # Если предыдущего состояния нет или оно связано с полем ввода, возвращаемся к начальному состоянию
-                await state.set_state(MainCommands.START)
-                await message.answer(
-                    text=MenuLabels.ENTER.value,
-                    reply_markup=on_enter_keyboard  # Устанавливаем разметку главного меню
-                )
+            await StateManager._handle_no_previous_state(is_online, is_admin, state, message)
+
+    @staticmethod
+    async def _handle_previous_state(previous_state: str, display_history: dict, action_history: dict,
+                                     state: FSMContext, message: Message):
+        """
+        Восстанавливает предыдущее состояние и отображение, если оно существует.
+        """
+        display_data = display_history.get(previous_state, {})
+        action_data = action_history.get(previous_state, None)
+
+        display_data["text"] = display_data.get("text", "Возврат на предыдущий шаг")
+
+        # Восстанавливаем разметку, если она была сериализована
+        if "reply_markup" in display_data and isinstance(display_data["reply_markup"], dict):
+            display_data["reply_markup"] = StateManager.deserialize_markup(display_data["reply_markup"])
+
+        # Устанавливаем предыдущее состояние и отправляем сообщение с восстановленными данными
+        await state.set_state(previous_state)
+        await message.answer(**display_data)
+
+    @staticmethod
+    async def _handle_no_previous_state(is_online: bool, is_admin: bool, state: FSMContext, message: Message):
+        """
+        Обрабатывает ситуацию, когда нет предыдущего состояния или оно связано с полем ввода.
+        """
+        if is_online:
+            # Если пользователь находится в сети, возвращаемся к начальному состоянию
+            await state.set_state(MainCommands.MAIN_MENU)
+            keyboard = generate_main_keyboard(is_admin)
+            await message.answer(
+                text=MenuLabels.MAIN_MENU.value,
+                reply_markup=keyboard  # Устанавливаем разметку главного меню
+            )
+        else:
+            # Если предыдущего состояния нет или оно связано с полем ввода, возвращаемся к начальному состоянию
+            await state.set_state(MainCommands.START)
+            await message.answer(
+                text=MenuLabels.ENTER.value,
+                reply_markup=on_enter_keyboard  # Устанавливаем разметку главного меню
+            )
