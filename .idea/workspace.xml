@@ -4,21 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Changed logger">
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Changed logger change Configs">
+      <change afterPath="$PROJECT_DIR$/app/handlers/device_handlers/ddm_check.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_instance.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_instance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/vlan_show.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/vlan_show.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/middlewares/user_activity_middleware.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/middlewares/user_activity_middleware.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/snmp_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/snmp_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/state_manager_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/state_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/task_handlers/task_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/keyboards/main_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/main_menu.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.env" beforeDir="false" afterPath="$PROJECT_DIR$/config.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/healthy.py" beforeDir="false" afterPath="$PROJECT_DIR$/healthy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/housekeeper.py" beforeDir="false" afterPath="$PROJECT_DIR$/housekeeper.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -357,7 +349,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731674428608</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Changed logger change Configs">
+      <option name="closed" value="true" />
+      <created>1731783478376</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1731783478376</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -381,6 +381,7 @@
     <MESSAGE value="fix  f'   Telegram: &lt;a href=&quot;https://t.me/{tg_contact}&quot;&gt;{tg_contact}&lt;/a&gt;\n'" />
     <MESSAGE value="fixed error" />
     <MESSAGE value="Changed logger" />
-    <option name="LAST_COMMIT_MESSAGE" value="Changed logger" />
+    <MESSAGE value="Changed logger change Configs" />
+    <option name="LAST_COMMIT_MESSAGE" value="Changed logger change Configs" />
   </component>
 </project>

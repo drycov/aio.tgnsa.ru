@@ -338,26 +338,37 @@ async def view_tasks(message: types.Message, created_by: Optional[int] = None, a
             all_tasks = tasks_ref.get()
 
         if isinstance(all_tasks, dict):
-            if assigned_to:
-                # Фильтруем задачи, исключая те, что имеют статус "revoked"
-                tasks = {key: task for key, task in all_tasks.items() if
-                         isinstance(task, dict) and task.get("status") != "revoked"}
-            else:
-                tasks = {key: task for key, task in all_tasks.items()}
+            # Фильтруем задачи, исключая те, что имеют статус "revoked"
+            tasks = {key: task for key, task in all_tasks.items() if
+                     isinstance(task, dict) and task.get("status") != "revoked"}
         else:
-            # Если данные не являются словарем, устанавливаем пустой словарь
             tasks = {}
 
     if not tasks:
         await message.answer("Нет задач, соответствующих вашему запросу.")
         return
 
-    total_tasks = len(tasks)
+    # Сортировка задач по дате (от ближайшей к текущей до более старой)
+    def sort_by_date(item):
+        task = item[1]
+        date_str = task.get("date")
+        if date_str:
+            try:
+                return datetime.fromisoformat(date_str)
+            except ValueError:
+                pass
+        # Если дата отсутствует или некорректна, ставим её в конец
+        return datetime.max
+
+    sorted_tasks = sorted(tasks.items(), key=sort_by_date)
+
+    # Постраничное разбиение
+    total_tasks = len(sorted_tasks)
     total_pages = (total_tasks + tasks_per_page - 1) // tasks_per_page
     page = max(1, min(page, total_pages))
     start_idx = (page - 1) * tasks_per_page
     end_idx = start_idx + tasks_per_page
-    tasks_to_display = list(tasks.items())[start_idx:end_idx]
+    tasks_to_display = sorted_tasks[start_idx:end_idx]
 
     # Функция для получения иконки статуса
     def get_status_icon(status):
@@ -366,7 +377,6 @@ async def view_tasks(message: types.Message, created_by: Optional[int] = None, a
             "completed": "🏁",
             "revoked": "⛔",
             "planned": "📝",  # Иконка для статуса по умолчанию
-            # Добавьте другие статусы и иконки при необходимости
         }
         return status_icons.get(status, "❔")  # Возвращает "❔", если статус неизвестен
 
@@ -374,12 +384,18 @@ async def view_tasks(message: types.Message, created_by: Optional[int] = None, a
         """Форматирует информацию о задаче."""
         status_icon = get_status_icon(task.get('status'))
         task_title = task.get('title', 'не указано')
-        start_date = HelperFunctions.format_human_date(datetime.fromisoformat(task.get('date', 'не задано')),
-                                                       show_time=False)
-        end_date = HelperFunctions.format_human_date(datetime.fromisoformat(task.get('end_date', 'не задано')),
-                                                     show_time=False)
+        start_date = HelperFunctions.format_human_date(
+            datetime.fromisoformat(task.get('date', 'не задано')), show_time=False
+        )
+        end_date = HelperFunctions.format_human_date(
+            datetime.fromisoformat(task.get('end_date', 'не задано')), show_time=False
+        )
         description = task.get('description', 'не указано')
         priority = PriorityLevel.get_priority_level(task.get('priority', 'low'))
+
+        # Получение пользователя-исполнителя и создателя задачи
+        assigned_user = User.get_by_tg_id(task.get('assigned_to', 0))
+        created_user = User.get_by_tg_id(task.get('created_by', 0))
 
         # Форматируем строки
         title_line = f"Имя: {task_title}\n" if task.get('status') != 'revoked' or task_id else ""
@@ -388,17 +404,34 @@ async def view_tasks(message: types.Message, created_by: Optional[int] = None, a
             'status') != 'revoked' or task_id == key or action == 'view' else ""
         priority_line = f"Приоритет: <b>{priority}</b>\n" if task.get('status') != 'revoked' or task_id == key else ""
 
+        # Проверка наличия assigned_user для ссылки Исполнитель
+        assigned_line = (
+            f"Исполнитель: <i><a href=\"tg://user?id={task.get('assigned_to')}\">"
+            f"{assigned_user.first_name if assigned_user else 'не назначен'} "
+            f"{assigned_user.last_name if assigned_user else ''}</a></i>\n"
+            if task.get('status') != 'revoked' and task.get('assigned_to')
+            else "Исполнитель: не назначен\n"
+        )
+
+        # Проверка наличия created_user для ссылки Создатель
+        creator_line = (
+            f"Создатель: <i><a href=\"tg://user?id={task.get('created_by')}\">"
+            f"{created_user.first_name if created_user else 'не указан'} "
+            f"{created_user.last_name if created_user else ''}</a></i>\n"
+            if action == 'view' and task.get('created_by')
+            else "Создатель: не указан\n"
+        )
+
         # Возвращаем форматированную информацию о задаче
         return (
             f"{status_icon} Задача: <i>/task_{key}</i>\n"
-            f"{title_line}{date_line}{description_line}{priority_line}"
+            f"{title_line}{date_line}{description_line}{priority_line}{assigned_line}{creator_line}"
         )
 
     # Формируем информацию о задачах с учетом статуса и добавлением иконки
     tasks_info = "\n\n".join([
         format_task_info(key, task, task_id, action)
         for idx, (key, task) in enumerate(tasks_to_display)
-        if isinstance(task, dict) and (task_id == key or task.get("status") != "revoked")
     ])
 
     # Создаем кнопки навигации
