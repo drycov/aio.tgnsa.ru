@@ -35,7 +35,7 @@ async def process_ping_node_input(message: Message, state: FSMContext):
         # Отправка результата пользователю
         await message.reply(
             f"<b>Ping device: <code>{host}</code> log</b>\n\n"
-            f"<i>{ping_data}</i>\n\n"
+            f"<pre>{ping_data}</pre>\n\n"
             f"<i>Выполнено: <code>{current_date}</code></i>",
             reply_markup=in_back_keyboard,
             parse_mode="HTML"
