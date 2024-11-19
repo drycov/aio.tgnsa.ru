@@ -4,27 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Changed logger change Configs">
-      <change beforePath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/aio.tgnsa.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Changed API and Admin panel">
+      <change afterPath="$PROJECT_DIR$/admin/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/admin_logger.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/admin_routes.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/admin_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/static/css/main.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/static/js/main.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/static/js/notification.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates/base.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates/report.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates/schedule_tasks.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates/status.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates/task_item.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates/task_list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/admin/templates/users.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_instance.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_instance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/constants/states.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/states.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/admin_handler/admin_callback.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_callback.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/admin_handler/admin_commands.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_commands.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/device_port_check.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/vlan_show.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/vlan_show.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards/main_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/main_menu.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/state_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/state_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/Task.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/Task.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/User.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/healthy.py" beforeDir="false" afterPath="$PROJECT_DIR$/healthy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/healthy_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/healthy_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logging_config.py" beforeDir="false" afterPath="$PROJECT_DIR$/logging_config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/healthy_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/housekeeper.py" beforeDir="false" afterPath="$PROJECT_DIR$/housekeeper.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/syslog_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/syslog_server.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -424,6 +428,7 @@
     <MESSAGE value="fixed error" />
     <MESSAGE value="Changed logger" />
     <MESSAGE value="Changed logger change Configs" />
-    <option name="LAST_COMMIT_MESSAGE" value="Changed logger change Configs" />
+    <MESSAGE value="Changed API and Admin panel" />
+    <option name="LAST_COMMIT_MESSAGE" value="Changed API and Admin panel" />
   </component>
 </project>

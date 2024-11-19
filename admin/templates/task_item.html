@@ -1,0 +1,12 @@
+<tr>
+    <td>{{ task.date.strftime("%Y-%m-%d %H:%M") }}</td>
+    <td>{{ task.title }}</td>
+    <td>{{ task.description }}</td>
+    <td class="{{ task.priority.value }}">{{ task.priority.get_icon() }} {{ task.priority.get_message() }}</td>
+    <td>{{ task.status }}</td>
+    <td>{{ task.assigned_to }}</td>
+    <td>
+        <button onclick="updateStatus('{{ task.task_id }}', 'completed')">Complete</button>
+        <button onclick="deleteTask('{{ task.task_id }}')">Delete</button>
+    </td>
+</tr>

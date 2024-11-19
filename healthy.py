@@ -5,6 +5,7 @@ from typing import Any
 
 import psutil
 import redis.asyncio as redis  # Используем асинхронный Redis клиент
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from ping3 import ping
 from ping3.errors import PingError
 
@@ -13,10 +14,18 @@ from config import Config
 
 
 class Healthy:
+    status_icons = {
+        "OK": "✅",
+        "FAILED": "❌",
+        "ERROR": "⚠️",
+        "N/A": "❔",
+    }
+
     def __init__(self):
         """
         Инициализирует класс Healthy с настройками из Config.
         """
+        self.scheduler = AsyncIOScheduler()
 
         self.check_interval = Config.HEALTHY_CHECK_INTERVAL  # Интервал проверки
         self.components = {
@@ -28,7 +37,27 @@ class Healthy:
             "gateway": self.check_gateway,
             "internet": self.check_internet,
         }
+        self.titles = {
+            "redis": "Redis",
+            "firebase": "Firebase",
+            "telegram": "Telegram",
+            "disk_space": "Дисковое пространство",
+            "ram": "Оперативная память",
+            "gateway": f"Шлюз {Config.GATEWAY_IP}",
+            "internet": "Интернет"
+        }
+        self.component_tooltips = {
+            "redis": "Проверка доступности кэша Redis",
+            "firebase": "Доступ к Firebase (База данных/Функции)",
+            "telegram": "Подключение к Telegram Bot API",
+            "disk_space": "Проверка свободного места на диске",
+            "ram": "Проверка доступной оперативной памяти",
+            "gateway": "Проверка статуса сетевого шлюза",
+            "internet": "Проверка подключения к интернету",
+        }
         self.statuses = {}  # Хранение статусов компонентов
+        self.jobs = {}  # Для хранения задач планировщика
+
         self.redis_client = None
         self.hosts = ["8.8.8.8", "1.1.1.1"]  # Список хостов для проверки
         self.gateway_ip = Config.GATEWAY_IP  # IP-адрес шлюза
@@ -169,21 +198,26 @@ class Healthy:
                 details = await self._run_check(check_function)
                 response_time = time() - start_time
                 self.statuses[name] = {
+                    "title": self.titles.get(name, "N/A"),
+                    "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
                     "status": "OK" if details["healthy"] else "FAILED",
                     "details": details.get("details", "No additional details"),
                     "inform": details.get("inform", "N/A"),
-                    "last_checked": time() - self.start_time,
+                    "last_checked": response_time,  # Время проверки компонента
                 }
-                app_logger.info(f"Проверка компонента {name}: {self.statuses[name]['status']} "
-                                f"за {response_time:.3f} секунд")
             except Exception as e:
                 self.statuses[name] = {
+                    "title": self.titles.get(name, "N/A"),
+                    "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
                     "status": "ERROR",
                     "details": str(e),
                     "inform": "N/A",
                     "last_checked": time() - self.start_time,
                 }
                 app_logger.error(f"Ошибка при проверке {name}: {e}")
+
+        # Возвращаем полный словарь статусов после всех проверок
+        return self.statuses
 
     async def _run_check(self, check_function):
         """
@@ -196,8 +230,18 @@ class Healthy:
         Возвращает текущий статус всех компонентов.
         """
         await self.perform_health_checks()
-        # Извлекаем только статус каждого компонента
-        return {name: status.get("status", "N/A") for name, status in self.statuses.items()}
+        # Формируем данные с заголовками и подсказками
+        return {
+            name: {
+                "title": self.titles.get(name, name),
+                "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
+                "status": status.get("status", "N/A"),
+                "details": status.get("details", "No details available"),
+                "inform": status.get("inform", "N/A"),
+                "last_checked": status.get("last_checked", "N/A"),
+            }
+            for name, status in self.statuses.items()
+        }
 
     async def initialize_redis(self):
         """
@@ -205,7 +249,6 @@ class Healthy:
         """
         try:
             self.redis_client = await redis.from_url(Config.REDIS_URL)
-            app_logger.info("Redis клиент успешно инициализирован")
         except Exception as e:
             app_logger.error(f"Ошибка при инициализации Redis клиента: {e}")
             raise

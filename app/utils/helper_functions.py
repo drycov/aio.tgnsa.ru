@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, Any, Dict, List
 
+import chardet
 from prettytable import PrettyTable
 from puresnmp.types import TimeTicks
 from pyasn1.type.univ import OctetString
@@ -22,6 +23,35 @@ from app.utils.logger_instance import app_logger
 
 
 class HelperFunctions:
+    @staticmethod
+    def detect_encoding(value: bytes) -> str:
+        """
+        Определяет кодировку строки с использованием chardet.
+        :param value: Строка в байтовом формате.
+        :return: Название кодировки или 'utf-8' по умолчанию.
+        """
+        detected = chardet.detect(value)
+        return detected.get("encoding", "utf-8")
+
+    @staticmethod
+    def safe_decode(value: Optional[str]) -> Optional[str]:
+        """
+        Попробовать декодировать строку в UTF-8, если это возможно.
+        :param value: Значение строки.
+        :return: Декодированная строка или оригинальное значение.
+        """
+        if value is None:
+            return value
+
+        try:
+            if isinstance(value, bytes):
+                # Определяем кодировку и декодируем
+                encoding = HelperFunctions.detect_encoding(value)
+                return value.decode(encoding, errors="replace")
+            return value  # Если уже строка, просто возвращаем
+        except Exception as e:
+            app_logger.error(f"Ошибка при декодировании строки: {e}")
+            return value
 
     @staticmethod
     def delay_ms(ms: int):

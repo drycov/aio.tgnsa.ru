@@ -1,35 +1,32 @@
-import asyncio
 import os
 import time
+from typing import List, Optional, Dict
 
-from app.bot_instance import storage
+import redis.asyncio as redis  # Используем асинхронный Redis клиент
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+
 from app.utils.logger_instance import app_logger
 from config import Config
 from logging_config import LoggingConfig
 
 
 class Housekeeper:
-    def __init__(self):
+    scheduler: AsyncIOScheduler
+
+    def __init__(self, scheduler: AsyncIOScheduler):
         """
         Инициализирует параметры для housekeeper, используя настройки из Config.
         """
+        self.scheduler = scheduler
         self.enabled = Config.HOUSEKEEPER_ENABLED
         self.logs_dir = LoggingConfig.LOG_DIR
         self.days_threshold = Config.HOUSEKEEPER_DAYS_THRESHOLD
         self.inactivity_threshold = Config.HOUSEKEEPER_INACTIVITY_THRESHOLD
-        self.interval = Config.HOUSEKEEPER_INTERVAL
-        self.max_threads = Config.HOUSEKEEPER_MAX_THREADS
-        self.max_requests = Config.HOUSEKEEPER_MAX_REQUESTS
-        self.max_concurrent_requests = Config.HOUSEKEEPER_MAX_CONCURRENT_REQUESTS
-        self.max_retry_attempts = Config.HOUSEKEEPER_MAX_RETRY_ATTEMPTS
-        self.max_retry_delay = Config.HOUSEKEEPER_MAX_RETRY_DELAY
-        self.retry_delay_multiplier = Config.HOUSEKEEPER_RETRY_DELAY_MULTIPLIER
-        self.max_queue_size = Config.HOUSEKEEPER_MAX_QUEUE_SIZE
-        self.queue_name = Config.HOUSEKEEPER_QUEUE_NAME
-        self.task_name = Config.HOUSEKEEPER_TASK_NAME
-        self.task_class = Config.HOUSEKEEPER_TASK_CLASS
+        self.redis_client = None
 
-        # Проверка на контейнерное окружение и корректировка логов
+        # Логирование
         if Config.IS_CONTAINER:
             app_logger.info("Housekeeper запущен в контейнере с уменьшенным количеством ресурсов.")
         else:
@@ -42,92 +39,117 @@ class Housekeeper:
 
     async def run(self):
         """
-        Основной цикл housekeeper, который периодически запускает задачи очистки.
+        Основной метод запуска Housekeeper для запуска фоновых задач.
+        """
+        self.schedule_tasks()  # Запуск всех запланированных задач
+        app_logger.info("Housekeeper задачи запланированы и запущены.")
+
+    async def initialize_redis(self):
+        """
+        Инициализирует соединение с Redis.
+        """
+        try:
+            self.redis_client = await redis.from_url(Config.REDIS_URL)
+        except Exception as e:
+            app_logger.error(f"Ошибка при инициализации Redis клиента: {e}")
+            raise
+
+    def schedule_tasks(self):
+        """
+        Запускает задачи через APScheduler.
         """
         if not self.enabled:
-            app_logger.info("Housekeeper отключён, запуск пропущен.")
+            app_logger.info("Housekeeper отключён, задачи не запланированы.")
             return
 
-        app_logger.info("Запуск Housekeeper...")
-
-        while True:
-            try:
-                await self.cleanup_inactive_users()
-                self.cleanup_logs()
-            except Exception as e:
-                app_logger.error(f"Ошибка в Housekeeper: {e}")
-            # Ожидание перед следующим циклом очистки
-            await asyncio.sleep(self.interval)
+        # Планируем задачи
+        self.scheduler.add_job(self.cleanup_inactive_users, IntervalTrigger(seconds=Config.HOUSEKEEPER_INTERVAL))
+        self.scheduler.add_job(self.cleanup_logs, CronTrigger(hour=3))  # Запуск каждый день в 3 утра
+        app_logger.info("Housekeeper задачи запланированы.")
 
     async def cleanup_inactive_users(self):
         """
-        Очищает данные неактивных пользователей из Redis, если они неактивны дольше порога.
+        Очищает данные неактивных пользователей из Redis.
         """
         try:
+            if not self.redis_client:
+                await self.initialize_redis()
             current_time = int(time.time())
             keys_pattern = "fsm:*:last_activity"
-            keys = await storage.keys(keys_pattern)
-
+            keys = await self.redis_client.keys(keys_pattern)
             for key in keys:
-                last_activity = await storage.get(key)
+                last_activity = await self.redis_client.get(key)
                 if last_activity:
                     last_activity = int(last_activity)
                     inactivity_period = current_time - last_activity
 
                     if inactivity_period > self.inactivity_threshold:
-                        # Удаляем данные пользователя
                         user_id = key.decode().split(":")[1]
-                        await storage.delete(key)
-                        await storage.delete(f"fsm:{user_id}:state")
-                        await storage.delete(f"fsm:{user_id}:data")
-
+                        await self.redis_client.delete(key)
+                        await self.redis_client.delete(f"fsm:{user_id}:state")
+                        await self.redis_client.delete(f"fsm:{user_id}:data")
                         app_logger.info(
-                            f"Удалены данные неактивного пользователя {user_id} после {inactivity_period} секунд неактивности.")
+                            f"Удалены данные неактивного пользователя {user_id} после {inactivity_period} секунд.")
         except Exception as e:
             app_logger.error(f"Ошибка при очистке неактивных пользователей: {e}")
 
     def cleanup_logs(self):
         """
-        Удаляет файлы в указанной директории, которые были изменены более чем `days_threshold` дней назад.
+        Удаляет старые логи.
         """
         try:
             now = time.time()
-            cutoff_time = now - self.days_threshold * 86400  # 86400 секунд в дне
+            cutoff_time = now - self.days_threshold * 86400
 
-            # Проверка существования директории логов перед очисткой
             if not os.path.exists(self.logs_dir):
-                app_logger.warning(f"Директория логов {self.logs_dir} не существует. Пропуск очистки логов.")
+                app_logger.warning(f"Директория логов {self.logs_dir} не существует. Пропуск очистки.")
                 return
 
             for filename in os.listdir(self.logs_dir):
                 file_path = os.path.join(self.logs_dir, filename)
-
-                if os.path.isfile(file_path):
-                    file_mod_time = os.path.getmtime(file_path)
-                    if file_mod_time < cutoff_time:
-                        try:
-                            os.remove(file_path)
-                            app_logger.info(f"Удален старый лог-файл: {file_path}")
-                        except Exception as e:
-                            app_logger.error(f"Ошибка при удалении файла {file_path}: {e}")
+                if os.path.isfile(file_path) and os.path.getmtime(file_path) < cutoff_time:
+                    os.remove(file_path)
+                    app_logger.info(f"Удален старый лог-файл: {file_path}")
         except Exception as e:
             app_logger.error(f"Ошибка при очистке логов: {e}")
 
-    async def report_status(self):
+    def get_all_jobs(self) -> List[Dict[str, Optional[str]]]:
         """
-        Отчётный метод, который можно вызвать для логирования текущего статуса очистки и активности.
+        Получает список всех задач из AsyncIOScheduler.
         """
-        app_logger.info("Housekeeper Status Report")
-        app_logger.info(f"Проверка директории логов: {self.logs_dir}")
-        app_logger.info(f"Логи старше {self.days_threshold} дней будут удалены.")
-        app_logger.info(f"Порог неактивности пользователей: {self.inactivity_threshold} секунд.")
-        app_logger.info(f"Интервал запуска задач: каждые {self.interval} секунд.")
-        app_logger.info(f"Максимальное количество потоков: {self.max_threads}")
-        app_logger.info(f"Максимальное количество запросов: {self.max_requests}")
-        app_logger.info(f"Максимальное количество параллельных запросов: {self.max_concurrent_requests}")
-        app_logger.info(f"Максимальное количество попыток повторного выполнения: {self.max_retry_attempts}")
-        app_logger.info(f"Задержка перед повторной попыткой: {self.max_retry_delay} секунд")
-        app_logger.info(f"Множитель задержки перед повторной попыткой: {self.retry_delay_multiplier}")
-        app_logger.info(f"Имя очереди: {self.queue_name}")
-        app_logger.info(f"Имя задачи: {self.task_name}")
-        app_logger.info(f"Класс задачи: {self.task_class}")
+        try:
+            jobs = self.scheduler.get_jobs()
+            job_list = []
+
+            for job in jobs:
+                job_list.append({
+                    "id": job.id,
+                    "name": job.name,
+                    "trigger": str(job.trigger),
+                    "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None
+                })
+
+            return job_list
+        except Exception as e:
+            app_logger.error(f"Error fetching all jobs: {e}")
+            raise
+
+    def get_job_by_id(self, job_id: str) -> Optional[Dict[str, Optional[str]]]:
+        """
+        Получает информацию о задаче по её ID.
+        """
+        try:
+            job = self.scheduler.get_job(job_id)
+            if not job:
+                app_logger.warning(f"Job with ID {job_id} not found.")
+                return None
+
+            return {
+                "id": job.id,
+                "name": job.name,
+                "trigger": str(job.trigger),
+                "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None
+            }
+        except Exception as e:
+            app_logger.error(f"Error fetching job with ID {job_id}: {e}")
+            raise

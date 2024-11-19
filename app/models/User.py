@@ -26,6 +26,27 @@ class User(BaseModel):
     email: Optional[str] = None
     hash: Optional[str] = None
 
+    @classmethod
+    def from_firebase(cls, data: dict) -> "User":
+        from app.utils.helper_functions import HelperFunctions  # Импорт внутри метода
+        """
+        Создает объект User из данных Firebase с безопасным декодированием строк.
+        """
+        return cls(
+            tg_id=data.get("tg_id", 0),
+            first_name=HelperFunctions.safe_decode(data.get("first_name")),
+            last_name=HelperFunctions.safe_decode(data.get("last_name")),
+            company_post=HelperFunctions.safe_decode(data.get("company_post")),
+            phone_number=HelperFunctions.safe_decode(data.get("phone_number")),
+            username=HelperFunctions.safe_decode(data.get("username")),
+            is_admin=data.get("is_admin", False),
+            is_allowed=data.get("is_allowed", False),
+            is_verified=data.get("is_verified", False),
+            verification_code=data.get("verification_code"),
+            email=HelperFunctions.safe_decode(data.get("email")),
+            hash=data.get("hash")
+        )
+
     @staticmethod
     def generate_verification_code() -> str:
         """
@@ -69,31 +90,23 @@ class User(BaseModel):
     @classmethod
     def create(cls, user_data: dict) -> "User":
         """
-        Создает нового пользователя в базе данных.
+        Создает нового пользователя в базе данных с безопасным декодированием строк.
         """
         try:
-            # Проверяем наличие обязательных полей
-            required_fields = ['tg_id', 'first_name', 'last_name', 'email']
-
-            missing_fields = [field for field in required_fields if field not in user_data or user_data[field] is None]
+            required_fields = ["tg_id", "first_name", "last_name", "email"]
+            missing_fields = [field for field in required_fields if not user_data.get(field)]
             if missing_fields:
-                raise ValueError(
-                    f"Отсутствуют обязательные поля для создания пользователя: {', '.join(missing_fields)}")
+                raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
 
-            # Создаем экземпляр пользователя
-            user = cls(**user_data)
+            # Создание пользователя с безопасным декодированием
+            user = cls.from_firebase(user_data)
 
             # Запись в базу данных Firebase
             user_ref = db.reference(f'users/{user.tg_id}')
             user_ref.set(user.model_dump())
 
-            # Логирование успешного создания пользователя
             app_logger.info(f"User {user.tg_id} created successfully.")
             return user
-
-        except ValidationError as e:
-            app_logger.error(f"Ошибка валидации при создании пользователя: {e}")
-            raise
         except Exception as error:
             app_logger.error(f"Error creating user: {error}")
             raise
@@ -107,29 +120,22 @@ class User(BaseModel):
             user_ref = db.reference(f'users/{tg_id}')
             user_snapshot = user_ref.get()
 
-            # Логирование, если данные отсутствуют или формат неверен
+            # Проверка наличия данных и их формата
             if not isinstance(user_snapshot, dict):
-                app_logger.warning(f"Пользователь с tg_id {tg_id} не найден или данные не в ожидаемом формате.")
+                app_logger.warning(
+                    f"Пользователь с tg_id {tg_id} не найден или данные не в ожидаемом формате: {type(user_snapshot)}")
                 return None
 
-            # Проверка на обязательные поля
-            missing_fields = [field for field in ["tg_id", "first_name", "last_name"] if field not in user_snapshot]
-            if missing_fields:
-                app_logger.warning(f"Отсутствуют обязательные поля для tg_id {tg_id}: {missing_fields}")
-                return None
-
-            # Валидация модели
-            return cls.model_validate(user_snapshot)
+            # Создание объекта User через метод from_firebase
+            user = cls.from_firebase(user_snapshot)
+            app_logger.info(f"Пользователь с tg_id {tg_id} успешно получен.")
+            return user
 
         except ValidationError as e:
             app_logger.error(f"Ошибка валидации при создании пользователя с tg_id {tg_id}: {e}")
             return None
         except exceptions.FirebaseError as firebase_error:
             app_logger.error(f"Ошибка Firebase: {firebase_error}")
-            return None
-        except ValueError as value_error:
-            # Обработка ошибок формата токена или его валидации
-            app_logger.error(f"Ошибка валидации JWT токена: {value_error}")
             return None
         except Exception as error:
             app_logger.error(f"Ошибка при получении пользователя с tg_id {tg_id}: {error}")
@@ -138,40 +144,59 @@ class User(BaseModel):
     @classmethod
     def get_all(cls) -> List["User"]:
         """
-        Получает список всех пользователей.
+        Получает список всех пользователей с безопасным декодированием строк.
         """
         try:
-            users_ref = db.reference('users')
+            users_ref = db.reference("users")
             users_snapshot = users_ref.get()
+
+            # Проверка на отсутствие данных
             if not users_snapshot:
                 app_logger.info("No users found.")
                 return []
-            return [cls(**user_data) for user_data in users_snapshot.values()] if isinstance(users_snapshot,
-                                                                                             dict) else []
+
+            # Проверка типа данных
+            if not isinstance(users_snapshot, dict):
+                app_logger.warning(f"Unexpected format for users_snapshot: {type(users_snapshot)}")
+                return []
+
+            # Обработка данных
+            return [
+                cls.from_firebase(user_data)
+                for user_data in users_snapshot.values()
+                if isinstance(user_data, dict)
+            ]
         except Exception as error:
             app_logger.error(f"Error fetching all users: {error}")
             raise
 
     def update(self, updates: dict) -> Optional["User"]:
+        from app.utils.helper_functions import HelperFunctions  # Импорт внутри метода
+
         """
-        Обновляет данные пользователя.
+        Обновляет данные пользователя с безопасным декодированием строк.
         """
         try:
             user_ref = db.reference(f'users/{self.tg_id}')
 
-            # Выполнение обновления данных
+            # Декодируем строки в словаре updates
+            updates = {
+                key: HelperFunctions.safe_decode(value) if isinstance(value, str) else value
+                for key, value in updates.items()
+            }
+
+            # Обновляем данные в Firebase
             user_ref.update(updates)
 
-            # Получение обновленных данных пользователя
+            # Получаем обновленные данные
             updated_user = user_ref.get()
 
+            # Проверка типа данных
             if not isinstance(updated_user, dict):
-                app_logger.warning(f"User with tg_id {self.tg_id} not found or data is not in expected format.")
+                app_logger.warning(f"Unexpected format for updated_user: {type(updated_user)}")
                 return None
 
-            app_logger.info(f"User {self.tg_id} updated successfully.")
-            return User(**updated_user)
-
+            return User.from_firebase(updated_user)
         except Exception as error:
             app_logger.error(f"Error updating user {self.tg_id}: {error}")
             raise
@@ -196,12 +221,26 @@ class User(BaseModel):
         """
         try:
             users_ref = db.reference('users')
+
+            # Получение только администраторов
             admins_snapshot = users_ref.order_by_child('is_admin').equal_to(True).get()
+
+            # Если администраторов нет
             if not admins_snapshot:
                 app_logger.info("No admin users found.")
                 return []
-            return [cls(**admin_data) for admin_data in admins_snapshot.values()] if isinstance(admins_snapshot,
-                                                                                                dict) else []
+
+            # Проверка формата и создание объектов User через from_firebase
+            if not isinstance(admins_snapshot, dict):
+                app_logger.warning(f"Unexpected format for admins_snapshot: {type(admins_snapshot)}")
+                return []
+
+            return [
+                cls.from_firebase(admin_data)
+                for admin_data in admins_snapshot.values()
+                if isinstance(admin_data, dict)
+            ]
+
         except Exception as error:
             app_logger.error(f"Error fetching admin users: {error}")
             raise

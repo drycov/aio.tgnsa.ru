@@ -3,21 +3,26 @@ import sys
 from pathlib import Path
 
 import firebase_admin
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from firebase_admin import credentials
 
+from admin import run
 from app import start_bot, graceful_shutdown
 from app.constants import Messages
 from app.utils.logger_instance import app_logger
 from config import Config
 from healthy import Healthy
-from healthy_api import run as run_health_api
 from housekeeper import Housekeeper
 
 # Настройка бота и диспетчера
 
 # Создание экземпляров для фоновых задач
-housekeeper = Housekeeper()
+scheduler = AsyncIOScheduler()
+
+housekeeper = Housekeeper(scheduler)
 health_checker = Healthy()
+housekeeper.schedule_tasks()
+scheduler.start()
 
 # Инициализация Firebase
 try:
@@ -51,7 +56,7 @@ async def on_startup():
     # Запуск Health API в отдельном потоке, если мониторинг включен
     if Config.HEALTHY_CHECK_ENABLE:
         loop = asyncio.get_running_loop()
-        loop.run_in_executor(None, run_health_api)  # Health API сервер
+        loop.run_in_executor(None, run)  # Health API сервер
 
     # Запуск фоновых задач
     asyncio.create_task(housekeeper.run())

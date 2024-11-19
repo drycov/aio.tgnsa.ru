@@ -5,7 +5,7 @@ from app import handlers
 from app.bot_instance import dp, bot
 from app.constants import Messages
 from app.middlewares import CustomLoggingMiddleware, RateLimitMiddleware, UserActivityMiddleware, AuthMiddleware
-from app.utils.logger_instance import app_logger  # Предполагаем, что app_logger уже инициализирован
+from app.utils.logger_instance import app_logger
 from config import Config
 
 dp.update.middleware(RateLimitMiddleware())
@@ -53,7 +53,7 @@ async def graceful_shutdown():
     app_logger.info("Начато корректное завершение работы бота...")
 
     # Остановка Health API сервера, если он запущен
-    from healthy_api import stop_server
+    from admin import stop_server
     stop_server()
 
     # Закрытие FSM-хранилища
