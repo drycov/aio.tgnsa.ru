@@ -4,32 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Changed API and Admin panel">
-      <change afterPath="$PROJECT_DIR$/admin/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/admin_logger.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/admin_routes.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/admin_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/static/css/main.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/static/js/main.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/static/js/notification.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates/base.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates/report.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates/schedule_tasks.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates/status.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates/task_item.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates/task_list.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/admin/templates/users.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/Task.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/Task.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/User.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/healthy.py" beforeDir="false" afterPath="$PROJECT_DIR$/healthy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/healthy_api.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/housekeeper.py" beforeDir="false" afterPath="$PROJECT_DIR$/housekeeper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-    </list>
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="Changed API and Admin panel" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -403,7 +378,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731832312908</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Changed API and Admin panel">
+      <option name="closed" value="true" />
+      <created>1732012716494</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1732012716494</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
