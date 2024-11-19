@@ -55,8 +55,7 @@ async def on_startup():
     """
     # Запуск Health API в отдельном потоке, если мониторинг включен
     if Config.HEALTHY_CHECK_ENABLE:
-        loop = asyncio.get_running_loop()
-        loop.run_in_executor(None, run)  # Health API сервер
+        asyncio.create_task(run())
 
     # Запуск фоновых задач
     asyncio.create_task(housekeeper.run())

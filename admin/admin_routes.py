@@ -249,10 +249,10 @@ def create_app():
 
 
 # Запуск сервера
-def run(host="127.0.0.1", port=8000):
+async def run(host="127.0.0.1", port=8000):
     app = create_app()  # Получаем приложение из create_app
     app_logger.info(f"Health API server running on port {port}")
-    web.run_app(app, host=host, port=port, print=None)
+    await web._run_app(app, host=host, port=port, print=None)
 
 
 def stop_server():
