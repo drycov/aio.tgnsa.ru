@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional, List
 
 from firebase_admin import db
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, ConfigDict
 
 from app.constants import Symbols, PriorityMessages
 from app.utils.logger_instance import app_logger
@@ -57,6 +57,8 @@ class Task(BaseModel):
     status: Optional[str] = "planned"
     task_id: Optional[str] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
     @classmethod
     def from_firebase(cls, data: dict) -> "Task":
         """
@@ -77,9 +79,6 @@ class Task(BaseModel):
         except Exception as e:
             app_logger.error(f"Error creating Task from Firebase data: {e}")
             raise
-
-    class Config:
-        from_attributes = True
 
     @classmethod
     def create(cls, task_data: dict) -> "Task":

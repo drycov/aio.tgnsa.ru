@@ -5,7 +5,7 @@ from typing import Optional, List, Union
 
 import jwt
 from firebase_admin import db, exceptions
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, ConfigDict
 
 from app.utils.logger_instance import app_logger
 from config import Config
@@ -25,6 +25,29 @@ class User(BaseModel):
     verification_code: Optional[Union[int, str]] = None
     email: Optional[str] = None
     hash: Optional[str] = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "is_bot": False,
+                "ttc_id": "123456",
+                "station": "Central",
+                "tg_id": 123456789,
+                "first_name": "John",
+                "last_name": "Doe",
+                "company_post": "Engineer",
+                "phone_number": "+1234567890",
+                "username": "johndoe",
+                "is_admin": True,
+                "user_allowed": True,
+                "verification_code": "ABC123",
+                "email": "johndoe@example.com",
+                "user_verified": True,
+                "api_token": "token_123456",
+                "hash": "hash_value"
+            }
+        }
+    )
 
     @classmethod
     def from_firebase(cls, data: dict) -> "User":
@@ -278,25 +301,3 @@ class User(BaseModel):
         except jwt.InvalidTokenError:
             app_logger.error("Неверный JWT токен.")
             return None
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "is_bot": False,
-                "ttc_id": "123456",
-                "station": "Central",
-                "tg_id": 123456789,
-                "first_name": "John",
-                "last_name": "Doe",
-                "company_post": "Engineer",
-                "phone_number": "+1234567890",
-                "username": "johndoe",
-                "is_admin": True,
-                "user_allowed": True,
-                "verification_code": "ABC123",
-                "email": "johndoe@example.com",
-                "user_verified": True,
-                "api_token": "token_123456",
-                "hash": "hash_value"
-            }
-        }

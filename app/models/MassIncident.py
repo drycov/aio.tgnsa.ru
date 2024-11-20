@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from firebase_admin import db
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from app.utils.logger_instance import app_logger
 
@@ -115,8 +115,8 @@ class MassIncident(BaseModel):
             app_logger.error(f"Error deleting incident {mi_id}: {error}")
             raise
 
-    class Config:
-        json_schema_extra  = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "mi_id": "unique-incident-id",
                 "station": "Central Station",
@@ -130,3 +130,4 @@ class MassIncident(BaseModel):
                 "priority": "High"
             }
         }
+    )
