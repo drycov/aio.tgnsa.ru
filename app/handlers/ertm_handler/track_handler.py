@@ -4,7 +4,8 @@ from aiogram.types import Message
 
 from app.constants import MenuLabels, Messages, ERTMManager
 from app.keyboards import ertm_track_location
-from app.utils import StateManager, ERTMUtils
+from app.utils import StateManager
+from ertm import ERTM
 
 router = Router()
 
@@ -32,7 +33,7 @@ async def handle_location(message: Message):
     # Найти устройства в радиусе
     nearby_devices = []
     for device in devices:
-        distance = ERTMUtils.calculate_distance(user_location, device["coords"])
+        distance = ERTM.calculate_distance(user_location, device["coords"])
         if distance <= radius:
             nearby_devices.append(f"{device['name']} (расстояние: {int(distance)} м)")
 

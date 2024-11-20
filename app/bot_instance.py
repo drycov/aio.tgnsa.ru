@@ -1,5 +1,8 @@
-import locale
+"""
+This module initializes the bot instance, including storage, dispatcher, and locale settings.
+"""
 
+import locale
 import redis.asyncio as redis
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -9,6 +12,8 @@ from aiogram.fsm.storage.mongo import MongoStorage
 from aiogram.fsm.storage.redis import RedisStorage
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.server_api import ServerApi
+from pymongo.errors import PyMongoError
+from redis.exceptions import RedisError
 
 from app.utils import HelperFunctions
 from app.utils.logger_instance import app_logger
@@ -23,22 +28,23 @@ def initialize_storage():
     Инициализация хранилища FSM с поддержкой Redis, MongoDB или памяти.
     """
     try:
+        temp_storage = MemoryStorage()
         if Config.USE_REDIS:
             redis_client = redis.from_url(Config.REDIS_URL)
-            storage = RedisStorage(redis_client)
+            temp_storage = RedisStorage(redis_client)
             app_logger.info("Redis-клиент успешно подключен")
         elif Config.USE_MONGODB:
             # Конфигурация MongoDB
             mongo_client = AsyncIOMotorClient(Config.MONGO_URI, server_api=ServerApi('1'))
-            storage = MongoStorage(mongo_client, db_name=Config.MONGO_DB_NAME)
+            temp_storage = MongoStorage(mongo_client, db_name=Config.MONGO_DB_NAME)
             app_logger.info("MongoDB-клиент успешно подключен")
         else:
-            storage = MemoryStorage()
+            temp_storage = MemoryStorage()
             app_logger.warning("Redis или MongoDB не настроены, используется MemoryStorage")
-        return storage
-    except Exception as ex:
+        return temp_storage
+    except (RedisError, PyMongoError) as ex:
         HelperFunctions.log_error(action="initialize_storage", error=ex)
-        app_logger.warning("Будет использоваться MemoryStorage")
+        app_logger.warning("Ошибка подключения, используется MemoryStorage")
         return MemoryStorage()
 
 

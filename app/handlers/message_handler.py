@@ -3,8 +3,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from app.constants import MenuLabels
-from app.constants.states import DeviceCommands
-from app.utils import StateManager
 from app.utils.logger_instance import app_logger
 
 router = Router()

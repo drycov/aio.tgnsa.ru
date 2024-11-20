@@ -10,9 +10,7 @@ from app.bot_instance import bot
 from app.constants import Messages, MenuLabels, msg_info
 from app.constants.states import MainCommands, ALL_STATES
 from app.keyboards import on_enter_keyboard
-from app.models import User
 from app.utils import StateManager, CalendarMarkup
-from app.utils.logger_instance import app_logger
 
 # Создаем маршрутизатор для регистрации обработчиков
 router = Router()

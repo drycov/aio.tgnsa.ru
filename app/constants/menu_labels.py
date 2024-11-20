@@ -1,9 +1,18 @@
+"""
+This module contains the MenuLabels Enum, which defines various menu labels
+and their associated icons or symbols for use in the application.
+"""
+
 from enum import Enum
+
 
 from .symbols import Symbols
 
 
 class MenuLabels(Enum):
+    """
+       An enumeration of menu labels with corresponding symbols for UI representation.
+       """
     # Основное меню и навигация
     MAIN_MENU = f"{Symbols.EMOJI_MAGIC_BALL.value} Главное меню {Symbols.EMOJI_MAGIC_BALL.value}"
     SETTINGS = f"{Symbols.ACTION_SETTINGS.value} Настройки"
@@ -76,10 +85,10 @@ class MenuLabels(Enum):
     VIEW_USERS = f"{Symbols.ACTION_USERS.value} Просмотреть пользователей"
     SEND_BROADCAST = f"{Symbols.ACTION_BROADCAST.value} Отправить рассылку"
     VIEW_LOGS = f"{Symbols.TECH_LOG.value} Просмотреть логи"
-    VIEW_STATISTICS = f"Просмотреть статистику"
-    ERTM_MENU = f"📍🛠️ ERTM"
+    VIEW_STATISTICS = "Просмотреть статистику"
+    ERTM_MENU = "📍🛠️ ERTM"
 
-    ERTM_MENU_MESS = f"Добро пожаловать в систему ERTM!\nВыберите действие из меню ниже."
+    ERTM_MENU_MESS = "Добро пожаловать в систему ERTM!\nВыберите действие из меню ниже."
     ERTM_ADD_EQUIPMENT = "➕ Добавить оборудование"
     ERTM_LIST_EQUIPMENT = "📋 Список оборудования"
     ERTM_TRACK_EQUIPMENT = "📍 Оборудование по локации"
@@ -97,6 +106,11 @@ class MenuLabels(Enum):
     SYSTEM_SETTINGS = f"{Symbols.ACTION_SETTINGS.value} Настройки системы"
 
 
-equipment_list = [MenuLabels.EQ_ANTENNA.value, MenuLabels.EQ_ROUTER,
-                  MenuLabels.EQ_SERVER.value, MenuLabels.EQ_OLT.value,
-                  MenuLabels.EQ_SWITCH.value, MenuLabels.EQ_ADSL.value]
+equipment_list = [
+    MenuLabels.EQ_ANTENNA.value,
+    MenuLabels.EQ_ROUTER,
+    MenuLabels.EQ_SERVER.value,
+    MenuLabels.EQ_OLT.value,
+    MenuLabels.EQ_SWITCH.value,
+    MenuLabels.EQ_ADSL.value,
+]

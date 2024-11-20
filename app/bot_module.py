@@ -1,10 +1,18 @@
-# bot_module.py
+"""
+This module configures the bot, sets up handlers, and manages lifecycle operations.
+"""
+
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 
 from app import handlers
 from app.bot_instance import dp, bot
 from app.constants import Messages
-from app.middlewares import CustomLoggingMiddleware, RateLimitMiddleware, UserActivityMiddleware, AuthMiddleware
+from app.middlewares import (
+    CustomLoggingMiddleware,
+    RateLimitMiddleware,
+    UserActivityMiddleware,
+    AuthMiddleware,
+)
 from app.utils.logger_instance import app_logger
 from config import Config
 
@@ -17,13 +25,12 @@ def setup_bot():
     """
     Настройка бота и регистрация обработчиков.
     """
-    # Подключение маршрутизатора команд
     app_logger.info(Messages.START_BOT_SETUP.value)
     router = handlers.get_handlers_router()
     app_logger.info(Messages.REGISTER_HANDLERS.value)
     dp.include_router(router)
-    dp.update.middleware(CallbackAnswerMiddleware())  # Aiogram 3.x использует новый способ для middleware
-    dp.update.middleware(AuthMiddleware())  # Aiogram 3.x использует новый способ для middleware
+    dp.update.middleware(CallbackAnswerMiddleware())
+    dp.update.middleware(AuthMiddleware())
 
     Config.DEBUG = True
     if Config.DEBUG:
@@ -35,14 +42,16 @@ async def start_bot(on_startup=None):
     """
     Запускает бота и начинает обработку сообщений.
     """
-    # Удаление вебхука и начало поллинга
     if on_startup:
-        await on_startup()  # Явно дождемся выполнения on_startup перед polling
+        await on_startup()
     setup_bot()
     app_logger.info(Messages.DELETE_WEBHOOK.value)
     await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types(),
-                           on_shutdown=graceful_shutdown)
+    await dp.start_polling(
+        bot,
+        allowed_updates=dp.resolve_used_update_types(),
+        on_shutdown=graceful_shutdown,
+    )
     app_logger.info(Messages.START_BOT.value)
 
 
@@ -53,6 +62,7 @@ async def graceful_shutdown():
     app_logger.info("Начато корректное завершение работы бота...")
 
     # Остановка Health API сервера, если он запущен
+    # pylint: disable=import-outside-toplevel
     from admin import stop_server
     stop_server()
 

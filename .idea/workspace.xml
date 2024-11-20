@@ -4,12 +4,22 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="delete test_hndler">
-      <change beforePath="$PROJECT_DIR$/exporter.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/log_parser.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/merge.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syslog_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_syslog.py" beforeDir="false" />
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="delete another filed">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin/admin_logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin/admin_logger.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin/admin_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin/admin_routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin/admin_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin/admin_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/bot_instance.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_instance.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/constants/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/constants/menu_labels.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/menu_labels.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/ertm_handler/track_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/ertm_handler/track_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/message_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/message_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/start_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/start_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/network_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/network_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ertm/models/device_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/ertm/models/device_models.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -345,7 +355,15 @@
       <option name="project" value="LOCAL" />
       <updated>1732139658347</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="delete another filed">
+      <option name="closed" value="true" />
+      <created>1732139907375</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1732139907375</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -376,6 +394,7 @@
     <MESSAGE value="add ertm and ddm" />
     <MESSAGE value="fix pydandic errors" />
     <MESSAGE value="delete test_hndler" />
-    <option name="LAST_COMMIT_MESSAGE" value="delete test_hndler" />
+    <MESSAGE value="delete another filed" />
+    <option name="LAST_COMMIT_MESSAGE" value="delete another filed" />
   </component>
 </project>

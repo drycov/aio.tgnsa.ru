@@ -104,11 +104,12 @@ class SNMPFunctions:
             return results
         except Timeout:
             app_logger.warning(f"Пропуск хоста {host}: превышено время ожидания ({timeout} секунд).")
-            return None  # Пропускаем хост, если произошел тайм-аут
+            return []  # Пропускаем хост, если произошел тайм-аут
         except Exception as e:
             HelperFunctions.log_error(action=action, host=host, error=e)
             return []
 
+    @staticmethod
     async def set_snmp_oid(host: str, oid: str, value: Any, community: str = None) -> Any:
         community = community or Config.SNMP_RW_COMMUNITIES
         action = f"{__name__}.set_snmp_oid"

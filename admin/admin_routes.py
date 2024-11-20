@@ -1,3 +1,7 @@
+"""
+This module handles admin routes and middleware for the aiohttp application.
+"""
+
 import asyncio
 import traceback
 from pathlib import Path
@@ -15,6 +19,9 @@ static_path = Path(__file__).parent / "static"
 
 @web.middleware
 async def error_middleware(request: web.Request, handler) -> web.Response:
+    """
+        Middleware to handle errors and provide appropriate HTTP responses.
+        """
     try:
         response = await handler(request)
 
@@ -57,7 +64,7 @@ async def error_middleware(request: web.Request, handler) -> web.Response:
 
 
 # Обработчик для 404 ошибки
-async def handle_404(request):
+async def handle_404():
     return web.Response(text="404: Page not found", content_type="text/html", status=404)
 
 
@@ -73,6 +80,10 @@ async def logging_middleware(request, handler):
 
 
 class BaseAPI:
+    """
+    Provides basic helper methods for JSON and HTML responses.
+    """
+
     @staticmethod
     def json_response(data, status=200):
         return web.json_response(data, status=status)
@@ -169,7 +180,9 @@ class AdminAPI(BaseAPI):
                 return web.json_response({"error": "User not found"}, status=404)
         except Exception as e:
             app_logger.error(f"Error updating user: {e}")
-            return web.json_response({"error": "Internal server error", "details": str(e)}, status=500)
+            return web.json_response(
+                {"error": "Internal server error", "details": str(e)},
+                status=500)
 
 
 class TaskApi(BaseAPI):
@@ -193,7 +206,9 @@ class TaskApi(BaseAPI):
             return web.json_response({"message": f"Task {task_id} deleted successfully"})
         except Exception as e:
             app_logger.error(f"Error deleting task {task_id}: {e}")
-            return web.json_response({"error": "Internal server error", "details": str(e)}, status=500)
+            return web.json_response(
+                {"error": "Internal server error", "details": str(e)},
+                status=500)
 
 
 # Настройка маршрутов
@@ -256,7 +271,9 @@ async def run(host="127.0.0.1", port=8000):
 
 
 def stop_server():
+    from main import housekeeper  # Подключите ваш планировщик
     app = create_app()  # Получаем приложение из create_app
+
     if app is None:
         app_logger.error("Health API server is not running.")
         return
@@ -265,7 +282,6 @@ def stop_server():
     loop = asyncio.get_event_loop()
 
     # Остановка планировщика задач, если он используется
-    from main import housekeeper  # Подключите ваш планировщик
     housekeeper.scheduler.shutdown(wait=False)
 
     # Остановка задач

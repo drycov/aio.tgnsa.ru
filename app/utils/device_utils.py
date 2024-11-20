@@ -316,6 +316,7 @@ class DeviceUtils:
             HelperFunctions.log_error(action=action, host=host, error=e)
             return None
 
+    @staticmethod
     async def get_ddm_info(host: str, port_if_list: List[str],
                            port_if_range: List[str], device_data, community: str) -> str:
         """
