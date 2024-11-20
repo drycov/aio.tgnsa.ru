@@ -1,4 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 from app.constants import MenuLabels
 
 # Клавиатура для админа

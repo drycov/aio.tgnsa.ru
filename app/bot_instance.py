@@ -13,6 +13,7 @@ from pymongo.server_api import ServerApi
 from app.utils import HelperFunctions
 from app.utils.logger_instance import app_logger
 from config import Config
+from ertm import ERTM
 
 parse_mode = DefaultBotProperties(parse_mode=ParseMode.HTML)
 
@@ -46,3 +47,4 @@ storage = initialize_storage()
 bot = Bot(token=Config.API_TOKEN, default=parse_mode)
 dp = Dispatcher(storage=storage)
 locale.setlocale(locale.LC_TIME, Config.DEFAULT_LOCALE)  # Для русского языка, например
+ertm = ERTM()

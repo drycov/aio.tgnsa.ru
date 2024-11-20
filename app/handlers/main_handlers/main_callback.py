@@ -1,8 +1,10 @@
 from aiogram import Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from app.constants import MenuLabels
+from app.constants.states import ALL_STATES
 from app.utils import StateManager, CalendarMarkup
 
 router = Router()
@@ -17,6 +19,16 @@ async def back_command_text(message: Message, state: FSMContext):
 async def back_command_callback(callback_query: CallbackQuery, state: FSMContext):
     await StateManager.handle_back_action(state, callback_query.message)
     await callback_query.answer()  # Закрывает окно callback
+
+
+# Обработчик для команды /cancel, который отменяет текущее состояние
+@router.callback_query(F.data == "cancel", StateFilter(*ALL_STATES))  # Обработчик для callback_query с данными "back"
+async def cancel_command_callback(callback_query: CallbackQuery, state: FSMContext):
+    await StateManager.handle_back_action(state, callback_query.message)
+
+    # Удаляем предыдущее сообщение пользователя (если это нужно по логике)
+    await callback_query.delete()
+    await state.clear()
 
 
 # Обработчик для навигации по месяцам
@@ -35,4 +47,3 @@ async def navigate_month(callback_query: CallbackQuery):
     # Обновляем сообщение с новым календарем
     await callback_query.message.edit_reply_markup(reply_markup=updated_calendar)
     await callback_query.answer()  # Закрываем callback-запрос
-

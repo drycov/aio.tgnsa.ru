@@ -54,6 +54,10 @@ class TaskPaginationState(StatesGroup):
     viewing_tasks = State()  # Состояние для отображения задач
     user_role = State()      # Состояние для хранения роли пользователя (создатель или исполнитель)
 
+class ERTMManager(StatesGroup):
+    ERTM_MENU = State()
+    TRACK_EQ = State()
+    EQ_SCAN = State()
 
 # Кортеж со всеми состояниями
 ALL_STATES = (

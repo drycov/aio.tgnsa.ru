@@ -5,6 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
+from app.bot_instance import ertm
 from app.constants import RegExpUtils, NetworkMessages
 from app.constants.states import DeviceCommands
 from app.keyboards import in_back_keyboard, device_keyboard
@@ -36,6 +37,7 @@ async def process_host_input(message: Message, state: FSMContext):
         if is_alive:
             # Проверка доступного SNMP-сообщества
             community = await SNMPFunctions.check_snmp(host, Config.SNMP_COMMUNITIES)
+            print(community)
             if community:
                 # Сохранение данных в состоянии
                 await state.update_data(host=host, community=community)
@@ -51,12 +53,22 @@ async def process_host_input(message: Message, state: FSMContext):
                 # Проверка, что device_info не None и содержит необходимые ключи
                 if device_info and all(
                         key in device_info for key in ['host', 'sw_sys_name', 'sw_model', 'sw_up_time', 'up_time']):
+                    # Добавление нового устройства
+                    ertm.add_device(
+                        host=host,
+                        sys_name=device_info.get('sw_sys_name', 'nAn'),
+                        model=device_info.get('sw_model', 'nAn'),
+                        latitude=device_info.get('latitude', 0),
+                        longitude=device_info.get('longitude', 0),
+                        address=device_info.get('address', 'nAn'),
+                    )
                     device_info_message = NetworkMessages.DEVICE_INFO.value.format(
                         host=device_info.get('host', 'Неизвестный хост'),
                         sw_sys_name=device_info.get('sw_sys_name', 'Неизвестное имя'),
                         sw_model=device_info.get('sw_model', 'Неизвестная модель'),
                         sw_up_time=device_info.get('sw_up_time', 'Неизвестное время работы системы'),
-                        up_time=device_info.get('up_time', 'Неизвестное время работы')
+                        up_time=device_info.get('up_time', 'Неизвестное время работы'),
+                        address=device_info.get('address', 'Неизвестный адрес'),
                     )
 
                     # Обновление состояния с данными устройства

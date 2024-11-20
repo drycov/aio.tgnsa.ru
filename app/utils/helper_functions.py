@@ -8,7 +8,7 @@ import re
 import time
 import uuid
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List, Union
 
 import chardet
 from prettytable import PrettyTable
@@ -176,8 +176,66 @@ class HelperFunctions:
 
     @staticmethod
     def convert_mW_to_dBW(val: float) -> float:
-        """Преобразование мощности в милливаттах (мВт) в децибелы (дБм)."""
-        return round(10 * (math.log10(val) - 3), 2)
+        """
+        Преобразование мощности в милливаттах (мВт) в децибелы (дБм).
+        Если значение недопустимо, возвращает -inf или значение по умолчанию.
+
+        Args:
+            val (float): Мощность в милливаттах.
+
+        Returns:
+            float: Значение в дБм или -inf для недопустимых значений.
+        """
+        try:
+            if val > 0:  # Проверка, что значение допустимо
+                return round(10 * (math.log10(val) - 3), 2)
+            else:
+                # Если значение <= 0, возвращаем -inf или 0.0
+                return float('-inf')  # Можно заменить на 0.0, если нужно
+        except Exception as e:
+            # Логирование ошибок
+            HelperFunctions.log_error(action="clean_and_convert",
+                                      error=e)
+            return float('-inf')  # Значение по умолчанию при ошибке
+
+    @staticmethod
+    def clean_and_convert(value: Union[bytes, int, str], default: float = 0.0, scale: float = 1.0) -> float:
+        """
+        Очистка и преобразование значения из байтов, строки или числа в float.
+        Если значение недопустимо для преобразования, возвращает значение по умолчанию.
+
+        Args:
+            value (Union[bytes, int, str]): Значение для обработки.
+            default (float): Значение по умолчанию, возвращаемое в случае ошибки.
+            scale (float): Масштабный коэффициент для преобразования.
+
+        Returns:
+            float: Преобразованное значение или значение по умолчанию.
+        """
+        try:
+            if isinstance(value, bytes):
+                # Если значение в байтах, декодируем
+                decoded_value = value.decode("utf-8").strip()
+            elif isinstance(value, int):
+                # Если значение уже число, преобразуем в строку
+                decoded_value = str(value)
+            elif isinstance(value, str):
+                # Если значение строка, просто убираем пробелы
+                decoded_value = value.strip()
+            else:
+                raise ValueError("Unsupported value type")
+
+            if decoded_value in ["-", ""]:
+                return default
+
+            # Преобразуем строку в float, масштабируем и округляем
+            formatted_value = round(float(decoded_value) / scale, 1)  # Округление до 1 десятичного знака
+
+            return formatted_value
+        except Exception as e:
+            HelperFunctions.log_error(action="clean_and_convert",
+                                      error=e)
+            return default
 
     @staticmethod
     def convert_hex_to_binary(input_string: str) -> str:
@@ -201,7 +259,8 @@ class HelperFunctions:
                 data = json.load(file)
                 return data.get(key)
         except Exception as error:
-            print(NetworkMessages.ERROR_FILE_READ.value.format(file_path=file_path, error=error))
+            HelperFunctions.log_error(action=f"interface_loader", error=ValueError(
+                NetworkMessages.ERROR_FILE_READ.value.format(file_path=file_path, error=error)))
             return None
 
     @staticmethod
@@ -232,9 +291,8 @@ class HelperFunctions:
         """
         file_path = Path(Config.DATA_PATH) / "oid.json"
         try:
-            with file_path.open("r", encoding="utf-8") as file:
-                # app_logger.info(f"Загружены данные устройства из файла {file_path}")
-                return json.load(file)
+            with open(file_path, "r", encoding="utf-8") as f:
+                return json.load(f)
         except FileNotFoundError:
             app_logger.error(LogMessages.FILE_NOT_FOUND.value.format(file_path=file_path))
             return {}
@@ -348,8 +406,9 @@ class HelperFunctions:
                         value = value[2:]
                     value = bytes.fromhex(value).decode(encoding)
                 except (ValueError, UnicodeDecodeError) as e:
+                    HelperFunctions.log_error(action="to_string",
+                                              error=ValueError(f"Ошибка при декодировании hex: {e}"))
                     # Оставляем исходное значение и логируем ошибку, если декодировать не удалось
-                    print(f"Ошибка при декодировании hex: {e}")
                     pass
 
         return value  # Возвращаем преобразованное значение или исходное, если оно не требует изменений
@@ -389,6 +448,7 @@ class HelperFunctions:
         table_string = tabulate(results, headers=head, tablefmt="plain", stralign="center")
         return table_string
 
+    @staticmethod
     def generate_vlan_table(vlan_data: List[List[Any]]) -> str:
         """
         Генерация таблицы VLAN с ID, именем и портами.
@@ -413,6 +473,7 @@ class HelperFunctions:
                     active_ports.append(byte_index * 8 + bit_index + 1)  # Порты начинаются с 1
         return active_ports
 
+    @staticmethod
     def log_error(*, action: str, error: Exception, host: Optional[str] = None) -> None:
         """
         Логирование ошибок в едином формате. Используйте именованные параметры для гибкости.
@@ -440,3 +501,52 @@ class HelperFunctions:
         # Сериализация в JSON с ensure_ascii=False
         error_message = json.dumps(error_data, ensure_ascii=False)
         app_logger.error(error_message)
+
+    @staticmethod
+    def parse_location(byte_string):
+        try:
+            decoded_string = byte_string.decode('utf-8')
+            address, coordinates = decoded_string.split('[')
+            coordinates = coordinates.rstrip(']')
+
+            # Парсим адрес
+            address_parts = address.split(',')
+
+            if len(address_parts) != 4:
+                raise ValueError("Неверный формат адреса")
+
+            if address_parts[0].isdigit():
+                # Если первый элемент — номер дома
+                house_number = address_parts[0]
+                street = address_parts[1]
+            else:
+                # Если первый элемент — улица
+                street = address_parts[0]
+                house_number = address_parts[1]
+
+            city = address_parts[2]
+            country = address_parts[3]
+
+            # Парсим координаты
+            latitude, longitude = map(float, coordinates.split(','))
+
+            return {
+                "street": street,
+                "house_number": house_number,
+                "city": city,
+                "country": country,
+                "latitude": latitude,
+                "longitude": longitude,
+            }
+
+        except Exception as e:
+            HelperFunctions.log_error(action="parse_location`",
+                                      error=ValueError(f"Ошибка обработки строки: {e}"))
+            return None
+
+    @staticmethod
+    def model_contains_substr(model: str, substrings: Any) -> bool:
+        """Проверяет, содержит ли строка модель одно из значений из списка или строку."""
+        if isinstance(substrings, str):
+            return substrings in model
+        return any(sub in model for sub in substrings)

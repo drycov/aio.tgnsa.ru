@@ -77,6 +77,26 @@ class MenuLabels(Enum):
     SEND_BROADCAST = f"{Symbols.ACTION_BROADCAST.value} Отправить рассылку"
     VIEW_LOGS = f"{Symbols.TECH_LOG.value} Просмотреть логи"
     VIEW_STATISTICS = f"Просмотреть статистику"
+    ERTM_MENU = f"📍🛠️ ERTM"
+
+    ERTM_MENU_MESS = f"Добро пожаловать в систему ERTM!\nВыберите действие из меню ниже."
+    ERTM_ADD_EQUIPMENT = "➕ Добавить оборудование"
+    ERTM_LIST_EQUIPMENT = "📋 Список оборудования"
+    ERTM_TRACK_EQUIPMENT = "📍 Оборудование по локации"
+    ERTM_SCAN_EQUIPMENT = f"{Symbols.ACTION_SEARCH.value} Сканировать"
+    ERTM_MANAGE_EQUIPMENT = "⚙️ Управление"
+    # Типы оборудования с иконками
+    EQ_ANTENNA = "📡 Антенна"
+    EQ_ROUTER = "🔌 Маршрутизатор"
+    EQ_SERVER = "🖥️ Сервер"
+    EQ_OLT = "🔧 OLT"
+    EQ_SWITCH = "🔀 Коммутатор"
+    EQ_ADSL = "📞 ADSL-модем"
 
     # Настройки системы
     SYSTEM_SETTINGS = f"{Symbols.ACTION_SETTINGS.value} Настройки системы"
+
+
+equipment_list = [MenuLabels.EQ_ANTENNA.value, MenuLabels.EQ_ROUTER,
+                  MenuLabels.EQ_SERVER.value, MenuLabels.EQ_OLT.value,
+                  MenuLabels.EQ_SWITCH.value, MenuLabels.EQ_ADSL.value]

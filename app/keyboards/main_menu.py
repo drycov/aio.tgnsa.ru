@@ -12,7 +12,8 @@ def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
         [
             KeyboardButton(text=MenuLabels.DEVICE_CHECK.value),
             KeyboardButton(text=MenuLabels.ADVANCED.value),
-        ],
+        ], [KeyboardButton(text=MenuLabels.ERTM_MENU.value)],
+
         [KeyboardButton(text=MenuLabels.TASK_MANAGER.value),
          KeyboardButton(text=MenuLabels.USER_PROFILE.value),
          ],

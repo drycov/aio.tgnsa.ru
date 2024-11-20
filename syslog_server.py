@@ -1,30 +1,56 @@
 import socketserver
-import sqlite3
+from sqlalchemy import Column, Integer, String, DateTime, create_engine
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
 import click
 from loguru import logger
+from sqlalchemy.orm import declarative_base
+
+# Инициализация базы данных
+DATABASE_URL = "sqlite:///syslog.db"  # Укажите путь к базе данных
+Base = declarative_base()
+engine = create_engine(DATABASE_URL, echo=False)  # Установите echo=True для логов SQL-запросов
+Session = sessionmaker(bind=engine)
+
+
+# Определение модели для таблицы логов
+class Log(Base):
+    __tablename__ = "logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    message = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+# Создаём таблицу, если её нет
+Base.metadata.create_all(engine)
 
 
 # Класс обработчика сообщений Syslog
 class SyslogUDPHandler(socketserver.BaseRequestHandler):
+
     def handle(self):
         # Получаем данные из запроса
         data = bytes.decode(self.request[0].strip())
-        # Логируем сообщение
         logger.info(f"Received syslog message: {data}")
-        # click.secho(f"Processed syslog message: {data}", fg="green")
 
         # Сохраняем сообщение в базу данных
         self.save_to_db(data)
 
-    def save_to_db(self, message):
+    @staticmethod
+    def save_to_db(message):
         """Сохраняет сообщение в базу данных."""
-        conn = sqlite3.connect("syslog.db")  # Соединяемся с базой
-        cursor = conn.cursor()
-
-        # Вставляем сообщение в таблицу
-        cursor.execute("INSERT INTO logs (message) VALUES (?)", (message,))
-        conn.commit()  # Сохраняем изменения
-        conn.close()  # Закрываем соединение
+        session = Session()
+        try:
+            log_entry = Log(message=message)
+            session.add(log_entry)
+            session.commit()
+            logger.info("Syslog message saved to database.")
+        except Exception as e:
+            logger.error(f"Failed to save message: {e}")
+            session.rollback()
+        finally:
+            session.close()
 
 
 # Класс многопоточного Syslog-сервера
@@ -34,19 +60,6 @@ class ThreadedSyslogServer(socketserver.ThreadingUDPServer):
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 514  # Стандартный порт Syslog
-
-    # Создаём таблицу, если её нет
-    conn = sqlite3.connect("syslog.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    conn.close()
 
     # Запуск сервера
     with ThreadedSyslogServer((HOST, PORT), SyslogUDPHandler) as server:

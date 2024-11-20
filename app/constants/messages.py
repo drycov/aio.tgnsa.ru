@@ -52,9 +52,12 @@ class Messages(Enum):
     ENTER_IP = "Введите IP-адрес устройства."
     ENTER_SUBNET_P2P = "Введите IP-адрес в формате <i><code>A.B.C.D/Mask(30)</code></i>."
     ENTER_SUBNET = "Введите IP-адрес в формате <i><code>A.B.C.D/Mask(0-32)</code></i>."
+    ENTER_24_SUBNET = "Введите IP-адрес в формате <i><code>A.B.C.D/Mask(24)</code></i>."
 
     # Сообщения об ошибках
     ERROR_SUBNET = f"{Symbols.CABLE_SHORT.value} Это не CIDR. Укажите IP в формате A.B.C.D / Mask(0 - 32) и повторите."
+    ERROR_24_SUBNET = f"{Symbols.CABLE_SHORT.value} Это не CIDR. Укажите IP в формате A.B.C.D / Mask(24) и повторите."
+
     ERROR_P2P = f"{Symbols.CABLE_SHORT.value} Это не P2P. Укажите IP в формате A.B.C.D / Mask(30) и повторите."
 
     ERROR_NO_ACL = f"{Symbols.STATUS_WARNING.value} Нет прав"
@@ -161,6 +164,7 @@ class ErrorMessages(Enum):
     BAD_REQUEST = "Запрос не может быть выполнен. Проверьте корректность введенных данных."
     TELEGRAM_API_ERROR = "Ошибка Telegram API: {exception}"
     UNKNOWN_ERROR_USER = "Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
+
     @staticmethod
     def error_message(msg=None):
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -169,6 +173,7 @@ class ErrorMessages(Enum):
             f"<b>Ошибка {Symbols.ACTION_ERROR.value}</b> <pre>{msg_text}</pre>\n"
             f"<i>Выполнено: <code>{current_date}</code></i>"
         )
+
 
 class NetworkMessages(Enum):
     ERROR_SUBNET_CALCULATION = "Ошибка в вычислении подсети: {error}"
@@ -187,11 +192,12 @@ class NetworkMessages(Enum):
         "Хостов/Сетей: <code>{size}</code>"
     )
     DEVICE_INFO = (
-        f"<i>Статус устройства:</i> <code>{Symbols.OK.value} Доступен</code>\n"
-        "<i>IP устройства:</i> <code>{host}</code>\n"
-        "<i>Имя устройства:</i> <code>{sw_sys_name}</code>\n"
-        "<i>Модель устройства:</i> <code>{sw_model}</code>\n"
-        "<i>UpTime:</i> <code>{sw_up_time}</code> (<code>{up_time}</code>)"
+        f"Статус устройства:{Symbols.OK.value} Доступен\n"
+        "IP устройства: {host}\n"
+        "Имя устройства: {sw_sys_name}\n"
+        "Модель устройства: {sw_model}\n"
+        "Address: {address}\n"
+        "UpTime: {sw_up_time}({up_time})\n"
     )
     P2P_INFO = (
         "Адрес пары: <code>{pair_address}</code>\n"
@@ -201,7 +207,6 @@ class NetworkMessages(Enum):
     )
 
     # Сообщение об ошибке
-
 
 
 class PriorityMessages(Enum):
@@ -215,7 +220,6 @@ class PriorityMessages(Enum):
 
 def msg_info(context):
     tg_contact = Config.vendor_info['botVendorTGContact']
-
 
     return (
         f"❖ Имя бота: {context.first_name}\n"

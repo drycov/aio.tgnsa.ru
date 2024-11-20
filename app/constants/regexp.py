@@ -12,6 +12,7 @@ class RegExpUtils:
         # Регулярные выражения
         self.ip_regexp = self.create_regexp(r"^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$")
         self.subnet_regexp = self.create_regexp(r"^(\d+\.\d+\.\d+\.\d+)(/\d+)$")
+        self.subnet_24_regexp = self.create_regexp(r"^(\d+\.\d+\.\d+\.\d+)(/24)$")
         self.p2p_subnet_regexp = self.create_regexp(r"^(\d+\.\d+\.\d+\.\d+)(/30)$")
         self.user_grant_regexp = self.create_regexp(r"/enb_")
         self.user_revoke_regexp = self.create_regexp(r"/dsb_")
@@ -20,6 +21,7 @@ class RegExpUtils:
         self.user_info_regexp = self.create_regexp(r"/ui_")
         self.email_regexp = self.create_regexp(r"[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
         self.ttc_email_regexp = self.create_regexp(r"[a-zA-Z0-9]+@ttc.kz")
+        self.dlink_regexp = self.create_regexp(r"Port \d+")
 
     @staticmethod
     def create_regexp(pattern: str, flags: int = 0) -> re.Pattern:
@@ -48,6 +50,9 @@ class RegExpUtils:
     def subnet_check(self, value: str) -> bool:
         return self.create_check_function(self.subnet_regexp)(value)
 
+    def subnet_24_check(self, value: str) -> bool:
+        return self.create_check_function(self.subnet_24_regexp)(value)
+
     def p2p_check(self, value: str) -> bool:
         return self.create_check_function(self.p2p_subnet_regexp)(value)
 
@@ -56,3 +61,6 @@ class RegExpUtils:
 
     def ttc_email_check(self, value: str) -> bool:
         return self.create_check_function(self.ttc_email_regexp)(value)
+
+    def dlink_check(self, value: str) -> bool:
+        return self.create_check_function(self.dlink_regexp)(value)

@@ -25,6 +25,11 @@ in_back_keyboard = InlineKeyboardMarkup(
         [InlineKeyboardButton(text=MenuLabels.BACK.value, callback_data="back")]
     ]
 )
+in_cancel_button = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text=MenuLabels.CANCEL.value, callback_data="cancel")]
+    ]
+)
 
 priority_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text=PriorityMessages.PRIORITY_LOW.value, callback_data="priority_low")],
