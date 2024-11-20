@@ -128,7 +128,7 @@ class StateManager:
         Восстанавливает предыдущее состояние и отображение, если оно существует.
         """
         display_data = display_history.get(previous_state, {})
-        action_data = action_history.get(previous_state, None)
+        # action_data = action_history.get(previous_state, None)
 
         display_data["text"] = display_data.get("text", "Возврат на предыдущий шаг")
 

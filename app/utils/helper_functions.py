@@ -259,7 +259,7 @@ class HelperFunctions:
                 data = json.load(file)
                 return data.get(key)
         except Exception as error:
-            HelperFunctions.log_error(action=f"interface_loader", error=ValueError(
+            HelperFunctions.log_error(action="interface_loader", error=ValueError(
                 NetworkMessages.ERROR_FILE_READ.value.format(file_path=file_path, error=error)))
             return None
 

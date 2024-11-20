@@ -2,3 +2,10 @@ from .auth_middleware import AuthMiddleware
 from .custom_logging_middleware import CustomLoggingMiddleware
 from .rate_limit_middleware import RateLimitMiddleware
 from .user_activity_middleware import UserActivityMiddleware
+
+__all__ = [
+    "AuthMiddleware",
+    "CustomLoggingMiddleware",
+    "RateLimitMiddleware",
+    "UserActivityMiddleware",
+]

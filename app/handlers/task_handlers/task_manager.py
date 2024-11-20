@@ -57,14 +57,6 @@ async def view_assigned_tasks(message: Message, state: FSMContext):
     await state.set_state(TaskPaginationState.viewing_tasks)
 
 
-@router.message(F.text == "/at")
-async def view_all_tasks(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    await view_tasks(message, page=1)
-    await state.update_data(role="all")  # Устанавливаем роль "все"
-    await state.set_state(TaskPaginationState.viewing_tasks)
-
-
 # Команда для создания новой задачи
 @router.message(F.text == MenuLabels.CREATE_TASK.value)
 async def new_task(message: Message, state: FSMContext):

@@ -1,6 +1,7 @@
-from datetime import datetime
 from typing import Optional, List
+
 from firebase_admin import db
+
 
 class Shift:
     def __init__(self, date: str, start_time: str, end_time: str, shift_type: str, assigned_to: int, status: str = "planned"):

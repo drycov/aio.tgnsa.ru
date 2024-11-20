@@ -182,10 +182,10 @@ class DeviceUtils:
                             any(sub in port_if_range[i] for sub in Config.EXCLUDED_SUBSTRINGS)
                             or port_if_range[i].isdigit()
                             or any(bad_sub in port_if_range[i] for bad_sub in [
-                        '.ServiceInstance', 'noSuchInstance', "E1", "AUX",
-                        f"{test_int_descr}.", "Po", "ControlEthernet", "Port",
-                        "802.1Q", "Logical-int", "rif", "stack-port", "loopback"
-                    ])
+                                '.ServiceInstance', 'noSuchInstance', "E1", "AUX",
+                                f"{test_int_descr}.", "Po", "ControlEthernet", "Port",
+                                "802.1Q", "Logical-int", "rif", "stack-port", "loopback"
+                            ])
                     ):
                         continue
 

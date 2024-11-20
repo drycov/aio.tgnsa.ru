@@ -79,7 +79,7 @@ async def revoke_task(callback_query: CallbackQuery):
 # Обработчик для редактирования задачи
 @router.callback_query(lambda call: call.data.startswith("edit_task_"))
 async def edit_task(callback_query: CallbackQuery):
-    task_id = callback_query.data.split("_")[-1]
+    # task_id = callback_query.data.split("_")[-1]
     # Здесь можно перейти в режим редактирования задачи, например, запрашивать новые данные
     await callback_query.answer("Переход к редактированию задачи.")
     await callback_query.message.edit_reply_markup()  # Убираем клавиатуру после действия

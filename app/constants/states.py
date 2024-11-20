@@ -50,14 +50,17 @@ class TaskCreationState(StatesGroup):
     EMPLOYEE = State()  # Состояние для выбора сотрудника
     CONFIRMATION = State()  # Состояние для подтверждения задачи (если требуется)
 
+
 class TaskPaginationState(StatesGroup):
     viewing_tasks = State()  # Состояние для отображения задач
     user_role = State()      # Состояние для хранения роли пользователя (создатель или исполнитель)
+
 
 class ERTMManager(StatesGroup):
     ERTM_MENU = State()
     TRACK_EQ = State()
     EQ_SCAN = State()
+
 
 # Кортеж со всеми состояниями
 ALL_STATES = (
@@ -78,5 +81,5 @@ ALL_STATES = (
     DeviceCommands.LLDP_INFORMATION,
 
     # Состояния TaskCreationState
-    TaskCreationState.DATE, TaskCreationState.PRIORITY, TaskCreationState.EMPLOYEE, TaskCreationState.CONFIRMATION,TaskCreationState.TASK_MENU
+    TaskCreationState.DATE, TaskCreationState.PRIORITY, TaskCreationState.EMPLOYEE, TaskCreationState.CONFIRMATION, TaskCreationState.TASK_MENU
 )

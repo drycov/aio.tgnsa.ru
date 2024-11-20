@@ -2,6 +2,7 @@ import time
 from aiogram.types import Message, CallbackQuery
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 
+
 class RateLimitMiddleware(BaseMiddleware):
     RATE_LIMIT = 2  # Лимит времени в секундах
 

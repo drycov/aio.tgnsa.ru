@@ -25,5 +25,7 @@ __all__ = [
     "Symbols",
     "msg_info",
     "PriorityMessages",
+    "RegistrationForm",
+
     "ERTMManager",
 ]

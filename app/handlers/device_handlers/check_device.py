@@ -80,7 +80,7 @@ async def process_host_input(message: Message, state: FSMContext):
                     # Подготовка данных для отображения
                     display_data = {
                         "text": f"<pre>{device_info_message}</pre>\n\n"
-                                f"<i>Выполнено: <code>{current_date}</code></i>",
+                        f"<i>Выполнено: <code>{current_date}</code></i>",
                         "reply_markup": device_keyboard
                     }
                 else:
@@ -88,7 +88,7 @@ async def process_host_input(message: Message, state: FSMContext):
                     device_info_message = "Информация об устройстве недоступна или неполная."
                     display_data = {
                         "text": f"<pre>{device_info_message}</pre>\n\n"
-                                f"<i>Выполнено: <code>{current_date}</code></i>",
+                        f"<i>Выполнено: <code>{current_date}</code></i>",
                         "reply_markup": in_back_keyboard
                     }
 

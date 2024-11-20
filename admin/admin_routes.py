@@ -55,7 +55,7 @@ async def error_middleware(request: web.Request, handler) -> web.Response:
 
     except Exception as e:
         # Логирование необработанных исключений
-        app_logger.error(f"Unhandled exception: {traceback.format_exc()}")
+        app_logger.error("Unhandled exception:%s %s", e, traceback.format_exc())
         return web.Response(
             text="500: Internal server error",
             content_type="text/html",

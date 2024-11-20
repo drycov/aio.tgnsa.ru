@@ -17,4 +17,3 @@ async def back_command(message: Message, state: FSMContext):
         app_logger.warning(f"Ошибка удаления сообщения: {e}")
 
     # Возвращаемся к предыдущему состоянию, используя сохраненные данные
-

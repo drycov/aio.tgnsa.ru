@@ -291,7 +291,7 @@ class Healthy:
         try:
             response_time = await self.ping_host(self.gateway_ip)
             if response_time:
-                return {"healthy": True, "details": f"Шлюз доступен", "inform": f"{response_time:.3f} seconds"}
+                return {"healthy": True, "details": "Шлюз доступен", "inform": f"{response_time:.3f} seconds"}
             return {"healthy": False, "details": "Шлюз недоступен"}
         except Exception as e:
             return {"healthy": False, "details": f"Ошибка проверки шлюза: {e}"}
@@ -321,7 +321,7 @@ class Healthy:
             redis_ip = Config.REDIS_HOST  # Укажите IP-адрес Redis-сервера
             response_time = await self.ping_host(redis_ip)
             if response_time:
-                return {"healthy": True, "details": f"Redis доступен", "inform": f"{response_time:.3f} seconds"}
+                return {"healthy": True, "details": "Redis доступен", "inform": f"{response_time:.3f} seconds"}
             return {"healthy": False, "details": "Redis недоступен (пинг неудачен)"}
         except Exception as e:
             return {"healthy": False, "details": f"Ошибка проверки Redis: {e}"}
@@ -334,7 +334,7 @@ class Healthy:
             firebase_host = "firebase.googleapis.com"
             response_time = await self.ping_host(firebase_host)
             if response_time:
-                return {"healthy": True, "details": f"Firebase доступен", "inform": f"{response_time:.3f} seconds"}
+                return {"healthy": True, "details": "Firebase доступен", "inform": f"{response_time:.3f} seconds"}
             return {"healthy": False, "details": "Firebase недоступен (пинг неудачен)"}
         except Exception as e:
             return {"healthy": False, "details": f"Ошибка проверки Firebase: {e}"}
@@ -347,7 +347,7 @@ class Healthy:
             telegram_host = "api.telegram.org"
             response_time = await self.ping_host(telegram_host)
             if response_time:
-                return {"healthy": True, "details": f"Telegram доступен", "inform": f"{response_time:.3f} seconds"}
+                return {"healthy": True, "details": "Telegram доступен", "inform": f"{response_time:.3f} seconds"}
             return {"healthy": False, "details": "Telegram недоступен (пинг неудачен)"}
         except Exception as e:
             return {"healthy": False, "details": f"Ошибка проверки Telegram: {e}"}
@@ -360,7 +360,7 @@ class Healthy:
             _, _, free = shutil.disk_usage("/")
             free_gb = free / (1024 ** 3)
             if free_gb < Config.DISK_SPACE_THRESHOLD_GB:
-                return {"healthy": False, "details": f"Мало места на диске",
+                return {"healthy": False, "details": "Мало места на диске",
                         "inform": f"{free_gb:.2f} ГБ"}
             return {"healthy": True, "details": f"Свободно на диске: {free_gb:.2f} ГБ", "inform": f"{free_gb:.2f} ГБ"}
         except Exception as e:

@@ -48,7 +48,7 @@ async def ddm_info(message: Message, state: FSMContext):
     data = await state.get_data()
     host = data.get('host')
     community = data.get('community')
-    model = data.get('model')
+    # model = data.get('model')
     device_data = data.get('device_data', {})
     port_if_list = data.get('device_data', {}).get('interfaceList', [])
     port_if_range = data.get('device_data', {}).get('interfaceRange', [])
@@ -68,7 +68,6 @@ async def ddm_info(message: Message, state: FSMContext):
             reply_markup=in_back_keyboard,
             parse_mode="HTML",
         )
-
 
     except Exception as e:
 
