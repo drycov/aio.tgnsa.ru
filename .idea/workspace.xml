@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="add ertm and ddm">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ertm/models/device_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/ertm/models/device_models.py" afterDir="false" />
-    </list>
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="fix pydandic errors" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -421,7 +418,15 @@
       <option name="project" value="LOCAL" />
       <updated>1732138485675</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="fix pydandic errors">
+      <option name="closed" value="true" />
+      <created>1732139551463</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1732139551463</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -450,6 +455,7 @@
     <MESSAGE value="fixed error &quot;set_wakeup_fd only works in main thread of the main interpreter&quot;" />
     <MESSAGE value="add &lt;pre&gt;&lt;/pre&gt; on ping handler" />
     <MESSAGE value="add ertm and ddm" />
-    <option name="LAST_COMMIT_MESSAGE" value="add ertm and ddm" />
+    <MESSAGE value="fix pydandic errors" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix pydandic errors" />
   </component>
 </project>

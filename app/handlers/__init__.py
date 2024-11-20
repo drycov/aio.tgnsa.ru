@@ -11,7 +11,6 @@ from .main_handlers import main_callback_router, main_commands_router, registrat
 from .message_handler import router as message_router
 from .start_handler import router as start_router
 from .task_handlers import task_router, task_callback_router
-from .test_handler import router as test_router
 
 # Собираем список всех маршрутизаторов, с логическим разделением
 routers = [
@@ -28,7 +27,6 @@ routers = [
     p2p_router,  # Обработчик для P2P
     cidr_router,  # CIDR-калькулятор
     ping_router,  # Пинг
-    test_router,  # Тестовые модули
     registration_router,  # Обработчик регистрации
     task_router,  # Обработчик задач
     device_port_router,  # Обработчик портов устройств
