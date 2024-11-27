@@ -6,7 +6,9 @@ from typing import Optional, List, Union
 from firebase_admin import db, exceptions
 from pydantic import BaseModel, ValidationError, ConfigDict
 
+from app.utils import JWTManager
 from app.utils.logger_instance import app_logger
+from config import Config
 
 
 class User(BaseModel):
@@ -269,3 +271,10 @@ class User(BaseModel):
         except Exception as error:
             app_logger.error(f"Error fetching admin users: {error}")
             raise
+
+    @staticmethod
+    def generate_jwt(data: int, secret: str) -> str:
+        """
+        Генерирует JWT токен.
+        """
+        return JWTManager.generate_jwt(data, secret)

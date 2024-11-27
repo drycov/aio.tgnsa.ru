@@ -8,6 +8,7 @@ from app.keyboards import generate_main_keyboard, on_enter_keyboard
 from app.models import User
 from app.utils import StateManager
 from app.utils.logger_instance import app_logger
+from config import Config
 
 router = Router()
 
@@ -32,7 +33,7 @@ async def main_menu(message: Message, state: FSMContext):
             display_data = {"text": Messages.WELCOME.value, "reply_markup": keyboard}
             await StateManager.set_state_with_previous(state, MainCommands.MAIN_MENU, display_data)
             await message.answer(**display_data)
-            await state.update_data(user_id=tg_id, is_online=True, token=user.generate_jwt(tg_id),
+            await state.update_data(user_id=tg_id, is_online=True, token=user.generate_jwt(tg_id, Config.SECRET_KEY),
                                     is_admin=user.is_admin_user())
         else:
             display_data = {"text": Messages.ACCESS_DENIED.value, "reply_markup": on_enter_keyboard}
