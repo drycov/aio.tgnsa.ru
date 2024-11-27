@@ -3,6 +3,7 @@ This module initializes the bot instance, including storage, dispatcher, and loc
 """
 
 import locale
+
 import redis.asyncio as redis
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -11,8 +12,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.mongo import MongoStorage
 from aiogram.fsm.storage.redis import RedisStorage
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.server_api import ServerApi
 from pymongo.errors import PyMongoError
+from pymongo.server_api import ServerApi
 from redis.exceptions import RedisError
 
 from app.utils import HelperFunctions
@@ -48,6 +49,7 @@ def initialize_storage():
         return MemoryStorage()
 
 
+app_logger.info("Инициализация хранилища FSM")
 storage = initialize_storage()
 
 bot = Bot(token=Config.API_TOKEN, default=parse_mode)

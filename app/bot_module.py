@@ -1,4 +1,3 @@
-from aiogram import Bot, Dispatcher
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 
 from app import handlers
@@ -19,11 +18,12 @@ class BotManager:
     """
 
     def __init__(self, token: str):
+        from .bot_instance import bot, dp
         """
         Инициализация бота и диспетчера.
         """
-        self.bot = Bot(token=token)
-        self.dp = Dispatcher()
+        self.bot = bot
+        self.dp = dp
         self._is_setup = False
 
     def setup_bot(self):
