@@ -580,10 +580,16 @@ class HelperFunctions:
     @staticmethod
     def escape_value(value):
         """
-        Экранирует одиночные кавычки в строке для предотвращения ошибок в SQL или другом использовании.
+        Преобразует значение в строку и экранирует одиночные кавычки.
         """
         try:
-            return f"'{str(value).replace('\'', '\'\'')}'"  # Приведение к строке и экранирование
+            # Приведение значения к строке
+            string_value = str(value)
+            # Экранирование одиночных кавычек
+            escaped_value = string_value.replace("'", "''")
+            # Возврат экранированного значения в обрамлении кавычек
+            return f"'{escaped_value}'"
         except Exception as e:
             print(f"Error escaping value: {value} -> {e}")
             raise
+
