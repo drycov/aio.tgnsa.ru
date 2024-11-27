@@ -1,3 +1,5 @@
+import uuid
+
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, ReplyKeyboardRemove, FSInputFile
@@ -8,6 +10,7 @@ from app.constants import Messages
 from app.constants.states import MainCommands, RegistrationForm
 from app.keyboards import on_enter_keyboard
 from app.models import User
+from app.utils import JWTManager
 from app.utils import StateManager, HelperFunctions
 from app.utils.logger_instance import app_logger
 from config import Config
@@ -44,7 +47,11 @@ async def approve_user(callback_query: CallbackQuery, state: FSMContext):
             is_verified=False,
             verification_code=verification_code,
             email=user_data['email'],
-            hash=user_hash
+            hash=user_hash,
+            api_token=JWTManager.generate_jwt(user_id=callback_query.from_user.id, secret_key=Config.SECRET_KEY,
+                                              expires_in=64800),
+            uid=str(uuid.uuid4())
+
         )
 
         # Данные для таблицы

@@ -52,7 +52,7 @@ class Config:
 
     # ---------- Основные настройки приложения ----------
     APP_NAME = os.getenv("APP_NAME", "TgNSA")
-    VERSION = os.getenv("VERSION", "1.0.0")
+    VERSION = os.getenv("VERSION", "0.1.0")
     SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "support@tgnsa.ru")
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@tgnsa.ru")
     BASE_DIR = basedir
@@ -126,7 +126,7 @@ class Config:
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "True").lower() == "true"
     MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "False").lower() == "true"
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME")  # Пример: ttcnsb1@hotmail.com
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", ADMIN_EMAIL)  # Пример: ttcnsb1@hotmail.com
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")  # Пример: OSKQAZwsx2022*
     EMAIL_SUBJECT_PREFIX = f"[{APP_NAME}]"
     EMAIL_SENDER = f"{APP_NAME} Admin <{MAIL_USERNAME}>"
@@ -172,5 +172,42 @@ class Config:
     # ---------- Настройки дискового пространства ----------
     HEALTHY_CHECK_ENABLE = os.getenv("HEALTHY_CHECK_ENABLE", "False").lower() == "true"
     DISK_SPACE_THRESHOLD_GB = int(os.getenv("DISK_SPACE_THRESHOLD_GB", 2))  # Порог свободного места на диске в ГБ
-    RAM_USAGE_THRESHOLD_PERCENT = int(os.getenv("RAM_USAGE_THRESHOLD_PERCENT", 80))  # Порог использования RAM в процентах
+    RAM_USAGE_THRESHOLD_PERCENT = int(
+        os.getenv("RAM_USAGE_THRESHOLD_PERCENT", 80))  # Порог использования RAM в процентах
     HEALTHY_CHECK_INTERVAL = int(os.getenv("HEALTHY_CHECK_INTERVAL", 300))  # Интервал проверок в секундах
+
+    class Security:
+        """Настройки безопасности."""
+
+        # Настройки токенов
+        class Tokens:
+            ACCESS_TOKEN_EXPIRATION = os.getenv("ACCESS_TOKEN_EXPIRATION", "15m")  # Время жизни короткоживущего токена
+            REFRESH_TOKEN_EXPIRATION = os.getenv("REFRESH_TOKEN_EXPIRATION", "30d")  # Время жизни refresh-токена
+            LONG_LIVED_TOKEN_EXPIRATION = os.getenv("LONG_LIVED_TOKEN_EXPIRATION", "90d")  # Долгоживущий токен
+            REVOKE_ON_COMPROMISE = bool(os.getenv("REVOKE_ON_COMPROMISE", True))  # Отзыв токенов при компрометации
+
+        # Настройки паролей
+        class Passwords:
+            STANDARD_USER_EXPIRATION = os.getenv("STANDARD_USER_EXPIRATION",
+                                                 "90d")  # Срок смены для обычных пользователей
+            PRIVILEGED_USER_EXPIRATION = os.getenv("PRIVILEGED_USER_EXPIRATION",
+                                                   "45d")  # Привилегированные пользователи
+            MIN_LENGTH = int(os.getenv("PASSWORD_MIN_LENGTH", 12))  # Минимальная длина
+            REQUIRE_UPPER_CASE = bool(os.getenv("PASSWORD_REQUIRE_UPPER_CASE", True))  # Требовать заглавные буквы
+            REQUIRE_LOWER_CASE = bool(os.getenv("PASSWORD_REQUIRE_LOWER_CASE", True))  # Требовать строчные буквы
+            REQUIRE_NUMBERS = bool(os.getenv("PASSWORD_REQUIRE_NUMBERS", True))  # Требовать цифры
+            REQUIRE_SPECIAL_CHARS = bool(os.getenv("PASSWORD_REQUIRE_SPECIAL_CHARS", True))  # Требовать спецсимволы
+            HISTORY_LIMIT = int(os.getenv("PASSWORD_HISTORY_LIMIT", 5))  # Ограничение на повторное использование
+
+        # Настройки двухфакторной аутентификации
+        class TwoFactorAuth:
+            ENABLED = bool(os.getenv("TFA_ENABLED", True))  # Включить 2FA
+            MANDATORY_FOR_ROLES = os.getenv("TFA_MANDATORY_FOR_ROLES", "admin,manager").split(
+                ",")  # Роли для обязательного 2FA
+        # ---------- Настройки логирования ----------
+
+    class SecurityLogging:
+        """Настройки логирования."""
+        TOKEN_ACTIVITY = bool(os.getenv("LOG_TOKEN_ACTIVITY", True))  # Логирование активности токенов
+        FAILED_LOGINS = bool(os.getenv("LOG_FAILED_LOGINS", True))  # Логирование неудачных попыток входа
+        PASSWORD_CHANGES = bool(os.getenv("LOG_PASSWORD_CHANGES", True))  # Логирование смен паролей

@@ -1,14 +1,12 @@
 import hashlib
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from random import randint
 from typing import Optional, List, Union
 
-import jwt
 from firebase_admin import db, exceptions
 from pydantic import BaseModel, ValidationError, ConfigDict
 
 from app.utils.logger_instance import app_logger
-from config import Config
 
 
 class User(BaseModel):
@@ -25,6 +23,10 @@ class User(BaseModel):
     verification_code: Optional[Union[int, str]] = None
     email: Optional[str] = None
     hash: Optional[str] = None
+    station: Optional[str] = None
+    branch: Optional[str] = None
+    api_token: Optional[str] = None
+    uid: Optional[str] = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -32,6 +34,7 @@ class User(BaseModel):
                 "is_bot": False,
                 "ttc_id": "123456",
                 "station": "Central",
+                "branch": "Branch A",
                 "tg_id": 123456789,
                 "first_name": "John",
                 "last_name": "Doe",
@@ -44,7 +47,8 @@ class User(BaseModel):
                 "email": "johndoe@example.com",
                 "user_verified": True,
                 "api_token": "token_123456",
-                "hash": "hash_value"
+                "hash": "hash_value",
+                "uid": "user_123456789"
             }
         }
     )
@@ -67,7 +71,11 @@ class User(BaseModel):
             is_verified=data.get("is_verified", False),
             verification_code=data.get("verification_code"),
             email=HelperFunctions.safe_decode(data.get("email")),
-            hash=data.get("hash")
+            hash=data.get("hash"),
+            station=HelperFunctions.safe_decode(data.get("station")),
+            branch=HelperFunctions.safe_decode(data.get("branch")),
+            api_token=HelperFunctions.safe_decode(data.get("api_token")),
+            uid=HelperFunctions.safe_decode(data.get("uid")),
         )
 
     @staticmethod
@@ -193,35 +201,25 @@ class User(BaseModel):
             app_logger.error(f"Error fetching all users: {error}")
             raise
 
-    def update(self, updates: dict) -> Optional["User"]:
-        from app.utils.helper_functions import HelperFunctions  # Импорт внутри метода
-
+    @classmethod
+    def update(cls, tg_id: int, updates: dict) -> Optional["User"]:
         """
-        Обновляет данные пользователя с безопасным декодированием строк.
+        Обновляет данные пользователя в базе данных Firebase и возвращает обновлённого пользователя.
         """
         try:
-            user_ref = db.reference(f'users/{self.tg_id}')
-
-            # Декодируем строки в словаре updates
-            updates = {
-                key: HelperFunctions.safe_decode(value) if isinstance(value, str) else value
-                for key, value in updates.items()
-            }
-
-            # Обновляем данные в Firebase
+            user_ref = db.reference(f'users/{tg_id}')
             user_ref.update(updates)
 
-            # Получаем обновленные данные
-            updated_user = user_ref.get()
+            # Получаем обновлённые данные пользователя
+            updated_data = user_ref.get()
 
-            # Проверка типа данных
-            if not isinstance(updated_user, dict):
-                app_logger.warning(f"Unexpected format for updated_user: {type(updated_user)}")
+            if not updated_data:
                 return None
 
-            return User.from_firebase(updated_user)
-        except Exception as error:
-            app_logger.error(f"Error updating user {self.tg_id}: {error}")
+            # Создаём объект User и возвращаем его
+            return cls.from_firebase(updated_data)
+        except Exception as e:
+            app_logger.error(f"Ошибка обновления пользователя {tg_id}: {e}")
             raise
 
     @classmethod
@@ -231,6 +229,10 @@ class User(BaseModel):
         """
         try:
             user_ref = db.reference(f'users/{tg_id}')
+            existing_user = user_ref.get()
+            if not existing_user:
+                app_logger.warning(f"Пользователь с tg_id {tg_id} не найден для удаления.")
+                raise ValueError("Пользователь не найден.")
             user_ref.delete()
             app_logger.info(f"User {tg_id} deleted successfully.")
         except Exception as error:
@@ -267,37 +269,3 @@ class User(BaseModel):
         except Exception as error:
             app_logger.error(f"Error fetching admin users: {error}")
             raise
-
-    @staticmethod
-    def generate_jwt(user_id: int, secret_key: str = Config.SECRET_KEY, expires_in: int = 60) -> str:
-        """
-        Генерирует JWT токен с информацией о пользователе.
-        :param user_id: Идентификатор пользователя (tg_id).
-        :param secret_key: Секретный ключ для подписи токена.
-        :param expires_in: Время жизни токена в минутах (по умолчанию 60 минут).
-        :return: Строка JWT токенsа.
-        """
-        payload = {
-            'user_id': user_id,
-            'exp': datetime.now(timezone.utc) + timedelta(minutes=expires_in),
-            'iat': datetime.now(timezone.utc)
-        }
-        return jwt.encode(payload, secret_key, algorithm='HS256')
-
-    @staticmethod
-    def decode_jwt(token: str, secret_key: str) -> Optional[dict]:
-        """
-        Декодирует JWT токен и возвращает данные пользователя, если токен валиден.
-        :param token: JWT токен.
-        :param secret_key: Секретный ключ для проверки подписи токена.
-        :return: Словарь с данными пользователя или None, если токен недействителен.
-        """
-        try:
-            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
-            return payload
-        except jwt.ExpiredSignatureError:
-            app_logger.warning("JWT токен просрочен.")
-            return None
-        except jwt.InvalidTokenError:
-            app_logger.error("Неверный JWT токен.")
-            return None

@@ -53,6 +53,7 @@ class Messages(Enum):
     ENTER_SUBNET_P2P = "Введите IP-адрес в формате <i><code>A.B.C.D/Mask(30)</code></i>."
     ENTER_SUBNET = "Введите IP-адрес в формате <i><code>A.B.C.D/Mask(0-32)</code></i>."
     ENTER_24_SUBNET = "Введите IP-адрес в формате <i><code>A.B.C.D/Mask(24)</code></i>."
+    SEND_LOCATION = "Отправьте локацию нажав кнопку ниже или поделитесь локацией"
 
     # Сообщения об ошибках
     ERROR_SUBNET = f"{Symbols.CABLE_SHORT.value} Это не CIDR. Укажите IP в формате A.B.C.D / Mask(0 - 32) и повторите."

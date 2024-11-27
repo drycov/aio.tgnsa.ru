@@ -93,7 +93,7 @@ async def process_host_input(message: Message, state: FSMContext):
                     }
 
                 # Переход в состояние ADMIN_PANEL с отображением данных
-                await message.reply(**display_data)
+                await message.reply(**display_data, parse_mode="HTML")
                 await StateManager.set_state_with_previous(state, DeviceCommands.MENU, display_data, '')
                 await state.update_data(waiting_for_ip=False)
             else:

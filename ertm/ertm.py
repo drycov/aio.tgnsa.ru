@@ -42,6 +42,7 @@ class ERTM:
         return R * c  # Расстояние в метрах
 
     # Получение всех устройств из базы данных
+
     def get_devices_from_db(self):
         try:
             devices = self.session.query(Device).all()
@@ -49,6 +50,8 @@ class ERTM:
                 {
                     "name": device.host,
                     "sys_name": device.sys_name,
+                    "model": device.model,
+                    "address": device.address,
                     "coords": [device.latitude, device.longitude],
                 }
                 for device in devices

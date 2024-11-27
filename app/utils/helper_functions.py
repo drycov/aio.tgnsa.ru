@@ -24,6 +24,23 @@ from app.utils.logger_instance import app_logger
 
 class HelperFunctions:
     @staticmethod
+    def parse_expiration_time(expiration: str) -> int:
+        """
+        Преобразует строковый формат времени (например, "15m", "1h", "2d") в минуты.
+        """
+        try:
+            if expiration.endswith("m"):  # Минуты
+                return int(expiration[:-1])
+            elif expiration.endswith("h"):  # Часы
+                return int(expiration[:-1]) * 60
+            elif expiration.endswith("d"):  # Дни
+                return int(expiration[:-1]) * 24 * 60
+            else:
+                raise ValueError("Неподдерживаемый формат времени. Используйте 'm', 'h', или 'd'.")
+        except ValueError as e:
+            raise ValueError(f"Ошибка обработки времени истечения: {e}")
+
+    @staticmethod
     def detect_encoding(value: bytes) -> str:
         """
         Определяет кодировку строки с использованием chardet.
@@ -199,43 +216,53 @@ class HelperFunctions:
             return float('-inf')  # Значение по умолчанию при ошибке
 
     @staticmethod
-    def clean_and_convert(value: Union[bytes, int, str], default: float = 0.0, scale: float = 1.0) -> float:
+    def clean_and_convert(value: Union[bytes, int, str], default: float = 0.0, scale: float = 1.0) -> float | None:
         """
-        Очистка и преобразование значения из байтов, строки или числа в float.
-        Если значение недопустимо для преобразования, возвращает значение по умолчанию.
+        Преобразует значение в float с учетом масштаба и обработкой ошибок.
 
         Args:
             value (Union[bytes, int, str]): Значение для обработки.
-            default (float): Значение по умолчанию, возвращаемое в случае ошибки.
-            scale (float): Масштабный коэффициент для преобразования.
+            default (float): Значение по умолчанию, возвращаемое при ошибке.
+            scale (float): Масштабный коэффициент.
 
         Returns:
             float: Преобразованное значение или значение по умолчанию.
         """
+        regex = r"\([A-Z]-\)"
+        subst = ""
+
         try:
+            # Проверка на None перед дальнейшей обработкой
+            print(f"Value: '{value}' is {type(value)}.")
+
+            if value is None:
+                print(f"Value is None, skipping...")
+                return None
+            # Преобразование значения в строку, если это необходимо
             if isinstance(value, bytes):
-                # Если значение в байтах, декодируем
                 decoded_value = value.decode("utf-8").strip()
-            elif isinstance(value, int):
-                # Если значение уже число, преобразуем в строку
-                decoded_value = str(value)
-            elif isinstance(value, str):
-                # Если значение строка, просто убираем пробелы
-                decoded_value = value.strip()
+                if not decoded_value or decoded_value.lower() in {"nothing", "null", "-"}:
+                    return None
+
+                cleaned_value = re.sub(regex, subst, decoded_value, 0, re.MULTILINE)
+                # Проверка на числовое значение после очистки
+                if cleaned_value.replace(".", "", 1).replace("-", "", 1).isdigit():
+                    return float(cleaned_value)
+                elif decoded_value.replace(".", "", 1).replace("-", "", 1).isdigit():
+                    return float(decoded_value)
+                else:
+                    print(f"Value '{decoded_value}' is not numeric.")
+                    return default
+            elif isinstance(value, (int, str)):
+                decoded_value = str(value).strip()
+                return round(float(decoded_value) / scale, 1)  # Округление до 1 десятичного знака
             else:
                 raise ValueError("Unsupported value type")
+                # Обработка специальных случаев и пустых значений
+        except (ValueError, TypeError) as e:
+            print(f"Error processing value: {value} -> {e}")
 
-            if decoded_value in ["-", ""]:
-                return default
-
-            # Преобразуем строку в float, масштабируем и округляем
-            formatted_value = round(float(decoded_value) / scale, 1)  # Округление до 1 десятичного знака
-
-            return formatted_value
-        except Exception as e:
-            HelperFunctions.log_error(action="clean_and_convert",
-                                      error=e)
-            return default
+        return default
 
     @staticmethod
     def convert_hex_to_binary(input_string: str) -> str:

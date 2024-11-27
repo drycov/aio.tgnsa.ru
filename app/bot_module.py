@@ -1,11 +1,7 @@
-"""
-This module configures the bot, sets up handlers, and manages lifecycle operations.
-"""
-
+from aiogram import Bot, Dispatcher
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 
 from app import handlers
-from app.bot_instance import dp, bot
 from app.constants import Messages
 from app.middlewares import (
     CustomLoggingMiddleware,
@@ -16,62 +12,112 @@ from app.middlewares import (
 from app.utils.logger_instance import app_logger
 from config import Config
 
-dp.update.middleware(RateLimitMiddleware())
-dp.update.middleware(UserActivityMiddleware())
-dp.update.middleware(AuthMiddleware())
 
-
-def setup_bot():
+class BotManager:
     """
-    Настройка бота и регистрация обработчиков.
+    Класс для управления настройкой, запуском и остановкой Telegram бота.
     """
-    app_logger.info(Messages.START_BOT_SETUP.value)
-    router = handlers.get_handlers_router()
-    app_logger.info(Messages.REGISTER_HANDLERS.value)
-    dp.include_router(router)
-    dp.update.middleware(CallbackAnswerMiddleware())
-    dp.update.middleware(AuthMiddleware())
 
-    Config.DEBUG = True
-    if Config.DEBUG:
-        dp.update.middleware(CustomLoggingMiddleware())
-    app_logger.info(Messages.BOT_SETUP_COMPLETE.value)
+    def __init__(self, token: str):
+        """
+        Инициализация бота и диспетчера.
+        """
+        self.bot = Bot(token=token)
+        self.dp = Dispatcher()
+        self._is_setup = False
+
+    def setup_bot(self):
+        """
+        Настройка бота и регистрация обработчиков.
+        """
+        if self._is_setup:
+            app_logger.warning("Бот уже настроен. Повторная настройка пропущена.")
+            return
+
+        app_logger.info(Messages.START_BOT_SETUP.value)
+
+        # Подключение обработчиков
+        router = handlers.get_handlers_router()
+        self.dp.include_router(router)
+
+        # Подключение middlewares
+        self.dp.update.middleware(RateLimitMiddleware())
+        self.dp.update.middleware(UserActivityMiddleware())
+        self.dp.update.middleware(AuthMiddleware())
+        self.dp.update.middleware(CallbackAnswerMiddleware())
+
+        if Config.DEBUG:
+            self.dp.update.middleware(CustomLoggingMiddleware())
+
+        self._is_setup = True
+        app_logger.info(Messages.BOT_SETUP_COMPLETE.value)
+
+    async def start_bot(self):
+        """
+        Запускает бота и начинает обработку сообщений.
+        """
+        app_logger.info(Messages.START_BOT.value)
+
+        # Убедимся, что бот настроен перед запуском
+        self.setup_bot()
+
+        # Удаление старого вебхука
+        app_logger.info(Messages.DELETE_WEBHOOK.value)
+        await self.bot.delete_webhook(drop_pending_updates=True)
+
+        # Запуск polling
+        try:
+            await self.dp.start_polling(
+                self.bot,
+                allowed_updates=self.dp.resolve_used_update_types(),
+                on_shutdown=self.graceful_shutdown,
+            )
+        except Exception as e:
+            app_logger.error(f"Ошибка во время запуска бота: {e}")
+
+    async def shutdown_bot(self):
+        """
+        Останавливает процессы, связанные с ботом.
+        """
+        try:
+            # Остановка polling
+            await self.dp.stop_polling()
+            app_logger.info("Диспетчер успешно остановлен.")
+
+            # Закрытие HTTP-сессии
+            await self.bot.session.close()
+            app_logger.info("HTTP-сессия успешно закрыта.")
+        except Exception as e:
+            app_logger.error(f"Ошибка при остановке бота: {e}")
+
+    async def restart_bot(self):
+        """
+        Перезапуск бота.
+        """
+        try:
+            await self.shutdown_bot()
+            await self.start_bot()
+            app_logger.info("Бот успешно перезапущен.")
+        except Exception as e:
+            app_logger.error(f"Ошибка при перезапуске бота: {e}")
+            raise
+
+    async def graceful_shutdown(self):
+        """
+        Корректное завершение работы бота.
+        """
+        app_logger.info("Начато корректное завершение работы бота...")
+
+        # Закрытие FSM-хранилища
+        await self.dp.storage.close()
+        app_logger.info("Хранилище FSM закрыто.")
+
+        # Закрытие HTTP-сессии
+        await self.bot.session.close()
+        app_logger.info("HTTP-сессия закрыта.")
+
+        app_logger.info("Работа бота завершена.")
 
 
-async def start_bot(on_startup=None):
-    """
-    Запускает бота и начинает обработку сообщений.
-    """
-    if on_startup:
-        await on_startup()
-    setup_bot()
-    app_logger.info(Messages.DELETE_WEBHOOK.value)
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(
-        bot,
-        allowed_updates=dp.resolve_used_update_types(),
-        on_shutdown=graceful_shutdown,
-    )
-    app_logger.info(Messages.START_BOT.value)
-
-
-async def graceful_shutdown():
-    """
-    Функция для корректного завершения работы бота и всех подключений.
-    """
-    app_logger.info("Начато корректное завершение работы бота...")
-
-    # Остановка Health API сервера, если он запущен
-    # pylint: disable=import-outside-toplevel
-    from admin import stop_server
-    stop_server()
-
-    # Закрытие FSM-хранилища
-    await dp.storage.close()
-    app_logger.info("Хранилище FSM закрыто.")
-
-    # Закрытие HTTP-сессии бота
-    await bot.session.close()
-    app_logger.info("HTTP-сессия бота закрыта.")
-
-    app_logger.info("Работа бота завершена.")
+# Инициализация глобального экземпляра BotManager
+bot_manager = BotManager(token=Config.API_TOKEN)

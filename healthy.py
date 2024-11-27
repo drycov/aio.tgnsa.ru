@@ -1,11 +1,13 @@
 import asyncio
 import shutil
 from time import time
-from typing import Any
+from typing import Union
 
 import psutil
-import redis.asyncio as redis  # Используем асинхронный Redis клиент
+import redis.asyncio as redis
+from apscheduler.job import Job
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from ping3 import ping
 from ping3.errors import PingError
 
@@ -14,6 +16,10 @@ from config import Config
 
 
 class Healthy:
+    """
+    Класс для управления проверкой состояния системы и расписанием задач.
+    """
+
     status_icons = {
         "OK": "✅",
         "FAILED": "❌",
@@ -23,20 +29,30 @@ class Healthy:
 
     def __init__(self):
         """
-        Инициализирует класс Healthy с настройками из Config.
+        Инициализация менеджера состояния системы.
         """
         self.scheduler = AsyncIOScheduler()
+        self.check_interval = Config.HEALTHY_CHECK_INTERVAL
+        self.statuses = {}
+        self.start_time = time()
+        self.redis_client = None
+        self.hosts = ["8.8.8.8", "1.1.1.1"]
+        self.gateway_ip = Config.GATEWAY_IP
+        self.firebase_host = "firebase.googleapis.com"
+        self.telegram_host = "api.telegram.org"
 
-        self.check_interval = Config.HEALTHY_CHECK_INTERVAL  # Интервал проверки
+        # Компоненты и их функции проверки
         self.components = {
             "redis": self.check_redis,
-            "firebase": self.check_firebase,
-            "telegram": self.check_telegram,
+            "firebase": self._make_async_check(self.firebase_host, "Firebase"),
+            "telegram": self._make_async_check(self.telegram_host, "Telegram"),
             "disk_space": self.check_disk_space,
             "ram": self.check_ram,
-            "gateway": self.check_gateway,
+            "gateway": self._make_async_check(self.gateway_ip, "Шлюз"),
             "internet": self.check_internet,
         }
+
+        # Заголовки и подсказки для компонентов
         self.titles = {
             "redis": "Redis",
             "firebase": "Firebase",
@@ -44,204 +60,152 @@ class Healthy:
             "disk_space": "Дисковое пространство",
             "ram": "Оперативная память",
             "gateway": f"Шлюз {Config.GATEWAY_IP}",
-            "internet": "Интернет"
+            "internet": "Интернет",
         }
         self.component_tooltips = {
             "redis": "Проверка доступности кэша Redis",
-            "firebase": "Доступ к Firebase (База данных/Функции)",
+            "firebase": "Доступ к Firebase",
             "telegram": "Подключение к Telegram Bot API",
             "disk_space": "Проверка свободного места на диске",
             "ram": "Проверка доступной оперативной памяти",
             "gateway": "Проверка статуса сетевого шлюза",
             "internet": "Проверка подключения к интернету",
         }
-        self.statuses = {}  # Хранение статусов компонентов
-        self.jobs = {}  # Для хранения задач планировщика
 
-        self.redis_client = None
-        self.hosts = ["8.8.8.8", "1.1.1.1"]  # Список хостов для проверки
-        self.gateway_ip = Config.GATEWAY_IP  # IP-адрес шлюза
-        self.start_time = time()  # Время последней проверки redis-компонента
+        # Планировщик задач
+        self.jobs = {
+            "health_check": self._schedule_task("health_check", self.perform_health_checks, self.check_interval),
+            "redis_reconnect": self._schedule_task("redis_reconnect", self.initialize_redis, 600),
+        }
 
-    async def run(self):
+    def _make_async_check(self, host: str, name: str):
         """
-        Запускает циклическую проверку состояния компонентов.
+        Создает функцию для проверки сетевого компонента.
         """
-        while True:
-            await self.perform_health_checks()
-            await asyncio.sleep(self.check_interval)
 
-    async def get_component_status(self, name: str) -> dict:
-        """
-        Возвращает текущий статус указанного компонента.
-        """
-        if name not in self.components:
-            return {"status": "NOT_REGISTERED", "details": f"Компонент {name} не зарегистрирован."}
+        async def check():
+            return await self.check_network_component(host, name)
 
+        return check
+
+    def _schedule_task(self, job_name: str, func, interval: int):
+        """
+        Создаёт задачу в планировщике.
+        """
         try:
-            details = await self._run_check(self.components[name])
+            self.scheduler.add_job(
+                func,
+                trigger=IntervalTrigger(seconds=interval),
+                id=job_name,
+                replace_existing=True
+            )
+            return self.scheduler.get_job(job_name)
+        except Exception as e:
+            app_logger.error(f"Ошибка при добавлении задачи '{job_name}': {e}")
+            return None
+
+    def start_scheduler(self):
+        """
+        Запускает планировщик задач.
+        """
+        if not self.scheduler.running:
+            self.scheduler.start()
+            app_logger.info("Планировщик задач успешно запущен.")
+
+    def stop_scheduler(self):
+        """
+        Останавливает планировщик задач.
+        """
+        if self.scheduler.running:
+            self.scheduler.shutdown(wait=False)
+            app_logger.info("Планировщик задач успешно остановлен.")
+
+    def get_scheduler_status(self, job_id: str) -> dict:
+        """
+        Получает статус задачи по идентификатору.
+        :param job_id: Идентификатор задачи в планировщике.
+        :return: Статус задачи (словарь с информацией или сообщение об ошибке).
+        """
+        try:
+            job: Job = self.scheduler.get_job(job_id)
+            if not job:
+                return {"status": "NOT_FOUND", "details": f"Задача с ID '{job_id}' не найдена."}
+
             return {
-                "status": "OK" if details["healthy"] else "FAILED",
-                "details": details.get("details", "No additional details"),
-                "inform": details.get("inform", False),
-                "last_checked": time() - self.start_time,
+                "status": "RUNNING" if job.next_run_time else "PAUSED",
+                "id": job.id,
+                "next_run_time": job.next_run_time,
             }
         except Exception as e:
+            app_logger.error(f"Ошибка при получении статуса задачи '{job_id}': {e}")
+            return {"status": "ERROR", "details": str(e)}
+
+    def get_all_scheduler_statuses(self) -> dict:
+        """
+        Получает статус всех задач в планировщике.
+        :return: Словарь со статусами задач.
+        """
+        try:
+            jobs = self.scheduler.get_jobs()
             return {
-                "status": "ERROR",
-                "details": str(e),
-                "inform": "N/A",
-                "last_checked": time() - self.start_time,
-            }
-
-    async def generate_report(self) -> dict:
-        """
-        Формирует подробный отчет о состоянии всех компонентов в формате JSON.
-        """
-        await self.perform_health_checks()
-        # Возвращаем полный отчет в виде словаря
-        return {
-            "components": {
-                name: {
-                    "status": status.get("status", "N/A"),
-                    "details": status.get("details", "No details available"),
-                    "inform": status.get("inform", False),
-                    "last_checked": self.statuses[name].get("last_checked", "N/A")
+                job.id: {
+                    "status": "RUNNING" if job.next_run_time else "PAUSED",
+                    "next_run_time": job.next_run_time,
                 }
-                for name, status in self.statuses.items()
+                for job in jobs
             }
-        }
-
-    async def generate_html_report(self) -> str:
-        """
-        Формирует HTML-отчёт о состоянии всех компонентов.
-        """
-        await self.perform_health_checks()
-
-        html = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Health Report</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
-                h1 { color: #333; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f4f4f4; }
-                .ok { color: green; }
-                .failed { color: red; }
-                .error { color: orange; }
-            </style>
-            <script>
-            // Автоперезагрузка страницы каждые 10 секунд
-            setInterval(() => {
-                window.location.reload();
-            }, 10000);
-        </script>
-        </head>
-        <body>
-            <h1>Отчёт о состоянии компонентов</h1>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Компонент</th>
-                        <th>Статус</th>
-                        <th>Детали</th>
-                        <th>Информация</th>
-                        <th>Последняя проверка</th>
-
-                    </tr>
-                </thead>
-                <tbody>
-        """
-        # Заменяем статусы на иконки
-        status_icons = {
-            "OK": "✅",
-            "FAILED": "❌",
-            "ERROR": "⚠️",
-            "N/A": "❔",
-        }
-
-        for name, status in self.statuses.items():
-            status_icon = status_icons.get(status.get('status', 'N/A'), "❔")
-            last_checked = status.get('last_checked', 'N/A')
-            if isinstance(last_checked, (float, int)):
-                last_checked = round(last_checked, 2)  # Округляем до 2 знаков
-            html += f"""
-            <tr>
-                <td>{name}</td>
-                <td class="{status.get('status', '').lower()}">{status_icon} {status.get('status', 'N/A')}</td>
-                <td>{status.get('details', 'No details available')}</td>
-                <td>{status.get('inform', 'N/A')}</td>
-                <td>{last_checked}</td>
-
-            </tr>
-            """
-        html += """
-                </tbody>
-            </table>
-        </body>
-        </html>
-        """
-        return html
+        except Exception as e:
+            app_logger.error(f"Ошибка при получении статусов задач: {e}")
+            return {"status": "ERROR", "details": str(e)}
 
     async def perform_health_checks(self):
         """
-        Выполняет проверку состояния всех зарегистрированных компонентов.
+        Выполняет детализированную проверку состояния всех компонентов.
         """
-        for name, check_function in self.components.items():
-            try:
-                start_time = time()  # Начало проверки
-                details = await self._run_check(check_function)
-                response_time = time() - start_time
+        try:
+            for name, check_function in self.components.items():
+                start_time = time()  # Записываем время начала проверки
+                details = await check_function() if asyncio.iscoroutinefunction(check_function) else check_function()
+                response_time = time() - start_time  # Вычисляем время выполнения проверки
+
+                # Сохраняем результат проверки
                 self.statuses[name] = {
                     "title": self.titles.get(name, "N/A"),
                     "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
-                    "status": "OK" if details["healthy"] else "FAILED",
-                    "details": details.get("details", "No additional details"),
+                    "status": "OK" if details.get("healthy") else "FAILED",
+                    "details": details.get("details", "No details available"),
                     "inform": details.get("inform", "N/A"),
-                    "last_checked": response_time,  # Время проверки компонента
+                    "last_checked": round(response_time, 2),  # Время выполнения в секундах
                 }
-            except Exception as e:
-                self.statuses[name] = {
-                    "title": self.titles.get(name, "N/A"),
-                    "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
-                    "status": "ERROR",
-                    "details": str(e),
-                    "inform": "N/A",
-                    "last_checked": time() - self.start_time,
-                }
-                app_logger.error(f"Ошибка при проверке {name}: {e}")
+        except Exception as e:
+            app_logger.error(f"Ошибка при выполнении детализированной проверки: {e}")
+            raise
 
-        # Возвращаем полный словарь статусов после всех проверок
-        return self.statuses
-
-    async def _run_check(self, check_function):
+    def _update_status(self, name: str, details: dict, response_time: Union[float, str], is_error=False):
         """
-        Выполняет проверку состояния для асинхронных и синхронных функций.
+        Обновляет статус компонента в словаре состояний.
         """
-        return await check_function() if asyncio.iscoroutinefunction(check_function) else check_function()
-
-    async def get_all_statuses(self) -> dict:
-        """
-        Возвращает текущий статус всех компонентов.
-        """
-        await self.perform_health_checks()
-        # Формируем данные с заголовками и подсказками
-        return {
-            name: {
-                "title": self.titles.get(name, name),
-                "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
-                "status": status.get("status", "N/A"),
-                "details": status.get("details", "No details available"),
-                "inform": status.get("inform", "N/A"),
-                "last_checked": status.get("last_checked", "N/A"),
-            }
-            for name, status in self.statuses.items()
+        self.statuses[name] = {
+            "title": self.titles.get(name, "N/A"),
+            "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
+            "status": "ERROR" if is_error else ("OK" if details.get("healthy") else "FAILED"),
+            "details": details.get("details", "No additional details"),
+            "inform": details.get("inform", "N/A"),
+            "last_checked": response_time,
         }
+
+    async def check_redis(self) -> dict:
+        """
+        Проверяет доступность Redis.
+        """
+        try:
+            if not self.redis_client:
+                await self.initialize_redis()
+            response_time = await self.ping_host(Config.REDIS_HOST)
+            return {"healthy": bool(response_time),
+                    "details": "Redis доступен" if response_time else "Redis недоступен"}
+        except Exception as e:
+            return {"healthy": False, "details": str(e)}
 
     async def initialize_redis(self):
         """
@@ -251,106 +215,36 @@ class Healthy:
             self.redis_client = await redis.from_url(Config.REDIS_URL)
         except Exception as e:
             app_logger.error(f"Ошибка при инициализации Redis клиента: {e}")
-            raise
 
-    async def check_hosts(self) -> dict:
-        """
-        Проверяет доступность хостов через пинг.
-        """
-        results = {}
-        for host in self.hosts:
-            try:
-                response_time = await self.ping_host(host)
-                if response_time:
-                    results[host] = {"status": "OK", "inform": f"{response_time:.3f} seconds"}
-                else:
-                    results[host] = {"status": "FAILED", "details": "Host unreachable"}
-            except Exception as e:
-                results[host] = {"status": "ERROR", "details": str(e)}
+    def check_firebase(self):
+        return self.check_network_component(self.firebase_host, "Firebase")
 
-        self.statuses["hosts"] = results
-        return results
+    def check_telegram(self):
+        return self.check_network_component(self.telegram_host, "Telegram")
 
-    async def ping_host(self, host: str) -> Any | None:
+    def check_gateway(self):
+        return self.check_network_component(self.gateway_ip, "Шлюз")
+
+    async def check_network_component(self, host: str, name: str) -> dict:
         """
-        Выполняет пинг указанного хоста.
-        :param host: IP-адрес или доменное имя.
-        :return: Время отклика (в секундах) или None, если хост недоступен.
+        Общая логика проверки сетевых компонентов.
         """
         try:
-            response_time = await asyncio.to_thread(ping, host, timeout=3)
-            return response_time
+            response_time = await self.ping_host(host)
+            return {"healthy": bool(response_time),
+                    "details": f"{name} доступен" if response_time else f"{name} недоступен", "infrm": response_time}
+        except Exception as e:
+            return {"healthy": False, "details": str(e)}
+
+    async def ping_host(self, host: str) -> Union[float, None]:
+        """
+        Выполняет пинг указанного хоста.
+        """
+        try:
+            return await asyncio.to_thread(ping, host, timeout=3)
         except PingError as e:
             app_logger.error(f"Ошибка пинга хоста {host}: {e}")
             return None
-
-    async def check_gateway(self) -> dict:
-        """
-        Проверяет доступность сетевого шлюза через пинг.
-        """
-        try:
-            response_time = await self.ping_host(self.gateway_ip)
-            if response_time:
-                return {"healthy": True, "details": "Шлюз доступен", "inform": f"{response_time:.3f} seconds"}
-            return {"healthy": False, "details": "Шлюз недоступен"}
-        except Exception as e:
-            return {"healthy": False, "details": f"Ошибка проверки шлюза: {e}"}
-
-    async def check_internet(self) -> dict:
-        """
-        Проверяет доступность интернета через пинг до известных хостов.
-        """
-        try:
-            for host in self.hosts:
-                response_time = await self.ping_host(host)
-                if response_time:
-                    return {"healthy": True,
-                            "details": f"Интернет доступен, пинг до {host}: {response_time:.3f} seconds",
-                            "inform": f"{response_time:.3f} seconds"}
-            return {"healthy": False, "details": "Интернет недоступен (все пинги неудачны)"}
-        except Exception as e:
-            return {"healthy": False, "details": f"Ошибка проверки доступа в интернет: {e}"}
-
-    async def check_redis(self) -> dict:
-        """
-        Проверяет доступность Redis через пинг.
-        """
-        try:
-            if not self.redis_client:
-                await self.initialize_redis()
-            redis_ip = Config.REDIS_HOST  # Укажите IP-адрес Redis-сервера
-            response_time = await self.ping_host(redis_ip)
-            if response_time:
-                return {"healthy": True, "details": "Redis доступен", "inform": f"{response_time:.3f} seconds"}
-            return {"healthy": False, "details": "Redis недоступен (пинг неудачен)"}
-        except Exception as e:
-            return {"healthy": False, "details": f"Ошибка проверки Redis: {e}"}
-
-    async def check_firebase(self) -> dict:
-        """
-        Проверяет доступность Firebase через пинг.
-        """
-        try:
-            firebase_host = "firebase.googleapis.com"
-            response_time = await self.ping_host(firebase_host)
-            if response_time:
-                return {"healthy": True, "details": "Firebase доступен", "inform": f"{response_time:.3f} seconds"}
-            return {"healthy": False, "details": "Firebase недоступен (пинг неудачен)"}
-        except Exception as e:
-            return {"healthy": False, "details": f"Ошибка проверки Firebase: {e}"}
-
-    async def check_telegram(self) -> dict:
-        """
-        Проверяет доступность серверов Telegram через пинг.
-        """
-        try:
-            telegram_host = "api.telegram.org"
-            response_time = await self.ping_host(telegram_host)
-            if response_time:
-                return {"healthy": True, "details": "Telegram доступен", "inform": f"{response_time:.3f} seconds"}
-            return {"healthy": False, "details": "Telegram недоступен (пинг неудачен)"}
-        except Exception as e:
-            return {"healthy": False, "details": f"Ошибка проверки Telegram: {e}"}
 
     def check_disk_space(self) -> dict:
         """
@@ -359,54 +253,128 @@ class Healthy:
         try:
             _, _, free = shutil.disk_usage("/")
             free_gb = free / (1024 ** 3)
-            if free_gb < Config.DISK_SPACE_THRESHOLD_GB:
-                return {"healthy": False, "details": "Мало места на диске",
-                        "inform": f"{free_gb:.2f} ГБ"}
-            return {"healthy": True, "details": f"Свободно на диске: {free_gb:.2f} ГБ", "inform": f"{free_gb:.2f} ГБ"}
+            return {
+                "healthy": free_gb >= Config.DISK_SPACE_THRESHOLD_GB,
+                "details": f"Свободно: {free_gb:.2f} ГБ",
+                "inform": f"{free_gb:.2f} ГБ"
+            }
         except Exception as e:
-            return {"healthy": False, "details": f"Ошибка при проверке дискового пространства: {e}"}
+            return {"healthy": False, "details": str(e)}
 
     def check_ram(self) -> dict:
         """
-        Проверяет использование оперативной памяти.
+        Проверяет использование RAM.
         """
         try:
             mem = psutil.virtual_memory()
-            total_gb = mem.total / (1024 ** 3)
             available_gb = mem.available / (1024 ** 3)
             used_percent = mem.percent
-            if used_percent > Config.RAM_USAGE_THRESHOLD_PERCENT:
-                return {"healthy": False,
-                        "details": f"Высокое использование RAM: {used_percent}%, доступно {available_gb:.2f} ГБ из {total_gb:.2f} ГБ",
-                        "inform": f"{used_percent}%"}
-            return {"healthy": True,
-                    "details": f"Использование RAM: {used_percent}%, доступно {available_gb:.2f} ГБ из {total_gb:.2f} ГБ",
-                    "inform": f"{used_percent}%"}
+            return {
+                "healthy": used_percent <= Config.RAM_USAGE_THRESHOLD_PERCENT,
+                "details": f"RAM используется на {used_percent}%",
+                "inform": f"{available_gb:.2f} ГБ"
+            }
         except Exception as e:
-            return {"healthy": False, "details": f"Ошибка при проверке RAM: {e}"}
+            return {"healthy": False, "details": str(e)}
+
+    def get_task_status(self, task: asyncio.Task, task_name: str) -> dict:
+        """
+        Возвращает текущий статус указанной задачи.
+
+        :param task: asyncio.Task - Задача, статус которой нужно проверить.
+        :param task_name: str - Название задачи для идентификации.
+        :return: dict - Словарь с состоянием задачи.
+        """
+        if not task:
+            return {"task": task_name, "status": "NOT_STARTED", "details": "Задача еще не создана."}
+
+        if task.done():
+            return {"task": task_name, "status": "COMPLETED", "details": "Задача завершена."}
+
+        if task.cancelled():
+            return {"task": task_name, "status": "CANCELLED", "details": "Задача была отменена."}
+
+        return {"task": task_name, "status": "RUNNING", "details": "Задача в процессе выполнения."}
+
+    async def check_internet(self) -> dict:
+        """
+        Проверяет доступность интернета.
+        """
+        for host in self.hosts:
+            result = await self.check_network_component(host, "Интернет")
+            if result["healthy"]:
+                return result
+        return {"healthy": False, "details": "Интернет недоступен"}
 
     def calculate_system_health(self) -> dict:
         """
-        Рассчитывает общее здоровье системы на основе статусов всех компонентов.
+        Рассчитывает общее здоровье системы.
         """
         overall_status = "OK"
-        failed_components = []
-        error_components = []
+        failed, errors = [], []
 
         for name, status in self.statuses.items():
             if status["status"] == "FAILED":
                 overall_status = "FAILED"
-                failed_components.append(name)
+                failed.append(name)
             elif status["status"] == "ERROR":
                 overall_status = "ERROR"
-                error_components.append(name)
+                errors.append(name)
 
-        # Формируем итоговый результат
-        health_report = {
+        return {
             "system_status": overall_status,
-            "failed_components": failed_components,
-            "error_components": error_components,
-            "details": self.statuses,  # Включаем детализированную информацию о компонентах
+            "failed_components": failed,
+            "error_components": errors,
+            "details": self.statuses,
         }
 
-        return health_report
+    async def generate_report(self) -> dict:
+
+        """
+        Формирует подробный отчет о состоянии всех компонентов в формате JSON.
+        """
+        try:
+            # Выполняем детализированную проверку компонентов
+            await self.perform_health_checks()
+
+            # Генерация отчета
+            report = {
+                "components": {
+                    name: {
+                        "status": status.get("status", "N/A"),
+                        "details": status.get("details", "No details available"),
+                        "inform": status.get("inform", False),
+                        "last_checked": status.get("last_checked", "N/A")
+                    }
+                    for name, status in self.statuses.items()
+                }
+            }
+
+            return report
+        except Exception as e:
+            app_logger.error(f"Ошибка генерации отчета: {e}")
+            raise ValueError(f"Ошибка генерации отчета: {e}")
+
+    async def get_all_statuses(self) -> dict:
+        """
+        Возвращает текущий статус всех компонентов.
+        """
+        try:
+            # Выполняем детализированную проверку состояния всех компонентов
+            await self.perform_health_checks()
+
+            # Формируем словарь статусов всех компонентов
+            return {
+                name: {
+                    "title": self.titles.get(name, name),
+                    "tooltip": self.component_tooltips.get(name, "Описание отсутствует"),
+                    "status": status.get("status", "N/A"),
+                    "details": status.get("details", "No details available"),
+                    "inform": status.get("inform", "N/A"),
+                    "last_checked": status.get("last_checked", "N/A"),
+                }
+                for name, status in self.statuses.items()
+            }
+        except Exception as e:
+            app_logger.error(f"Ошибка получения статусов: {e}")
+            raise ValueError(f"Ошибка получения статусов: {e}")

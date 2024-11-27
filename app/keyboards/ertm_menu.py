@@ -23,5 +23,6 @@ ertm_track_location = ReplyKeyboardMarkup(  # Это позволяет клав
     keyboard=[
         [
             KeyboardButton(text="📍 Отправить локацию", request_location=True)
-        ]], resize_keyboard=True,
+        ], [KeyboardButton(text=MenuLabels.BACK.value)],
+    ], resize_keyboard=True,
     one_time_keyboard=False, )

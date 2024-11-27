@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/venv/Scripts" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/venv1" />
+      <excludeFolder url="file://$MODULE_DIR$/logs" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.13 (aio.tgnsa)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

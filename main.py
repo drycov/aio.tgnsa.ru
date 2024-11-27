@@ -1,82 +1,22 @@
-import asyncio
-import sys
-from pathlib import Path
+import uvicorn
 
-import firebase_admin
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from firebase_admin import credentials
-
-from admin import run
-from app import start_bot, graceful_shutdown
-from app.constants import Messages
+from api import API
 from app.utils.logger_instance import app_logger
-from config import Config
-from healthy import Healthy
-from housekeeper import Housekeeper
-
-# Настройка бота и диспетчера
-
-# Создание экземпляров для фоновых задач
-scheduler = AsyncIOScheduler()
-
-housekeeper = Housekeeper(scheduler)
-health_checker = Healthy()
-housekeeper.schedule_tasks()
-scheduler.start()
-
-# Инициализация Firebase
-try:
-    if not firebase_admin._apps:
-        serviceAccountKey = Path(Config.BASE_DIR) / "serviceAccountKey.json"
-        app_logger.info(f"Начало инициализации Firebase с файлом ключа: {serviceAccountKey}")
-
-        # Проверка существования файла
-        if not serviceAccountKey.exists():
-            app_logger.error(f"Файл serviceAccountKey.json не найден по пути: {serviceAccountKey}")
-            sys.exit(1)
-
-        cred = credentials.Certificate(serviceAccountKey)
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': Config.FIREBASE_DATABASE_URL
-        })
-        app_logger.info("Firebase успешно инициализирован")
-except FileNotFoundError as fnf_error:
-    app_logger.error(f"Файл serviceAccountKey.json не найден: {fnf_error}")
-    sys.exit(1)
-except Exception as e:
-    app_logger.error(f"Ошибка при инициализации Firebase: {e}")
-    sys.exit(1)
 
 
-async def on_startup():
+# Экспорт приложения для использования с Uvicorn
+def create_app():
     """
-    Функция, выполняющая действия при старте бота.
-    Запускает фоновые задачи для Health Checker и Housekeeper.
+    Создание приложения FastAPI с жизненным циклом.
     """
-    # Запуск Health API в отдельном потоке, если мониторинг включен
-    if Config.HEALTHY_CHECK_ENABLE:
-        asyncio.create_task(run())
-
-    # Запуск фоновых задач
-    asyncio.create_task(housekeeper.run())
-    if Config.HEALTHY_CHECK_ENABLE:
-        asyncio.create_task(health_checker.run())  # Health Checker
-    app_logger.info("Фоновые задачи Housekeeper и Health Checker запущены")
+    api = API()
+    app = api.get_app()  # Lifespan уже настроен в классе API
+    return app
 
 
-async def main():
-    """
-    Главная функция запуска бота с учетом запуска фоновых задач.
-    """
-    # Запуск бота с on_startup
-    await start_bot(on_startup=on_startup)
-
+# Экспорт приложения
+app = create_app()
 
 if __name__ == "__main__":
-    app_logger.info(Messages.START_BOT_MODULE.value)
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        # Завершаем бота и фоновые задачи при выходе
-        asyncio.run(graceful_shutdown())
-        app_logger.warning(Messages.SHUTDOWN_SIGNAL.value)
+    app_logger.info("Запуск FastAPI приложения")
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)

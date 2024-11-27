@@ -4,8 +4,48 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="pylint fix">
-      <change afterPath="$PROJECT_DIR$/.flake8" afterDir="false" />
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="pylint fix new">
+      <change afterPath="$PROJECT_DIR$/adminGUI/forms/Connection/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/forms/Main/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/forms/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/icons/refresh.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/icons/restart.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/icons/settings.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/icons/start.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/icons/stop.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/adminGUI/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/app.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/routes/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/routes/config_manager/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/routes/health_manager/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/routes/index/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/routes/send_messages/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/routes/tasks_manager/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/routes/user_manager/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/services/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/services/config_service/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/api/services/user_service/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/utils/JWT_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/constants/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/messages.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/admin_handler/admin_callback.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_callback.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/error_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/error_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/ertm_handler/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/ertm_handler/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/ertm_handler/track_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/ertm_handler/track_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/keyboards/ertm_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/ertm_menu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/User.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ertm/ertm.py" beforeDir="false" afterPath="$PROJECT_DIR$/ertm/ertm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/healthy.py" beforeDir="false" afterPath="$PROJECT_DIR$/healthy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,6 +88,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Python.admin_gui.executor&quot;: &quot;Run&quot;,
     &quot;Python.exporter.executor&quot;: &quot;Run&quot;,
     &quot;Python.healthy_api.executor&quot;: &quot;Run&quot;,
     &quot;Python.log_parser.executor&quot;: &quot;Run&quot;,
@@ -60,17 +101,17 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/dev.tgnsa.ru/aio.tgnsa/ertm/models&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+    &quot;last_opened_file_path&quot;: &quot;D:/dev.tgnsa.ru/aio.tgnsa/adminGUI/icons&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\adminGUI\icons" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\ertm\models" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\ertm" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\admin_handler" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\advanced_handlers" />
-      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\models" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\ertm" />
@@ -86,8 +127,51 @@
         <option value="PythonConfigurationType" />
       </set>
     </option>
+    <option name="hiddenConfigurations">
+      <map>
+        <entry key="PythonConfigurationType">
+          <value>
+            <set>
+              <option value="admin_gui" />
+            </set>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.admin_gui">
+    <configuration name="admin_gui" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="aio.tgnsa" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/adminGUI" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </EXTENSION>
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/adminGUI/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="aio.tgnsa" />
       <option name="ENV_FILES" value="" />
@@ -123,6 +207,7 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.admin_gui" />
       </list>
     </recent_temporary>
   </component>
@@ -366,7 +451,15 @@
       <option name="project" value="LOCAL" />
       <updated>1732142753097</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="pylint fix new">
+      <option name="closed" value="true" />
+      <created>1732143345568</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1732143345568</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -399,6 +492,7 @@
     <MESSAGE value="delete test_hndler" />
     <MESSAGE value="delete another filed" />
     <MESSAGE value="pylint fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="pylint fix" />
+    <MESSAGE value="pylint fix new" />
+    <option name="LAST_COMMIT_MESSAGE" value="pylint fix new" />
   </component>
 </project>

@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
@@ -9,29 +10,24 @@ from ertm import ERTM
 
 router = Router()
 
-devices = [
-    {"name": "Device 1", "coords": [49.670784, 83.828939]},
-    {"name": "Device 2", "coords": [49.670700, 83.828800]},
-    {"name": "Device 3", "coords": [49.671000, 83.829000]},
-    {"name": "Device 4", "coords": [49.675000, 83.830000]},  # Вне радиуса 50 м
-]
-
 
 @router.message(F.text == MenuLabels.ERTM_TRACK_EQUIPMENT.value)
 async def cidr_calc_command(message: Message, state: FSMContext):
-    display_data = {"text": Messages.ENTER_SUBNET.value}
+    display_data = {"text": Messages.SEND_LOCATION.value}
     await StateManager.set_state_with_previous(state, ERTMManager.TRACK_EQ, display_data)
     await message.answer(**display_data, reply_markup=ertm_track_location)
     # await state.update_data(waiting_for_subnet=True)
 
 
-@router.message(F.location)
+@router.message(F.location, StateFilter(ERTMManager.TRACK_EQ))
 async def handle_location(message: Message):
     user_location = [message.location.latitude, message.location.longitude]
-    radius = 50  # Радиус в метрах
+    radius = 150  # Радиус в метрах
 
     # Найти устройства в радиусе
     nearby_devices = []
+    ertm = ERTM()  # Создайте экземпляр класса
+    devices = ertm.get_devices_from_db()  # Правильный вызов
     for device in devices:
         distance = ERTM.calculate_distance(user_location, device["coords"])
         if distance <= radius:
