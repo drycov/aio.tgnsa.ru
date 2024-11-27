@@ -4,48 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="pylint fix new">
-      <change afterPath="$PROJECT_DIR$/adminGUI/forms/Connection/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/forms/Main/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/forms/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/icons/refresh.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/icons/restart.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/icons/settings.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/icons/start.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/icons/stop.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/adminGUI/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/routes/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/routes/config_manager/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/routes/health_manager/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/routes/index/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/routes/send_messages/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/routes/tasks_manager/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/routes/user_manager/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/services/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/services/config_service/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api/services/user_service/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/utils/JWT_manager.py" afterDir="false" />
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="DDM zero dot zero fixed and retyping running method on asyncio">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/constants/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/messages.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/admin_handler/admin_callback.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/admin_handler/admin_callback.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/error_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/error_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/ertm_handler/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/ertm_handler/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/handlers/ertm_handler/track_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/ertm_handler/track_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards/ertm_menu.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards/ertm_menu.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/User.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/User.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/helper_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ertm/ertm.py" beforeDir="false" afterPath="$PROJECT_DIR$/ertm/ertm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/healthy.py" beforeDir="false" afterPath="$PROJECT_DIR$/healthy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -459,7 +419,15 @@
       <option name="project" value="LOCAL" />
       <updated>1732143345568</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="DDM zero dot zero fixed and retyping running method on asyncio">
+      <option name="closed" value="true" />
+      <created>1732733875882</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1732733875882</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -493,6 +461,7 @@
     <MESSAGE value="delete another filed" />
     <MESSAGE value="pylint fix" />
     <MESSAGE value="pylint fix new" />
-    <option name="LAST_COMMIT_MESSAGE" value="pylint fix new" />
+    <MESSAGE value="DDM zero dot zero fixed and retyping running method on asyncio" />
+    <option name="LAST_COMMIT_MESSAGE" value="DDM zero dot zero fixed and retyping running method on asyncio" />
   </component>
 </project>

@@ -577,3 +577,13 @@ class HelperFunctions:
         if isinstance(substrings, str):
             return substrings in model
         return any(sub in model for sub in substrings)
+    @staticmethod
+    def escape_value(value):
+        """
+        Экранирует одиночные кавычки в строке для предотвращения ошибок в SQL или другом использовании.
+        """
+        try:
+            return f"'{str(value).replace('\'', '\'\'')}'"  # Приведение к строке и экранирование
+        except Exception as e:
+            print(f"Error escaping value: {value} -> {e}")
+            raise

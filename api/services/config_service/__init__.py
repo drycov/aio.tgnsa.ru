@@ -2,8 +2,11 @@ import csv
 import json
 import sqlite3
 from pathlib import Path
+from pydoc import Helper
 
 from dotenv import load_dotenv
+
+from app.utils import HelperFunctions
 
 # Загружаем текущие переменные окружения
 load_dotenv()
@@ -90,7 +93,8 @@ class ConfigService:
                 if value is None:
                     value = "NULL"
                 elif isinstance(value, str):
-                    value = f"'{value.replace('\'', '\'\'')}'"  # Экранирование одиночных кавычек
+                    value = HelperFunctions.escape_value(value)
+                    # value = f"'{value.replace('\'', '\'\'')}'"  # Экранирование одиночных кавычек
                 dump_file.write(f"INSERT INTO config (key, value) VALUES ('{key}', {value});\n")
 
             dump_file.write("COMMIT;\n")
