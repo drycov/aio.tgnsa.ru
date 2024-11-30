@@ -4,9 +4,30 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="AttributeError: 'User' object has no attribute 'generate_jwt'. Did you mean: 'generate_hash'?">
+    <list default="true" id="3fcad583-4698-417a-90ba-7df397c18630" name="Changes" comment="fixed init bot">
+      <change afterPath="$PROJECT_DIR$/app/utils/pen_finder.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data.xls" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ertm_mock.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/cli/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/cli/shell.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/core/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/core/auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/core/database.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/server/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/server/ssl_manager.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/proxy/server/vpn_server.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/bot_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/bot_module.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/constants/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/constants/messages.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/device_handlers/check_device.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/handlers/start_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers/start_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/device_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/device_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/snmp_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/snmp_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ertm/ertm.py" beforeDir="false" afterPath="$PROJECT_DIR$/ertm/ertm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ertm/models/device_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/ertm/models/device_models.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,19 +71,23 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;Python.admin_gui.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ertm_mock.executor&quot;: &quot;Run&quot;,
     &quot;Python.exporter.executor&quot;: &quot;Run&quot;,
     &quot;Python.healthy_api.executor&quot;: &quot;Run&quot;,
     &quot;Python.log_parser.executor&quot;: &quot;Run&quot;,
     &quot;Python.main (1).executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.merge.executor&quot;: &quot;Run&quot;,
+    &quot;Python.proxy_vpn (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.proxy_vpn.executor&quot;: &quot;Run&quot;,
     &quot;Python.syslog_server.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test.executor&quot;: &quot;Run&quot;,
     &quot;Python.test_syslog.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/dev.tgnsa.ru/aio.tgnsa/adminGUI/icons&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/dev.tgnsa.ru/aio.tgnsa&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
@@ -75,11 +100,11 @@
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\advanced_handlers" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\proxy" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\ertm" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\device_handlers" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\advanced_handlers" />
       <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\handlers\main_handler" />
-      <recent name="D:\dev.tgnsa.ru\aio.tgnsa\app\models" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -93,15 +118,15 @@
         <entry key="PythonConfigurationType">
           <value>
             <set>
-              <option value="admin_gui" />
+              <option value="ertm_mock" />
             </set>
           </value>
         </entry>
       </map>
     </option>
   </component>
-  <component name="RunManager" selected="Python.admin_gui">
-    <configuration name="admin_gui" type="PythonConfigurationType" factoryName="Python" temporary="true">
+  <component name="RunManager" selected="Python.main (1)">
+    <configuration name="ertm_mock" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="aio.tgnsa" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -110,21 +135,33 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/adminGUI" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="net.ashald.envfile">
-        <option name="IS_ENABLED" value="false" />
-        <option name="IS_SUBST" value="false" />
-        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
-        <option name="IS_IGNORE_MISSING_FILES" value="false" />
-        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
-        <ENTRIES>
-          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
-        </ENTRIES>
-      </EXTENSION>
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/adminGUI/main.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ertm_mock.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="aio.tgnsa" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/proxy" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/proxy/main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -165,10 +202,40 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="aio.tgnsa" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.main (1)" />
+      <item itemvalue="Python.ertm_mock" />
+      <item itemvalue="Python.main" />
+      <item itemvalue="Python.test" />
+    </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test" />
+        <item itemvalue="Python.main (1)" />
         <item itemvalue="Python.main" />
-        <item itemvalue="Python.admin_gui" />
+        <item itemvalue="Python.ertm_mock" />
       </list>
     </recent_temporary>
   </component>
@@ -452,7 +519,15 @@
       <option name="project" value="LOCAL" />
       <updated>1732736469993</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL-00034" summary="fixed init bot">
+      <option name="closed" value="true" />
+      <created>1732738235935</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1732738235935</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -489,6 +564,7 @@
     <MESSAGE value="DDM zero dot zero fixed and retyping running method on asyncio" />
     <MESSAGE value="Nov 28 00:29:36 ttcnsbvm python[594242]: 2024-11-28 00:29:36,665 - app.utils.logger - ERROR - Ошибка при регистрации маршрутов: f-string expression part cannot include a backslash (__init__.py, line 93)" />
     <MESSAGE value="AttributeError: 'User' object has no attribute 'generate_jwt'. Did you mean: 'generate_hash'?" />
-    <option name="LAST_COMMIT_MESSAGE" value="AttributeError: 'User' object has no attribute 'generate_jwt'. Did you mean: 'generate_hash'?" />
+    <MESSAGE value="fixed init bot" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed init bot" />
   </component>
 </project>

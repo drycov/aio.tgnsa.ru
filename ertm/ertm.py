@@ -61,7 +61,7 @@ class ERTM:
             return []
 
     # Добавление нового устройства в базу данных
-    def add_device(self, host, sys_name, model, latitude, longitude, address):
+    def add_device(self, host,vendor, sys_name, model, latitude, longitude, address):
         try:
             # Проверка существования устройства
             existing_device = (
@@ -76,6 +76,7 @@ class ERTM:
             # Создание нового устройства
             new_device = Device(
                 host=host,
+                vendor=vendor,
                 sys_name=sys_name,
                 model=model,
                 latitude=latitude,

@@ -1,7 +1,7 @@
 import uvicorn
 
 from api import API
-from app.utils.logger_instance import app_logger
+from bot.utils.logger_instance import app_logger
 
 
 # Экспорт приложения для использования с Uvicorn

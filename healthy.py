@@ -11,7 +11,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from ping3 import ping
 from ping3.errors import PingError
 
-from app.utils.logger_instance import app_logger
+from bot.utils.logger_instance import app_logger
 from config import Config
 
 

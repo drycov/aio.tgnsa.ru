@@ -14,9 +14,9 @@ from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.routes import register_routes
-from app.bot_module import bot_manager
-from app.utils import JWTManager
-from app.utils.logger_instance import app_logger
+from bot.bot_module import bot_manager
+from bot.utils import JWTManager
+from bot.utils.logger_instance import app_logger
 from config import Config
 from healthy import Healthy
 from housekeeper import Housekeeper

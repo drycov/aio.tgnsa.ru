@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
-from app.utils.logger_instance import app_logger
+from bot.utils.logger_instance import app_logger
 from config import Config
 from logging_config import LoggingConfig
 

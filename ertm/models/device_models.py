@@ -9,6 +9,7 @@ class Device(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)  # Уникальный идентификатор
     host = Column(String, nullable=False, default='Неизвестный хост')  # Хост устройства
+    vendor = Column(String, nullable=False, default='Неизвестный vendor')  # Хост устройства
     sys_name = Column(String, nullable=False, default='Неизвестное имя')  # Имя системы
     model = Column(String, nullable=False, default='Неизвестная модель')  # Модель устройства
     latitude = Column(Float, nullable=False, default=0.0)  # Широта

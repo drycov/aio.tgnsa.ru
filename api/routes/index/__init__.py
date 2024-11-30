@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from api import API
-from app.bot_instance import bot
+from bot.bot_instance import bot
 from config import Config
 
 Index = APIRouter()

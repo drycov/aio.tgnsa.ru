@@ -3,8 +3,8 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.models import User
-from app.utils.logger_instance import app_logger
+from bot.models import User
+from bot.utils.logger_instance import app_logger
 
 UserManager = APIRouter()
 

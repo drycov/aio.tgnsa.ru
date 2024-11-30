@@ -6,7 +6,7 @@ from pydoc import Helper
 
 from dotenv import load_dotenv
 
-from app.utils import HelperFunctions
+from bot.utils import HelperFunctions
 
 # Загружаем текущие переменные окружения
 load_dotenv()

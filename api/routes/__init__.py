@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter
 
-from app.utils.logger_instance import app_logger  # Подключение логирования
+from bot.utils.logger_instance import app_logger  # Подключение логирования
 
 
 PingManager = APIRouter()
