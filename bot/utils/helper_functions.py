@@ -472,8 +472,17 @@ class HelperFunctions:
             str: Строковое представление таблицы.
         """
         # Создаем таблицу с помощью `tabulate`
-        table_string = tabulate(results, headers=head, tablefmt="plain", stralign="center")
-        return table_string
+        try:
+            # Проверка, что headers передается как список строк
+            if isinstance(head, list) and all(isinstance(h, str) for h in head):
+                # Формируем таблицу
+                table_string = tabulate(results, headers=head, tablefmt="plain", stralign="left")
+                return table_string
+            else:
+                raise ValueError("Заголовки должны быть списком строк.")
+        except Exception as e:
+            app_logger.error(f"Ошибка форматирования таблицы: {e}")
+            raise ValueError("Ошибка при форматировании таблицы")
 
     @staticmethod
     def generate_vlan_table(vlan_data: List[List[Any]]) -> str:

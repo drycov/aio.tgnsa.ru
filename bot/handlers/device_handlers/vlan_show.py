@@ -50,7 +50,6 @@ async def vlan_list(message: Message, state: FSMContext):
     current_date = HelperFunctions.get_current_date()
     await message.answer(
         f"Список VLAN на устройстве: <code>{host}</code>",
-        reply_markup=ReplyKeyboardRemove(),
         parse_mode="HTML"
     )
     try:

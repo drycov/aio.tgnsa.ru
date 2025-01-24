@@ -106,7 +106,7 @@ class Config:
     # ---------- Логирование ----------
 
     # ---------- Redis и кэширование ----------
-    REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/db")
+    REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/")
     USE_REDIS = os.getenv("USE_REDIS", "False").lower() in ("true", "1", "yes", "True")
     CACHE_TYPE = os.getenv("CACHE_TYPE", "SimpleCache")
     # Парсинг REDIS_URL для настройки переменных конфигурации RQ

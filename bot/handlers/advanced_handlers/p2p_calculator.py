@@ -7,7 +7,7 @@ from aiogram.types import Message
 
 from bot.constants import RegExpUtils, Messages
 from bot.constants.states import AdvancedCommands
-from bot.keyboards import in_back_keyboard
+from bot.keyboards import in_back_keyboard, advanced_keyboard
 from bot.utils import NetworkUtils
 
 router = Router()
@@ -37,7 +37,7 @@ async def process_p2p_input(message: Message, state: FSMContext):
             f"<b>Расчет P2P-пары: <code>{subnet}</code></b>\n\n"
             f"{p2p_data}\n\n"
             f"<i>Выполнено: <code>{current_date}</code></i>",
-            reply_markup=in_back_keyboard,
+            reply_markup=advanced_keyboard,
             parse_mode="HTML"
         )
 

@@ -7,7 +7,7 @@ from aiogram.types import Message
 
 from bot.constants import RegExpUtils, Messages
 from bot.constants.states import AdvancedCommands
-from bot.keyboards import in_back_keyboard
+from bot.keyboards import in_back_keyboard, advanced_keyboard
 from bot.utils import NetworkUtils
 
 router = Router()
@@ -35,7 +35,7 @@ async def process_subnet_input(message: Message, state: FSMContext):
                 f"<b>Расчет IP-сети: <code>{subnet}</code></b>\n\n"
                 f"<pre>{cidr_data}</pre>\n\n"
                 f"<i>Выполнено: <code>{current_date}</code></i>",
-            "reply_markup": in_back_keyboard
+            "reply_markup": advanced_keyboard
         }
         await message.reply(**display_data, parse_mode="HTML")
         await state.clear()

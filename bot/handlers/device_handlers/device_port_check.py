@@ -61,7 +61,6 @@ async def port_info(message: Message, state: FSMContext):
 
     await message.reply(
         f"Проверка портов на устройстве: <code>{host}</code>",
-        reply_markup=ReplyKeyboardRemove(),
         parse_mode="HTML"
     )
 

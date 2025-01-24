@@ -1,7 +1,8 @@
 import asyncio
 import json
+import re
 from typing import Any, Dict, List, Optional, Callable
-
+from puresnmp.varbind import PyVarBind
 from bot.constants import LogMessages, Symbols, ErrorMessages
 from config import Config
 from .helper_functions import HelperFunctions
@@ -511,3 +512,114 @@ class DeviceUtils:
                 # if all(val not in ["-inf"] for val in
                 #        [ddm_rx_power, ddm_tx_power, ddm_voltage, ddm_temperature]):
                 results.append([port_if_range[i], ddm_tx_power, ddm_rx_power, ddm_temperature, ddm_voltage])
+
+    @staticmethod
+    async def get_lldp_data(host: str, community: str) -> Any:
+        action = f"{__name__}.get_lldp_data"
+        current_date = HelperFunctions.get_current_date()
+        results = []
+
+        joid = HelperFunctions.load_oids()
+        oidRemSysName = joid["lldp_oids"]["lldpRemSysName"]
+        oidRemSysModel = joid["lldp_oids"]["lldpRemSysDesc"]
+        oidRemIfName = joid["lldp_oids"]["lldpRemPortId"]
+        oidRemManIp = joid["lldp_oids"]["lldpRemManIp"]
+
+        try:
+            # Получаем данные для всех OID с параллельными запросами
+            res_rem_sys_name, res_rem_sys_model, res_rem_sys_if_name, res_local_sys_name, res_local_model = await asyncio.gather(
+                SNMPFunctions.get_multi_oid(host, oidRemSysName, community),
+                SNMPFunctions.get_multi_oid(host, oidRemSysModel, community),
+                SNMPFunctions.get_multi_oid(host, oidRemIfName, community),
+                SNMPFunctions.get_single_oid(host, "1.3.6.1.2.1.1.5.0", community),
+                SNMPFunctions.get_single_oid(host, "1.3.6.1.2.1.1.1.0", community)
+            )
+            # Преобразуем данные в строки, если это необходимо
+            res_rem_sys_name = HelperFunctions.to_string(res_rem_sys_name)
+            res_rem_sys_model = HelperFunctions.to_string(res_rem_sys_model)
+            # Преобразование значений с учетом типа
+            res_rem_sys_if_name = HelperFunctions.to_string(res_rem_sys_if_name)
+
+            res_local_sys_name = HelperFunctions.to_string(res_local_sys_name)
+
+        # Преобразование значений с учетом типа
+
+            # Применение фильтрации модели устройства
+            loaclSysModel = DeviceUtils.filter_device_model(res_local_model)
+
+
+            # Преобразование значений с учетом типа
+            sysName = [
+                index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1])
+                for index in res_rem_sys_name
+            ]
+            sysModel = [
+                DeviceUtils.filter_device_model(index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1]))
+                for index in res_rem_sys_model
+            ]
+            ifName = [
+                index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1])
+                for index in res_rem_sys_if_name
+            ]
+
+            # loaclSysModel = [
+            #     index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1])
+            #     for index in res_local_sys_model
+            # ]
+
+
+
+            # Обработка интерфейсов
+            # Пример с использованием атрибутов объекта PyVarBind
+            parsed_if_name = []
+            for item in res_rem_sys_if_name:
+                if isinstance(item, PyVarBind):  # Проверяем, что это объект PyVarBind
+                    oid = item.oid
+                    regex = r'(\d+)(?=,\d+$)'
+                    oid_string = ','.join(str(x) for x in oid.split('.'))
+                    match = re.search(regex, oid_string)
+                    extracted_number = match.group(0) if match else None
+                    if_name = HelperFunctions.to_string(await SNMPFunctions.get_single_oid(host,f"1.3.6.1.2.1.2.2.1.2.{extracted_number}",  community))
+                    parsed_if_name.append(if_name)
+
+
+                # value = item.value
+                    # Преобразуем значение в строку, если это необходимо
+                    # str_value = value.decode('utf-8') if isinstance(value, bytes) else str(value)
+                    # Логируем или используем str_value дальше
+                else:
+                    app_logger.error(f"Expected a PyVarBind, but got: {type(item)}")
+
+
+            # Создание соединений
+            connections = [
+                [
+                    # loaclSysModel,
+                    # res_local_sys_name,
+                    local_if_name,  # Пример значения интерфейса
+                    ifName[idx],
+                    sysName[idx],
+                    sysModel[idx],
+                ]
+                for idx, local_if_name in enumerate(parsed_if_name)
+            ]
+
+            # app_logger.info("Connections: %s" % connections)
+
+            # # Формирование итогового массива данных
+            # data_array = [
+            #     host,
+            #     res_local_sys_name,
+            #     loaclSysModel,
+            #     connections,
+            # ]
+
+
+
+            # Возврат сгенерированного результата
+            return connections  # Заменить на функцию генерации таблицы LLDP
+
+        except Exception as e:
+            HelperFunctions.log_error(action=action, host=host, error=e)
+            return None
+

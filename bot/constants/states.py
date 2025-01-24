@@ -39,6 +39,9 @@ class DeviceCommands(StatesGroup):
     CABLE_MEASUREMENT = State()
     LLDP_INFORMATION = State()
 
+class UserCommands(StatesGroup):
+    USER_MENU = State()  # Главное меню команд устройства
+
 
 class TaskCreationState(StatesGroup):
     TASK_MENU = State()  # Состояние для главного меню создания задачи
@@ -79,6 +82,9 @@ ALL_STATES = (
     DeviceCommands.MENU, DeviceCommands.CHECK_STATUS, DeviceCommands.PORT_INFORMATION,
     DeviceCommands.VLAN_INFORMATION, DeviceCommands.DDM_INFORMATION, DeviceCommands.CABLE_MEASUREMENT,
     DeviceCommands.LLDP_INFORMATION,
+
+    # Состояния UserCommands
+    UserCommands.USER_MENU,
 
     # Состояния TaskCreationState
     TaskCreationState.DATE, TaskCreationState.PRIORITY, TaskCreationState.EMPLOYEE, TaskCreationState.CONFIRMATION, TaskCreationState.TASK_MENU

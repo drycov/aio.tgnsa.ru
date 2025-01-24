@@ -7,7 +7,7 @@ from aiogram.types import Message
 
 from bot.constants import RegExpUtils, NetworkMessages
 from bot.constants.states import AdvancedCommands
-from bot.keyboards import in_back_keyboard
+from bot.keyboards import in_back_keyboard, advanced_keyboard
 from bot.utils import NetworkUtils
 
 router = Router()
@@ -37,7 +37,7 @@ async def process_ping_node_input(message: Message, state: FSMContext):
             f"<b>Ping device: <code>{host}</code> log</b>\n\n"
             f"<pre>{ping_data}</pre>\n\n"
             f"<i>Выполнено: <code>{current_date}</code></i>",
-            reply_markup=in_back_keyboard,
+            reply_markup=advanced_keyboard,
             parse_mode="HTML"
         )
 

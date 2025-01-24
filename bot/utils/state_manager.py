@@ -155,8 +155,9 @@ class StateManager:
             )
         else:
             # Если предыдущего состояния нет или оно связано с полем ввода, возвращаемся к начальному состоянию
-            await state.set_state(MainCommands.START)
-            await message.answer(
-                text=MenuLabels.ENTER.value,
-                reply_markup=on_enter_keyboard  # Устанавливаем разметку главного меню
+            await state.set_state(MainCommands.MAIN_MENU)
+            keyboard = generate_main_keyboard(is_admin)
+        await message.answer(
+                text=MenuLabels.MAIN_MENU.value,
+                reply_markup=keyboard  # Устанавливаем разметку главного меню
             )

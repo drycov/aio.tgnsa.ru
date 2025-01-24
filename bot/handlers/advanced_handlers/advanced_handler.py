@@ -23,7 +23,7 @@ async def advanced_menu_command(message: Message, state: FSMContext):
 async def cidr_calc_command(message: Message, state: FSMContext):
     display_data = {"text": Messages.ENTER_SUBNET.value}
     await StateManager.set_state_with_previous(state, AdvancedCommands.CIDR_CALCULATOR, display_data)
-    await message.answer(**display_data, reply_markup=ReplyKeyboardRemove())
+    await message.answer(**display_data, )
     await state.update_data(waiting_for_subnet=True)
 
 
@@ -32,7 +32,7 @@ async def cidr_calc_command(message: Message, state: FSMContext):
 async def p2p_calc_command(message: Message, state: FSMContext):
     display_data = {"text": Messages.ENTER_SUBNET_P2P.value}
     await StateManager.set_state_with_previous(state, AdvancedCommands.P2P_CALCULATOR, display_data)
-    await message.answer(**display_data, reply_markup=ReplyKeyboardRemove())
+    await message.answer(**display_data, )
     await state.update_data(waiting_for_subnet=True)
 
 
@@ -41,7 +41,7 @@ async def p2p_calc_command(message: Message, state: FSMContext):
 async def ping_device_command(message: Message, state: FSMContext):
     display_data = {"text": Messages.ENTER_IP.value}
     await StateManager.set_state_with_previous(state, AdvancedCommands.DEVICE_PING, display_data)
-    await message.answer(**display_data, reply_markup=ReplyKeyboardRemove())
+    await message.answer(**display_data, )
     await state.update_data(waiting_for_host=True)
 
 
