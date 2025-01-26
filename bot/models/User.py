@@ -216,6 +216,7 @@ class User(BaseModel):
             updated_data = user_ref.get()
 
             if not updated_data:
+                app_logger.warning(f"User with tg_id {tg_id} not found after update.")
                 return None
 
             # Создаём объект User и возвращаем его

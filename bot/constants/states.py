@@ -27,6 +27,18 @@ class AdvancedCommands(StatesGroup):
     DEVICE_PING = State()
     MASS_INCIDENT = State()
     API_TOKEN_GENERATOR = State()
+    
+class ProfileCommands(StatesGroup):
+    PROFILE = State()  # Главное меню продвинутых команд
+    # CIDR_CALCULATOR = State()
+    # P2P_CALCULATOR = State()
+    # DEVICE_PING = State()
+    # MASS_INCIDENT = State()
+    # API_TOKEN_GENERATOR = State()
+# Определяем состояния для редактирования
+class EditProfileStates(StatesGroup):
+    choosing_field = State()
+    waiting_for_new_value = State()
 
 
 # Команды для работы с устройствами

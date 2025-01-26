@@ -7,7 +7,6 @@ task_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text=MenuLabels.CREATE_TASK.value),
-            # KeyboardButton(text=MenuLabels.MASS_INCIDENT_ALERT.value),
         ],
         [
             KeyboardButton(text=MenuLabels.VIEW_MY_TASKS.value),
@@ -15,7 +14,6 @@ task_keyboard = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text=MenuLabels.VIEW_ALL_TASKS.value),
-            # KeyboardButton(text=MenuLabels.MASS_INCIDENT_ALERT.value),
         ],
         [KeyboardButton(text=MenuLabels.BACK.value)],
     ],

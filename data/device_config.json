@@ -334,6 +334,13 @@
     "adsl": false,
     "fibers": 2
   },
+  "V1600G2B":{
+    "name": "V-Solution GPON-OLT V1600G2B",
+    "ddm": true,
+    "adsl": false,
+    "gpon":true
+  },
+
   "LinkSys SPS 208G": {
     "name": "LinkSys SPS 208G"
   },

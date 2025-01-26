@@ -50,7 +50,7 @@ async def view_assigned_tasks(message: Message, state: FSMContext):
 
 
 @router.message(F.text == MenuLabels.VIEW_ALL_TASKS.value)
-async def view_assigned_tasks(message: Message, state: FSMContext):
+async def view_all_assigned_tasks(message: Message, state: FSMContext):
     user_id = message.from_user.id
     await view_tasks(message, assigned_to=user_id, created_by=user_id)
     await state.update_data(role="all")  # Устанавливаем роль "исполнитель"
@@ -59,7 +59,7 @@ async def view_assigned_tasks(message: Message, state: FSMContext):
 
 # Команда для создания новой задачи
 @router.message(F.text == MenuLabels.CREATE_TASK.value)
-async def new_task(message: Message, state: FSMContext):
+async def create_new_task(message: Message, state: FSMContext):
     await state.set_state(TaskCreationState.DATE)
     now = datetime.now()
     calendar_markup = CalendarMarkup(now.year, now.month).create_calendar()

@@ -1,5 +1,6 @@
-from calendar import month_name, monthcalendar
+# -*- coding: utf-8 -*-
 
+from calendar import monthcalendar
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
@@ -7,20 +8,25 @@ class CalendarMarkup:
     def __init__(self, year: int, month: int):
         self.year = year
         self.month = month
+        
+        # Список месяцев на кириллице
+        self.months = [
+            "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
+            "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+        ]
 
     def create_calendar(self) -> InlineKeyboardMarkup:
         """
         Создает клавиатуру-календарь для выбора даты.
         """
-        # Создаем список для строк календаря
         inline_keyboard = []
 
         # Заголовок с названием месяца и года
         inline_keyboard.append([InlineKeyboardButton(
-            text=f"{month_name[self.month]} {self.year}", callback_data="ignore")])
+            text=f"{self.months[self.month - 1]} {self.year}", callback_data="ignore")])
 
         # Добавляем дни недели
-        days_of_week = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+        days_of_week = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
         inline_keyboard.append(
             [InlineKeyboardButton(text=day, callback_data="ignore") for day in days_of_week])
 
@@ -29,26 +35,23 @@ class CalendarMarkup:
         for week in month_days:
             row = [
                 InlineKeyboardButton(
-                    text=" " if day == 0 else str(day),
+                    text=str(day) if day != 0 else " ",  # Пустое место для дня 0
                     callback_data=f"day_{day}_{self.month}_{self.year}" if day != 0 else "ignore"
-                )
-                for day in week
+                ) for day in week
             ]
             inline_keyboard.append(row)
 
-        # Кнопки "Назад" и "Вперед" для переключения месяцев
-        inline_keyboard.append([
+        # Кнопки для навигации по месяцам
+        inline_keyboard.append([ 
             InlineKeyboardButton(text="<", callback_data=f"prev_{self.year}_{self.month}"),
             InlineKeyboardButton(text=">", callback_data=f"next_{self.year}_{self.month}")
         ])
 
-        # Создаем и возвращаем клавиатуру с собранными строками
-        return InlineKeyboardMarkup(inline_keyboard=inline_keyboard, resize_keyboard=True,
-                                    )
+        return InlineKeyboardMarkup(inline_keyboard=inline_keyboard, resize_keyboard=True)
 
     def navigate_month(self, direction: str):
         """
-        Обновляет месяц на следующий или предыдущий в зависимости от direction.
+        Переключает месяц в зависимости от направления.
         """
         if direction == "next":
             if self.month == 12:

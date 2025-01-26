@@ -158,11 +158,12 @@ class DeviceUtils:
         action = f"{__name__}.get_port_status"
         joid = HelperFunctions.load_oids()
         # Определяем descr_oid в зависимости от модели
-        descr_oid = (
-            joid["AAM1212_oid"]["subrPortName"]
-            if any(sub in model for sub in ["IES-612", "IES1248-51", "SAM1008"])
-            else joid["basic_oids"]["oid_descr_ports"]
-        )
+        def get_descr_oid(model: str, joid: dict) -> str:
+            target_models = ["IES-612", "IES1248-51", "SAM1008"]
+            return joid["AAM1212_oid"]["subrPortName"] if any(sub in model for sub in target_models) else joid["basic_oids"]["oid_descr_ports"]
+        
+        descr_oid = get_descr_oid(model, joid)
+
 
         try:
             if port_if_list is None:
@@ -179,17 +180,19 @@ class DeviceUtils:
                 ), encoding='iso-8859-1')
 
                 # Пропуск ненужных интерфейсов
-                if not port_if_range[i].startswith("port") and not port_if_range[i].startswith("D-Link"):
-                    if (
-                            any(sub in port_if_range[i] for sub in Config.EXCLUDED_SUBSTRINGS)
-                            or port_if_range[i].isdigit()
-                            or any(bad_sub in port_if_range[i] for bad_sub in [
-                        '.ServiceInstance', 'noSuchInstance', "E1", "AUX",
-                        f"{test_int_descr}.", "Po", "ControlEthernet", "Port",
-                        "802.1Q", "Logical-int", "rif", "stack-port", "loopback"
-                    ])
-                    ):
-                        continue
+                if i < len(port_if_range):
+                    if not port_if_range[i].startswith("port") and not port_if_range[i].startswith("D-Link"):
+                        if (
+                                any(sub in port_if_range[i] for sub in Config.EXCLUDED_SUBSTRINGS)
+                                or port_if_range[i].isdigit()
+                                or any(bad_sub in port_if_range[i] for bad_sub in [
+                            '.ServiceInstance', 'noSuchInstance', "E1", "AUX",
+                            f"{test_int_descr}.", "Po", "ControlEthernet", "Port",
+                            "802.1Q", "Logical-int", "rif", "stack-port", "loopback"
+                        ])
+                        ):
+                            continue
+                
 
                 # Получение статуса интерфейса и ошибок
                 int_descr = HelperFunctions.to_string(await SNMPFunctions.get_single_oid(
@@ -219,8 +222,11 @@ class DeviceUtils:
                     oper_status = Symbols.STATUS_ADMIN_DISABLED.value
 
                 # Подготовка и нормализация данных
-                fix_int_descr = int_descr if int_descr not in ["noSuchInstance", "noSuchObject"] else " "
-                fix_in_errors = get_in_errors if get_in_errors not in ["noSuchInstance", "noSuchObject", "0"] else " "
+                def clean_snmp_data(data: str, default: str = " ") -> str:
+                    invalid_values = ["noSuchInstance", "noSuchObject", "0"]
+                    return data if data not in invalid_values else default
+                fix_int_descr = clean_snmp_data(int_descr)
+                fix_in_errors = clean_snmp_data(get_in_errors)
                 fix_int_name = port_if_range[i]
 
                 if "Huawei" in port_if_range[i]:

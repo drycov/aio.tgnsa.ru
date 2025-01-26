@@ -7,7 +7,7 @@ from .advanced_handlers import cidr_router, p2p_router, ping_router, advanced_ro
 from .device_handlers import check_device_router, device_command_router, device_port_router, vlan_router, ddm_router,lldp_router
 from .error_handler import router as error_router
 from .ertm_handler import ertm_router, ertm_track
-from .main_handlers import main_callback_router, main_commands_router, registration_router
+from .main_handlers import main_callback_router, main_commands_router, registration_router,profile_router
 from .message_handler import router as message_router
 from .start_handler import router as start_router
 from .task_handlers import task_router, task_callback_router
@@ -36,7 +36,8 @@ routers = [
     ertm_track,
     ddm_router,
     error_router,  # Обработчик ошибок (раскомментируйте при необходимости)
-    lldp_router
+    lldp_router,
+    profile_router
 ]
 
 

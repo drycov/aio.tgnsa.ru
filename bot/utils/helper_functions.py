@@ -465,21 +465,23 @@ class HelperFunctions:
         Форматирует результаты в таблицу с опциональным заголовком.
 
         Args:
-            results (list of lists): Данные для отображения в таблице.
+            results (list of dicts): Данные для отображения в таблице.
             head (list of str, optional): Заголовки столбцов таблицы. По умолчанию None.
 
         Returns:
             str: Строковое представление таблицы.
         """
-        # Создаем таблицу с помощью `tabulate`
         try:
-            # Проверка, что headers передается как список строк
-            if isinstance(head, list) and all(isinstance(h, str) for h in head):
-                # Формируем таблицу
+            if isinstance(results, list) and all(isinstance(item, dict) for item in results):
+                # Если передан список словарей, используем ключи словарей как заголовки
+                if head is None:
+                    # Используем первые ключи первого элемента как заголовки
+                    head = list(results[0].keys())
+                
                 table_string = tabulate(results, headers=head, tablefmt="plain", stralign="left")
                 return table_string
             else:
-                raise ValueError("Заголовки должны быть списком строк.")
+                raise ValueError("Данные должны быть списком словарей.")
         except Exception as e:
             app_logger.error(f"Ошибка форматирования таблицы: {e}")
             raise ValueError("Ошибка при форматировании таблицы")

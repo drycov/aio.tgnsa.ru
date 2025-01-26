@@ -178,6 +178,8 @@ class Config:
 
     class Security:
         """Настройки безопасности."""
+        EXCLUDE_PATHS = ["/login", "/docs", "/openapi.json", "/api/ping"]  # Пути, которые не требуют авторизации
+        ALGORITHM = "HS256"
 
         # Настройки токенов
         class Tokens:

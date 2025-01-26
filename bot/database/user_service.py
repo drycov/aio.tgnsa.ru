@@ -71,7 +71,7 @@ async def update_user(tg_id: int, updated_user_data: dict) -> dict | None:
             handle_result_not_found("User not found", "updateUser", f"User with id {tg_id} not found")
             return None
 
-        user.update(updated_user_data)
+        user.update(tg_id=tg_id, updates=updated_user_data)
         return user.model_dump()
     except Exception as error:
         handle_error("Error updating user", str(tg_id), error)
