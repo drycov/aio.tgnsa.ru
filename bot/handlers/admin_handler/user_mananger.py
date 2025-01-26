@@ -8,9 +8,11 @@ from bot.constants.states import UserCommands
 from bot.keyboards import in_back_keyboard
 from bot.utils import HelperFunctions, StateManager
 from bot.utils.logger_instance import app_logger
+import numpy as np
 
 router = Router()
 ROWS_PER_PAGE = 20
+
 
 async def generate_pagination_keyboard(page: int, total_pages: int) -> InlineKeyboardMarkup:
     """Создаёт клавиатуру для пагинации с выделением текущей страницы."""
@@ -36,6 +38,7 @@ async def generate_pagination_keyboard(page: int, total_pages: int) -> InlineKey
 
     return keyboard
 
+
 @router.message(F.text == MenuLabels.VIEW_USERS.value)
 async def view_users(message: Message, state: FSMContext):
     """Отображает список пользователей."""
@@ -51,22 +54,27 @@ async def view_users(message: Message, state: FSMContext):
                 parse_mode="HTML",
             )
             return
-
-        filtered_users_data = [
-            {
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'company_post': user.company_post,
-                'phone_number': user.phone_number,
-                'email': user.email
-            }
+        
+        filtered_users_data = np.array([
+            (user.first_name, user.last_name, user.company_post, user.phone_number, user.email)
             for user in users_data
-        ]
+        ], dtype=[('first_name', 'U50'), ('last_name', 'U50'), ('company_post', 'U100'), ('phone_number', 'U20'), ('email', 'U100')])
 
-        app_logger.info("Filtered Users %s", filtered_users_data)
+        # filtered_users_data = [
+        #     {
+        #         'first_name': user.first_name,
+        #         'last_name': user.last_name,
+        #         'company_post': user.company_post,
+        #         'phone_number': user.phone_number,
+        #         'email': user.email
+        #     }
+        #     for user in users_data
+        # ]
+
+        app_logger.info(f"action:{action},data:\n %s", filtered_users_data)
 
         # Формируем таблицу и разбиваем на строки
-        table_output = HelperFunctions.table_formatted_output(filtered_users_data, [])
+        table_output = HelperFunctions.table_formatted_output(filtered_users_data, ["First Name", "Last Name", "CP", "Phone", "Email"])
         table_lines = table_output.splitlines()
 
         # Рассчитываем количество страниц
@@ -85,6 +93,7 @@ async def view_users(message: Message, state: FSMContext):
             reply_markup=in_back_keyboard,
             parse_mode="HTML",
         )
+
 
 async def send_page(message: Message, state: FSMContext, page: int, total_pages: int, current_date: str):
     """Отправляет одну страницу с состоянием пользователей."""
@@ -106,6 +115,7 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
     await StateManager.set_state_with_previous(state, UserCommands.USER_MENU, display_data)
 
     await message.reply(text=full_message, reply_markup=pagination_keyboard, parse_mode="HTML")
+
 
 @router.callback_query(F.data.startswith("page_"))
 async def pagination_callback(callback: CallbackQuery, state: FSMContext):

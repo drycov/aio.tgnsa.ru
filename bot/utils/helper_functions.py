@@ -460,35 +460,26 @@ class HelperFunctions:
         return False
 
     @staticmethod
+    @staticmethod
     def table_formatted_output(results, head=None):
         """
         Форматирует результаты в таблицу с опциональным заголовком.
 
         Args:
-            results (list of dicts): Данные для отображения в таблице.
+            results (list of lists): Данные для отображения в таблице.
             head (list of str, optional): Заголовки столбцов таблицы. По умолчанию None.
 
         Returns:
             str: Строковое представление таблицы.
         """
         try:
-            if not isinstance(results, list) or not all(isinstance(item, dict) for item in results):
-                app_logger.error(f"Неверный формат данных  {results}")
-                raise ValueError("Данные должны быть списком словарей.")
-            if isinstance(results, list) and all(isinstance(item, dict) for item in results):
-                # Если передан список словарей, используем ключи словарей как заголовки
-                if head is None:
-                    # Используем первые ключи первого элемента как заголовки
-                    head = list(results[0].keys())
-                
-                table_string = tabulate(results, headers=head, tablefmt="plain", stralign="left")
-                return table_string
-            else:
-                raise ValueError("Данные должны быть списком словарей.")
+            # Создаем таблицу с помощью `tabulate`
+            table_string = tabulate(results, headers=head, tablefmt="plain", stralign="center")
+            return table_string
         except Exception as e:
             app_logger.error(f"Ошибка форматирования таблицы: {e}")
             raise ValueError("Ошибка при форматировании таблицы")
-
+    
     @staticmethod
     def generate_vlan_table(vlan_data: List[List[Any]]) -> str:
         """
