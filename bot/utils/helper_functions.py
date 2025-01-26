@@ -369,6 +369,11 @@ class HelperFunctions:
             HelperFunctions.log_error(action=action, error=e)
             app_logger.error(LogMessages.JSON_DECODE_ERROR.value.format(file_path=file_path))
             return {}
+        except PermissionError as e:
+            HelperFunctions.log_error(action=action, error=e)
+            app_logger.error(f"Permission error while accessing the file {file_path}: {e}")
+            return {}
+
 
     @staticmethod
     def validate(text: str, replace: str, labels: dict) -> str:
