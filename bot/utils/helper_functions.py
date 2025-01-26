@@ -472,6 +472,9 @@ class HelperFunctions:
             str: Строковое представление таблицы.
         """
         try:
+            if not isinstance(results, list) or not all(isinstance(item, dict) for item in results):
+                app_logger.error(f"Неверный формат данных  {results}")
+                raise ValueError("Данные должны быть списком словарей.")
             if isinstance(results, list) and all(isinstance(item, dict) for item in results):
                 # Если передан список словарей, используем ключи словарей как заголовки
                 if head is None:
