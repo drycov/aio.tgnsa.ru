@@ -221,6 +221,7 @@
     "adsl": false,
     "fibers": 0
   },
+  
   "CRS326-24G-2S+": {
     "name": "Mikrotik CRS326",
     "interface_key": "mikrotic_CRS326_26p",
@@ -266,6 +267,12 @@
     "ddm": true,
     "adsl": false,
     "fibers": 2
+  },
+  "CHR":{
+    "name": "MikroTik RouterOS CHR",
+    "ddm": false,
+    "adsl": false,
+    "fibers": 0
   },
   "SNR-S2962-24T": {
     "name": "SNR S2962-24T",
