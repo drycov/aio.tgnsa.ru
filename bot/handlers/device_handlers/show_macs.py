@@ -17,31 +17,6 @@ regexp = RegExpUtils()
 ROWS_PER_PAGE = 20
 
 
-async def generate_pagination_keyboard(page: int, total_pages: int) -> InlineKeyboardMarkup:
-    """Создаёт клавиатуру для пагинации с выделением текущей страницы."""
-    keyboard = InlineKeyboardMarkup(row_width=5, inline_keyboard=[])
-
-    # Диапазон страниц для отображения в навигации
-    start_page = max(1, page - 2)
-    end_page = min(total_pages, page + 2)
-
-    # Кнопки навигации
-    navigation_buttons = [
-        InlineKeyboardButton(text="⬅️ Назад", callback_data=f"page_{page - 1}") if page > 1 else None,
-        *[
-            InlineKeyboardButton(text=str(i), callback_data=f"page_{i}") if i != page
-            else InlineKeyboardButton(text=f"⟨ {i} ⟩", callback_data="current_page")
-            for i in range(start_page, end_page + 1)
-        ],
-        InlineKeyboardButton(text="Вперёд ➡️", callback_data=f"page_{page + 1}") if page < total_pages else None
-    ]
-
-    # Фильтрация None и добавление кнопок
-    keyboard.inline_keyboard.append([button for button in navigation_buttons if button])
-    keyboard.inline_keyboard.append([InlineKeyboardButton(text=MenuLabels.BACK.value, callback_data="back")])
-    return keyboard
-
-
 @router.message(F.text == MenuLabels.DEVICE_MACS.value)
 async def get_mac_addresses(message: Message, state: FSMContext):
     """Хэндлер для получения MAC-адресов через SNMP с указанием IP"""

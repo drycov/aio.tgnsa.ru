@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, UniqueConstraint
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
-
-Base = declarative_base()
+from .base import Base
 
 
 class Device(Base):
@@ -26,7 +24,7 @@ class Device(Base):
     )
     
     # Связь с портами
-    ports = relationship("Port", back_populates="device")
+    ports = relationship("Port", back_populates="device", cascade="all, delete-orphan")
     
     def __repr__(self):
         """

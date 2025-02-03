@@ -187,7 +187,7 @@ class ERTM:
     @staticmethod
     async def parse_snmp_mac(target, community="public"):
         """Функция для сбора MAC-адресов и их привязки к интерфейсам.
-        Возвращает словарь с портами доступа и транками."""
+        Возвращает словарь с портами доступа и транками, отсортированными по номерам портов."""
         try:
             # Запускаем параллельные задачи для получения данных через SNMP
             task_mac_table, task_port_table, task_port_mapping, task_if_table = await asyncio.gather(
@@ -234,11 +234,18 @@ class ERTM:
                     else:  # Если MAC-адресов больше 3, это транковый порт
                         trunk_ports[port_name] = macs
 
+            # Функция для сортировки портов
+            def port_sort_key(port_name):
+                try:
+                    parts = port_name.replace("Ethernet", "").split("/")
+                    return tuple(map(int, parts))  # Преобразуем в кортеж чисел для сортировки
+                except ValueError:
+                    return (9999,)  # На случай ошибок сортируем такие порты в конец
 
-            # Возвращаем результат
+            # Возвращаем отсортированные порты
             return {
-                "access_ports": access_ports,
-                "trunk_ports": trunk_ports
+                "access_ports": dict(sorted(access_ports.items(), key=lambda x: port_sort_key(x[0]))),
+                "trunk_ports": dict(sorted(trunk_ports.items(), key=lambda x: port_sort_key(x[0])))
             }
 
         except Exception as e:
@@ -246,5 +253,3 @@ class ERTM:
             await HelperFunctions.log_action(f"{__name__}.parse_snmp_mac")
             app_logger.error(f"Error in parse_snmp_mac: {str(e)}")
             return None
-        
-        

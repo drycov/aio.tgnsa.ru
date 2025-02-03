@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
+from .base import Base
 
 
 class Subscriber(Base):
