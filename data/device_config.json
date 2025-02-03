@@ -51,7 +51,9 @@
     "name": "Huawei S5700-26X-SI-12S-AC"
   },
   "Huawei Integrated Access Software": {
-    "name": "Huawei SmartAX MA5616"},
+    "name": "Huawei SmartAX MA5616",
+    "adsl": true
+  },
   "DGS-3420-28SC": {
     "name": "Dlink DGS-3420-28SC"
   },
@@ -331,7 +333,12 @@
     "fibers": 0
   },
   "ZyXEL IES-1000/SAM1008": {
-    "name": "ZyXEL SAM1008"
+    "name": "ZyXEL SAM1008",
+    "interface_key": "zyxel_interfaces_adsl_12_2",
+    "interface_list_key": "interface_list_12p",
+    "ddm": false,
+    "adsl": true,
+    "fibers": 0
   },
   "SG200-26": {
     "name": "Cisco SG200-26",
@@ -343,9 +350,10 @@
   },
   "V1600G2B":{
     "name": "V-Solution GPON-OLT V1600G2B",
-    "ddm": true,
+    "ddm": false,
     "adsl": false,
-    "gpon":true
+    "gpon":true,
+    "fibers":24
   },
 
   "LinkSys SPS 208G": {

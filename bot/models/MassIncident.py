@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from firebase_admin import db
 from pydantic import BaseModel, Field, ConfigDict
@@ -22,6 +22,9 @@ class MassIncident(BaseModel):
 
     # Метод для сохранения инцидента в базе данных
     def save_to_db(self) -> None:
+        """
+        Сохраняет инцидент в базу данных.
+        """
         try:
             incident_ref = db.reference(f'incidents/{self.mi_id}')
             incident_ref.set(self.model_dump(by_alias=True))
@@ -33,6 +36,12 @@ class MassIncident(BaseModel):
     # Метод класса для создания инцидента
     @classmethod
     def create(cls, data: dict) -> "MassIncident":
+        """
+        Создает новый инцидент и сохраняет его в базе данных.
+
+        :param data: Данные инцидента.
+        :return: Объект инцидента.
+        """
         incident = cls(**data)
         incident.save_to_db()
         return incident
@@ -41,13 +50,15 @@ class MassIncident(BaseModel):
     @classmethod
     def get_by_id(cls, mi_id: str) -> Optional["MassIncident"]:
         """
-        Получает инцидент по ID.
+        Получает инцидент по его ID из базы данных.
+
+        :param mi_id: ID инцидента.
+        :return: Инцидент или None, если не найден.
         """
         try:
             incident_ref = db.reference(f'incidents/{mi_id}')
             incident_data = incident_ref.get()
 
-            # Проверка, что данные существуют и имеют формат словаря
             if isinstance(incident_data, dict):
                 return cls(**incident_data)
             else:
@@ -61,13 +72,14 @@ class MassIncident(BaseModel):
     @classmethod
     def get_all(cls) -> List["MassIncident"]:
         """
-        Получает список всех инцидентов.
+        Получает список всех инцидентов из базы данных.
+
+        :return: Список инцидентов.
         """
         try:
             incidents_ref = db.reference('incidents')
             incidents_snapshot = incidents_ref.get()
 
-            # Проверка, что incidents_snapshot является словарем
             if isinstance(incidents_snapshot, dict):
                 return [cls(**incident_data) for incident_data in incidents_snapshot.values()]
             else:
@@ -80,25 +92,23 @@ class MassIncident(BaseModel):
     # Метод для обновления инцидента
     def update(self, updates: dict) -> Optional["MassIncident"]:
         """
-        Обновляет данные инцидента в базе данных и возвращает обновленный экземпляр.
+        Обновляет данные инцидента в базе данных.
+
+        :param updates: Словарь с обновлениям данных.
+        :return: Обновленный инцидент.
         """
         try:
             incident_ref = db.reference(f'incidents/{self.mi_id}')
-
-            # Обновление данных в базе данных
             incident_ref.update(updates)
 
-            # Получение обновленных данных инцидента
             updated_data = incident_ref.get()
 
-            # Проверка, что данные существуют и являются словарем
             if isinstance(updated_data, dict):
-                self.__dict__.update(**updated_data)  # Обновляем текущий экземпляр данными из базы данных
+                self.__dict__.update(**updated_data)
                 app_logger.info(f"Incident {self.mi_id} updated successfully.")
                 return self
             else:
-                app_logger.warning(
-                    f"Failed to update incident {self.mi_id}. Data format is not correct or incident not found.")
+                app_logger.warning(f"Failed to update incident {self.mi_id}. Data format is incorrect or incident not found.")
                 return None
         except Exception as error:
             app_logger.error(f"Error updating incident {self.mi_id}: {error}")
@@ -107,6 +117,11 @@ class MassIncident(BaseModel):
     # Метод класса для удаления инцидента
     @classmethod
     def delete(cls, mi_id: str) -> None:
+        """
+        Удаляет инцидент по его ID.
+
+        :param mi_id: ID инцидента.
+        """
         try:
             incident_ref = db.reference(f'incidents/{mi_id}')
             incident_ref.delete()
@@ -115,6 +130,7 @@ class MassIncident(BaseModel):
             app_logger.error(f"Error deleting incident {mi_id}: {error}")
             raise
 
+    # Конфигурация модели для генерации примера
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -122,7 +138,7 @@ class MassIncident(BaseModel):
                 "station": "Central Station",
                 "city": "New York",
                 "addr": "123 Main St",
-                "commet": "Power outage",
+                "comment": "Power outage",
                 "ts": "2023-10-31T08:00:00",
                 "te": "2023-10-31T12:00:00",
                 "from": "Maintenance",

@@ -8,7 +8,8 @@ from .network_utils import NetworkUtils
 from .pen_finder import PENFinder
 from .snmp_functions import SNMPFunctions
 from .state_manager import StateManager
+from .MACVendorLookup import MACVendorLookup
 
 
 __all__ = ["DeviceModelFilter", "HelperFunctions", "NetworkUtils", "SNMPFunctions", "StateManager", "CalendarMarkup",
-           "DeviceUtils", "JWTManager", "PENFinder"]
+           "DeviceUtils", "JWTManager", "PENFinder","MACVendorLookup"]

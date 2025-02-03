@@ -1,12 +1,14 @@
-from aiogram import Router, F
+from aiogram import Router, F, types
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.filters.command import CommandObject, Command
 
 from bot.constants import MenuLabels, ERTMManager, RegExpUtils, Messages
 from bot.keyboards import ertm_keyboard, in_back_keyboard, in_cancel_button
-from bot.utils import StateManager, NetworkUtils, HelperFunctions
+from bot.utils import MACVendorLookup, StateManager, NetworkUtils, HelperFunctions
 from config import Config
+from ertm.ertm import ERTM
 
 router = Router()
 regexp = RegExpUtils()
@@ -85,3 +87,5 @@ async def scan_network_and_reply(message: Message, network: str, state: FSMConte
     except Exception as e:
         await message.reply(f"Ошибка при сканировании сети: {str(e)}")
         await state.clear()
+
+

@@ -9,6 +9,7 @@ from .helper_functions import HelperFunctions
 from .logger_instance import app_logger
 from .pen_finder import PENFinder
 from .snmp_functions import SNMPFunctions
+import numpy as np
 
 current_date = HelperFunctions.get_current_date()
 
@@ -18,14 +19,14 @@ class DeviceUtils:
     device_data = HelperFunctions.load_device_data()
 
     @staticmethod
-    async def get_interface_range(host: str, community: str) -> List[str]:
+    async def get_interface_range(host: str, community: str, oid_group="basic_oids", oid="oid_ifName") -> List[str]:
         """
         Получает диапазон интерфейсов устройства с помощью SNMP.
         """
         # OID для имен интерфейсов. Обычно для интерфейсов используется .1.3.6.1.2.1.2.2.1.2 (ifDescr)
         action = f"{__name__}.get_interface_range"
-        joid = HelperFunctions.load_oids()
-        oid_ifDescr = joid["basic_oids"]["oid_ifName"]
+        joid = HelperFunctions.load_oids()       
+        oid_ifDescr = joid[oid_group][oid]
 
         # oid_ifDescr = '.1.3.6.1.2.1.31.1.1.1.1'
         try:
@@ -42,13 +43,14 @@ class DeviceUtils:
             return []
 
     @staticmethod
-    async def get_interface_list(host: str, community: str) -> List[int]:
+    async def get_interface_list(host: str, community: str, oid_group="basic_oids", oid="oid_ifIndex") -> List[int]:
         """
         Получает список идентификаторов интерфейсов устройства с помощью SNMP.
         """
         # OID для индексов интерфейсов: обычно .1.3.6.1.2.1.2.2.1.1 (ifIndex)
         action = f"{__name__}.get_interface_list"
-        oid_ifIndex = '.1.3.6.1.2.1.2.2.1.1'
+        joid = HelperFunctions.load_oids()       
+        oid_ifIndex = joid[oid_group][oid]
         try:
             task = asyncio.create_task(SNMPFunctions.get_multi_oid(host, oid_ifIndex, community))
             interface_indices = HelperFunctions.to_string(await task)
@@ -73,6 +75,7 @@ class DeviceUtils:
             return
 
         try:
+            
             vlan_id = await SNMPFunctions.get_multi_oid(host, oid_vlan_id, community)
         except Exception as e:
             HelperFunctions.log_error(action=action, host=host, error=e)
@@ -101,7 +104,7 @@ class DeviceUtils:
         for model_key, model_info in DeviceUtils.device_data.items():
             if model_key in dirty_data:
                 model_name = model_info["name"]
-                app_logger.info(LogMessages.MODEL_FILTERED.value.format(model_name=model_name, model_key=model_key))
+                # app_logger.info(LogMessages.MODEL_FILTERED.value.format(model_name=model_name, model_key=model_key))
                 return model_name
 
         app_logger.warning(LogMessages.MODEL_NOT_FOUND.value.format(dirty_data=dirty_data))
@@ -122,6 +125,7 @@ class DeviceUtils:
                         "interfaceList": "auto",
                         "ddm": False,
                         "adsl": False,
+                        "gpon:": False,
                         "fibers": 0
                     }
                 # Загрузка интерфейсных данных для конфигурации модели
@@ -135,6 +139,7 @@ class DeviceUtils:
                                                                          "interfaceList") if interface_list_key else "auto",
                     "ddm": model_info.get("ddm", False),
                     "adsl": model_info.get("adsl", False),
+                    "gpon": model_info.get("gpon", False),
                     "fibers": model_info.get("fibers", 0)
                 }
         app_logger.warning(LogMessages.MODEL_NOT_FOUND.value.format(dirty_data=dirty_data))
@@ -143,6 +148,7 @@ class DeviceUtils:
             "interfaceList": "auto",
             "ddm": False,
             "adsl": False,
+            "gpon": False,
             "fibers": 0
         }
 
@@ -152,18 +158,18 @@ class DeviceUtils:
             port_if_list: List[str],
             port_if_range: List[str],
             community: str,
-            model: Optional[str] = None,
+            model: Optional[str]=None,
     ):
         results = []
         action = f"{__name__}.get_port_status"
         joid = HelperFunctions.load_oids()
+
         # Определяем descr_oid в зависимости от модели
         def get_descr_oid(model: str, joid: dict) -> str:
             target_models = ["IES-612", "IES1248-51", "SAM1008"]
             return joid["AAM1212_oid"]["subrPortName"] if any(sub in model for sub in target_models) else joid["basic_oids"]["oid_descr_ports"]
         
         descr_oid = get_descr_oid(model, joid)
-
 
         try:
             if port_if_list is None:
@@ -192,7 +198,6 @@ class DeviceUtils:
                         ])
                         ):
                             continue
-                
 
                 # Получение статуса интерфейса и ошибок
                 int_descr = HelperFunctions.to_string(await SNMPFunctions.get_single_oid(
@@ -222,9 +227,10 @@ class DeviceUtils:
                     oper_status = Symbols.STATUS_ADMIN_DISABLED.value
 
                 # Подготовка и нормализация данных
-                def clean_snmp_data(data: str, default: str = " ") -> str:
+                def clean_snmp_data(data: str, default: str=" ") -> str:
                     invalid_values = ["noSuchInstance", "noSuchObject", "0"]
                     return data if data not in invalid_values else default
+
                 fix_int_descr = clean_snmp_data(int_descr)
                 fix_in_errors = clean_snmp_data(get_in_errors)
                 fix_int_name = port_if_range[i]
@@ -284,7 +290,7 @@ class DeviceUtils:
 
             parsed_oid = PENFinder.parse_oid(sw_pen)
             vendor = PENFinder.search_pen(parsed_oid['pen'])
-            print(vendor[0].get('Organization'))
+            app_logger.debug(vendor[0].get('Organization'))
 
             # Парсинг sys_location
             result = HelperFunctions.parse_location(sys_location)
@@ -332,17 +338,9 @@ class DeviceUtils:
             return None
 
     @staticmethod
-    async def get_ddm_info(host: str, port_if_list: List[str],
-                           port_if_range: List[str], device_data, community: str) -> str:
+    async def get_ddm_info(host: str, port_if_list: List[str], port_if_range: List[str], device_data, community: str) -> str:
         """
         Получает данные DDM или ADSL для указанного устройства.
-
-        Args:
-            host (str): IP-адрес устройства.
-            community (str): SNMP community string.
-
-        Returns:
-            str: Отформатированные данные или сообщение об ошибке.
         """
         action = "get_ddm_info"
         current_date = HelperFunctions.get_current_date()
@@ -354,98 +352,131 @@ class DeviceUtils:
             model = DeviceUtils.filter_device_model(
                 await SNMPFunctions.get_single_oid(host, joid["basic_oids"]["oid_model"], community))
 
+            if port_if_list is None:
+                list_of_ports = []
+
+            if port_if_range is None:
+                range_of_ports = []
+            
             list_of_ports = port_if_list
             range_of_ports = port_if_range
 
             ddm_supported = device_data.get("ddm", False)
             adsl_supported = device_data.get("adsl", False)
             gpon_supported = device_data.get("gpon", False)
-            fibers = device_data.get("fibers", 0)
 
-            if ddm_supported and fibers == 0:
-                error_message = f"DDM не поддерживается для устройства {host}."
-                HelperFunctions.log_error(action=action, host=host, error=ValueError(error_message))
-                return error_message
+            # Логирование состояния устройства и поддержки
+            app_logger.debug(f"Device data: {device_data}\n ddm_supported: {ddm_supported}, adsl_supported: {adsl_supported}, gpon_supported: {gpon_supported}")
 
-            if adsl_supported:
-                return "ADSL поддерживается, но метод обработки еще не реализован."
-                # # Обработка ADSL данных
-                # await DeviceData.process_adsl_info(host, list_of_ports, range_of_ports, community, results, True)
-                # return HelperFunctions.table_formatted_output(
-                #     results,
-                #     ["IF", "SNR", "Attn", "Pwr", "Curr.Rate", "Max.Rate"]
-                # )
+            if ddm_supported:
+                # Загрузка OID для определенной модели устройства
+                oid_key_mapping = {
+                    "snr_oids": "SNR",
+                    "eltex_oids": "Eltex",
+                    "dlink_oids": ["DGS", "DES"],
+                    "cisco_oids": "SG200-26",
+                    "ios_oids": "IOS",
+                    "vsol_oid": "V1600G2B"
+                }
 
-            if gpon_supported:
-                return "GPON поддерживается, но метод обработки еще не реализован."
+                oid_loader_key = next(
+                    (key for key, substr in oid_key_mapping.items() if HelperFunctions.model_contains_substr(model, substr)), "")
 
-            # Загрузка OID для определенной модели устройства
-            oid_key_mapping = {
-                "snr_oids": "SNR",
-                "eltex_oids": "Eltex",
-                "dlink_oids": ["DGS", "DES"],
-                "cisco_oids": "SG200-26",
-                "ios_oids": "IOS"
-            }
+                if not oid_loader_key:
+                    error_message = f"DDM не поддерживается для данной модели {model}."
+                    app_logger.error({"date": current_date, "action": action, "error": error_message})
+                    return error_message
 
-            oid_loader_key = next(
-                (key for key, substr in oid_key_mapping.items() if
-                 HelperFunctions.model_contains_substr(model, substr)), "")
+                oid_loader = joid[oid_loader_key]
 
-            if not oid_loader_key:
-                error_message = f"DDM не поддерживается для данной модели {model}."
-                app_logger.error({"date": current_date, "action": action, "error": error_message})
-                return error_message
-            #
-            oid_loader = joid[oid_loader_key]
-            #
-            # # Обработка DDM данных для различных моделей
-            if HelperFunctions.model_contains_substr(model, "SNR"):
-                await DeviceUtils.process_ddm_info(
-                    host, list_of_ports, range_of_ports,
-                    oid_loader["snr_oid_DDMRXPower"], oid_loader["snr_oid_DDMTXPower"],
-                    oid_loader["snr_oid_DDMTemperature"], oid_loader["snr_oid_DDMVoltage"],
-                    community, results
-                )
-            #
-            elif HelperFunctions.model_contains_substr(model, ["Eltex MES14", "Eltex MES24", "Eltex MES3708"]):
-                await DeviceUtils.process_ddm_info(
-                    host, list_of_ports, range_of_ports,
-                    oid_loader["eltex_DDM_mes14_mes24_mes_3708"], oid_loader["eltex_DDM_mes14_mes24_mes_3708"],
-                    oid_loader["eltex_DDM_mes14_mes24_mes_3708"], oid_loader["eltex_DDM_mes14_mes24_mes_3708"],
-                    community, results, False, True, "access", HelperFunctions.convert_mW_to_dBW
-                )
-            #
-            elif HelperFunctions.model_contains_substr(model,
-                                                       ["Eltex MES23", "Eltex MES33", "Eltex MES35", "Eltex MES53"]):
-                await DeviceUtils.process_ddm_info(
-                    host, list_of_ports, range_of_ports,
-                    oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"], oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"],
-                    oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"], oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"],
-                    community, results, True, True, 'aggregate'
-                )
-            #
-            elif HelperFunctions.model_contains_substr(model, ["DGS-3620", "DES-3200", "DGS-3000"]):
-                await DeviceUtils.process_ddm_info(
-                    host, list_of_ports, range_of_ports,
-                    oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_rx_power"],
-                    oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_tx_power"],
-                    oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_temperature"],
-                    oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_voltage"],
-                    community, results
-                )
-            #
-            elif HelperFunctions.model_contains_substr(model, "SG200-26"):
-                await DeviceUtils.process_ddm_info(
-                    host, list_of_ports, range_of_ports,
-                    oid_loader["cisco_DDM_S200"], oid_loader["cisco_DDM_S200"],
-                    oid_loader["cisco_DDM_S200"], oid_loader["cisco_DDM_S200"],
-                    community, results, True
-                )
-            #
-            # # Форматирование данных
-            return HelperFunctions.table_formatted_output(results, ["IF", "Tx", "Rx", "°C", "V"])
+                # Обработка DDM данных для различных моделей
+                if HelperFunctions.model_contains_substr(model, "SNR"):
+                    await DeviceUtils.process_ddm_info(
+                        host, list_of_ports, range_of_ports,
+                        oid_loader["snr_oid_DDMRXPower"], oid_loader["snr_oid_DDMTXPower"],
+                        oid_loader["snr_oid_DDMTemperature"], oid_loader["snr_oid_DDMVoltage"],
+                        community, results
+                    )
+                elif HelperFunctions.model_contains_substr(model, ["Eltex MES14", "Eltex MES24", "Eltex MES3708"]):
+                    await DeviceUtils.process_ddm_info(
+                        host, list_of_ports, range_of_ports,
+                        oid_loader["eltex_DDM_mes14_mes24_mes_3708"], oid_loader["eltex_DDM_mes14_mes24_mes_3708"],
+                        oid_loader["eltex_DDM_mes14_mes24_mes_3708"], oid_loader["eltex_DDM_mes14_mes24_mes_3708"],
+                        community, results, False, True, "access", HelperFunctions.convert_mW_to_dBW
+                    )
+                elif HelperFunctions.model_contains_substr(model, ["Eltex MES23", "Eltex MES33", "Eltex MES35", "Eltex MES53"]):
+                    await DeviceUtils.process_ddm_info(
+                        host, list_of_ports, range_of_ports,
+                        oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"], oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"],
+                        oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"], oid_loader["eltex_DDM_mes23_mes33_mes35_mes53"],
+                        community, results, True, True, 'aggregate'
+                    )
+                elif HelperFunctions.model_contains_substr(model, ["DGS-3620", "DES-3200", "DGS-3000"]):
+                    await DeviceUtils.process_ddm_info(
+                        host, list_of_ports, range_of_ports,
+                        oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_rx_power"],
+                        oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_tx_power"],
+                        oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_temperature"],
+                        oid_loader["dlink_dgs36xx_ses32xx_dgs_30xx_ddm_voltage"],
+                        community, results
+                    )
+                elif HelperFunctions.model_contains_substr(model, "SG200-26"):
+                    await DeviceUtils.process_ddm_info(
+                        host, list_of_ports, range_of_ports,
+                        oid_loader["cisco_DDM_S200"], oid_loader["cisco_DDM_S200"],
+                        oid_loader["cisco_DDM_S200"], oid_loader["cisco_DDM_S200"],
+                        community, results, True
+                    )
+                elif HelperFunctions.model_contains_substr(model, "V1600G2B"):
+                    portDescr = await DeviceUtils.get_interface_range(host, community, oid_loader_key, "gponVsolupLinkPortDescr")
+                    portIndex = await DeviceUtils.get_interface_list(host, community, oid_loader_key, "gponVsolupLinkPortIndex")
+                    portType = HelperFunctions.to_string(await SNMPFunctions.get_multi_oid(
+                        host, oid_loader["gponVsolupLinkPortType"], community
+                    ), encoding='iso-8859-1')
+                    
+                    if not portIndex or not portDescr or not portType:
+                        raise Exception(ErrorMessages.error_message(host))
+                    # app_logger.info(f"{portDescr}\n {portIndex}")
+                    port_types = {entry.oid.split('.')[-1]: entry.value for entry in portType}
+                    type_of_ports = [value for key, value in port_types.items()]
+                    
+                    list_of_ports = [
+                        portIndex[i] for i, port_type in enumerate(type_of_ports) if port_type == 0
+                    ]  
+                    range_of_ports = [
+                        portDescr[i] for i, port_type in enumerate(type_of_ports) if port_type == 0
+                    ]   
 
+                    await DeviceUtils.process_ddm_info(
+                        host, list_of_ports, range_of_ports,
+                        oid_loader["transceiverReceivedPower"], oid_loader["transceiverTransmitPower"],
+                        oid_loader["transceiverTemperature"], oid_loader["transceiverVoltage"],
+                        community, results
+                    )
+                else:
+                    error_message = f"DDM не поддерживается для устройства {host}."
+                    HelperFunctions.log_error(action=action, host=host, error=ValueError(error_message))
+                    return error_message
+            elif adsl_supported:
+                    # list_of_ports = [
+                    await DeviceUtils.process_adsl_info(
+                        host, list_of_ports, range_of_ports,
+                        joid["adsl_oid"],
+                        community, results, power_converter=HelperFunctions.adsl_val_converter
+                    )
+            else:
+                    error_message = f"DDM не поддерживается для устройства {host}."
+                    HelperFunctions.log_error(action=action, host=host, error=ValueError(error_message))
+                    return error_message     
+                   # port_if_range[i], snr_margin, attenuation, output_power, attainable_rate, tx_rate
+            if not adsl_supported:
+                return HelperFunctions.table_formatted_output(results, ["IF", "Tx", "Rx", "°C", "V"])
+            elif adsl_supported:
+                return HelperFunctions.table_formatted_output(results, ["IF", "snr_margin", "attenuation", "output_power", "attainable_rate", "tx_rate"])
+        except PermissionError as e:
+            error_message = f"Ошибка доступа к файлу: {e}. Возможно, у вас нет прав на чтение данного файла."
+            HelperFunctions.log_error(action=action, host=host, error=e)
+            return error_message
         except Exception as e:
             error_message = f"При проверке DDM на устройстве: {host} произошла ошибка: {e}"
             HelperFunctions.log_error(action=action, host=host, error=e)
@@ -462,10 +493,10 @@ class DeviceUtils:
             base_oid_voltage: str,
             community: str,
             results: List[Any],
-            unstandart: Optional[bool] = False,
-            eltex: Optional[bool] = False,
-            mib_type: str = None,
-            power_converter: Optional[Callable[[float], float]] = None
+            unstandart: Optional[bool]=False,
+            eltex: Optional[bool]=False,
+            mib_type: str=None,
+            power_converter: Optional[Callable[[float], float]]=None
     ) -> None:
         param_suffix_map = {
             "temperature": {True: ".5", False: ".1"},
@@ -476,6 +507,7 @@ class DeviceUtils:
         }
         """Обрабатывает DDM информацию с устройства через SNMP."""
         for i, port in enumerate(port_if_list):
+
             def generate_oid(base_oid: str, suffix: str) -> str:
                 if unstandart:
                     return f"{base_oid}{port}{suffix}"
@@ -508,12 +540,12 @@ class DeviceUtils:
                 ddm_tx_power = HelperFunctions.clean_and_convert(get_tx_power, scale=1000)
                 ddm_voltage = HelperFunctions.clean_and_convert(get_voltage)
                 ddm_temperature = HelperFunctions.clean_and_convert(get_temperature)
-                print(port_if_range[i], ddm_tx_power, ddm_rx_power, ddm_voltage, ddm_temperature)
+                app_logger.debug(port_if_range[i], ddm_tx_power, ddm_rx_power, ddm_voltage, ddm_temperature)
                 # #
                 if power_converter:
                     ddm_rx_power = power_converter(ddm_rx_power)
                     ddm_tx_power = power_converter(ddm_tx_power)
-                    print(port_if_range[i], ddm_tx_power, ddm_rx_power, ddm_voltage, ddm_temperature)
+                    app_logger.debug(port_if_range[i], ddm_tx_power, ddm_rx_power, ddm_voltage, ddm_temperature)
 
                 # if all(val not in ["-inf"] for val in
                 #        [ddm_rx_power, ddm_tx_power, ddm_voltage, ddm_temperature]):
@@ -553,7 +585,6 @@ class DeviceUtils:
             # Применение фильтрации модели устройства
             loaclSysModel = DeviceUtils.filter_device_model(res_local_model)
 
-
             # Преобразование значений с учетом типа
             sysName = [
                 index[1].decode('utf-8') if isinstance(index[1], bytes) else str(index[1])
@@ -573,8 +604,6 @@ class DeviceUtils:
             #     for index in res_local_sys_model
             # ]
 
-
-
             # Обработка интерфейсов
             # Пример с использованием атрибутов объекта PyVarBind
             parsed_if_name = []
@@ -585,9 +614,8 @@ class DeviceUtils:
                     oid_string = ','.join(str(x) for x in oid.split('.'))
                     match = re.search(regex, oid_string)
                     extracted_number = match.group(0) if match else None
-                    if_name = HelperFunctions.to_string(await SNMPFunctions.get_single_oid(host,f"1.3.6.1.2.1.2.2.1.2.{extracted_number}",  community))
+                    if_name = HelperFunctions.to_string(await SNMPFunctions.get_single_oid(host, f"1.3.6.1.2.1.2.2.1.2.{extracted_number}", community))
                     parsed_if_name.append(if_name)
-
 
                 # value = item.value
                     # Преобразуем значение в строку, если это необходимо
@@ -596,31 +624,23 @@ class DeviceUtils:
                 else:
                     app_logger.error(f"Expected a PyVarBind, but got: {type(item)}")
 
-
             # Создание соединений
-            connections = [
-                [
-                    # loaclSysModel,
-                    # res_local_sys_name,
-                    local_if_name,  # Пример значения интерфейса
-                    ifName[idx],
-                    sysName[idx],
-                    sysModel[idx],
-                ]
-                for idx, local_if_name in enumerate(parsed_if_name)
-            ]
-
-            # app_logger.info("Connections: %s" % connections)
-
-            # # Формирование итогового массива данных
-            # data_array = [
-            #     host,
-            #     res_local_sys_name,
-            #     loaclSysModel,
-            #     connections,
+            # connections = [
+            #     [
+            #         # loaclSysModel,
+            #         # res_local_sys_name,
+            #         local_if_name,  # Пример значения интерфейса
+            #         ifName[idx],
+            #         sysName[idx],
+            #         sysModel[idx],
+            #     ]
+            #     for idx, local_if_name in enumerate(parsed_if_name)
             # ]
-
-
+            
+            connections = np.array([
+                (local_if_name, ifName[idx], sysName[idx], sysModel[idx])
+                for idx, local_if_name in enumerate(parsed_if_name)
+            ], dtype=[('local_if_name', 'U50'), ('if_name', 'U50'), ('sys_name', 'U50'), ('sys_model', 'U50')])
 
             # Возврат сгенерированного результата
             return connections  # Заменить на функцию генерации таблицы LLDP
@@ -628,4 +648,90 @@ class DeviceUtils:
         except Exception as e:
             HelperFunctions.log_error(action=action, host=host, error=e)
             return None
+
+    @staticmethod
+    async def process_adsl_info(
+            host: str,
+            port_if_list: List[str],
+            port_if_range: List[str],
+            adsl_oids: Dict[str, str],
+            community: str,
+            results: List[Any],
+            mib_type: str=None,
+            power_converter: Optional[Callable[[float], float]]=None
+    ) -> None:
+
+        """Обрабатывает ADSL информацию с устройства через SNMP."""
+        for i, port in enumerate(port_if_list):
+
+            def generate_oid(base_oid: str,) -> str:
+                    return f"{base_oid}{port}"
+            # oids_prefix = "atur" if not atuc else "atuc"
+
+            # Генерация OID для всех типов параметров ADSL
+            oid_atur_snr_margin = generate_oid(adsl_oids["adslAturCurrSnrMgn"],)
+            oid_atur_attenuation = generate_oid(adsl_oids["adslAturCurrAtn"])
+            oid_atur_output_power = generate_oid(adsl_oids["adslAturCurrOutputPwr"])
+            oid_atur_attainable_rate = generate_oid(adsl_oids["adslAturCurrAttainableRate"])
+            oid_atur_tx_rate = generate_oid(adsl_oids["adslAturChanCurrTxRate"])
+            
+            oid_atuc_snr_margin = generate_oid(adsl_oids["adslAtucCurrSnrMgn"],)
+            oid_atuc_attenuation = generate_oid(adsl_oids["adslAtucCurrAtn"])
+            oid_atuc_output_power = generate_oid(adsl_oids["adslAtucCurrOutputPwr"])
+            oid_atuc_attainable_rate = generate_oid(adsl_oids["adslAtucCurrAttainableRate"])
+            oid_atuc_tx_rate = generate_oid(adsl_oids["adslAtucChanCurrTxRate"])
+            
+            get_atur_snr_margin = await SNMPFunctions.get_single_oid(host, oid_atur_snr_margin, community)
+            get_atur_attenuation = await SNMPFunctions.get_single_oid(host, oid_atur_attenuation, community)
+            get_atur_output_power = await SNMPFunctions.get_single_oid(host, oid_atur_output_power, community)
+            get_atur_attainable_rate = await SNMPFunctions.get_single_oid(host, oid_atur_attainable_rate, community)
+            get_atur_tx_rate = await SNMPFunctions.get_single_oid(host, oid_atur_tx_rate, community)
+            
+            get_atuc_snr_margin = await SNMPFunctions.get_single_oid(host, oid_atuc_snr_margin, community)
+            get_atuc_attenuation = await SNMPFunctions.get_single_oid(host, oid_atuc_attenuation, community)
+            get_atuc_output_power = await SNMPFunctions.get_single_oid(host, oid_atuc_output_power, community)
+            get_atuc_attainable_rate = await SNMPFunctions.get_single_oid(host, oid_atuc_attainable_rate, community)
+            get_atuc_tx_rate = await SNMPFunctions.get_single_oid(host, oid_atuc_tx_rate, community)
+
+            if all(HelperFunctions.clean_and_convert(val) is not None for val in
+                [get_atur_snr_margin, get_atur_attenuation, get_atur_output_power, get_atur_attainable_rate, get_atur_tx_rate,
+                 get_atuc_snr_margin, get_atuc_attenuation, get_atuc_output_power, get_atuc_attainable_rate, get_atuc_tx_rate]):
+
+                atur_snr_margin = get_atur_snr_margin
+                atuc_snr_margin = (get_atuc_snr_margin)
+                atur_attenuation = (get_atur_attenuation)
+                atuc_attenuation = (get_atuc_attenuation)
+                atur_output_power = (get_atur_output_power)
+                atuc_output_power = (get_atuc_attenuation)
+                atur_attainable_rate = get_atur_attainable_rate
+                atuc_attainable_rate = (get_atuc_attenuation)
+                atur_tx_rate = get_atur_tx_rate
+                atuc_tx_rate = (get_atuc_tx_rate)
+                
+                app_logger.debug(port_if_range[i], atur_snr_margin, atur_attenuation, atur_output_power, atur_attainable_rate, atur_tx_rate)
+
+                # Применение конвертера мощности, если передан
+                if power_converter:
+                    atur_snr_margin = power_converter(atur_snr_margin)
+                    atuc_snr_margin = power_converter(atuc_snr_margin)
+
+                    atur_attenuation = power_converter(atur_attenuation)
+                    atuc_attenuation = power_converter(atuc_attenuation)
+                    
+                    atur_output_power = power_converter(atur_output_power)
+                    atuc_output_power = power_converter(atuc_output_power)
+
+                    atur_attainable_rate = HelperFunctions.convert_to_mbps(atur_attainable_rate)
+                    atuc_attainable_rate = HelperFunctions.convert_to_mbps(atuc_attainable_rate)
+                    
+                    atuc_tx_rate = HelperFunctions.convert_to_mbps(atuc_tx_rate)
+                    atur_tx_rate = HelperFunctions.convert_to_mbps(atur_tx_rate)
+                    
+                results.append([port_if_range[i],
+                                f"{atur_snr_margin}/{atuc_snr_margin}", 
+                                f"{atur_attenuation}/{atuc_attenuation}", 
+                                f"{atur_output_power}/{atuc_output_power}", 
+                                f"{atur_attainable_rate}/{atuc_attainable_rate}", 
+                                f"{atur_tx_rate}/{atuc_tx_rate}"
+                                ])
 

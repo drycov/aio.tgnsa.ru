@@ -15,20 +15,24 @@ from config import Config
 class BotManager:
     """
     Класс для управления настройкой, запуском и остановкой Telegram бота.
+    Обеспечивает настройку, запуск, корректное завершение работы и перезапуск бота.
     """
 
     def __init__(self, token: str):
-        from .bot_instance import bot, dp
         """
         Инициализация бота и диспетчера.
+        
+        :param token: Токен для подключения к API Telegram.
         """
+        from .bot_instance import bot, dp
         self.bot = bot
         self.dp = dp
         self._is_setup = False
 
     def setup_bot(self):
         """
-        Настройка бота и регистрация обработчиков.
+        Настройка бота и регистрация обработчиков и middleware.
+        Выполняется только один раз при первом вызове.
         """
         if self._is_setup:
             app_logger.warning("Бот уже настроен. Повторная настройка пропущена.")
@@ -55,6 +59,8 @@ class BotManager:
     async def start_bot(self):
         """
         Запускает бота и начинает обработку сообщений.
+        
+        При старте выполняется проверка настройки и удаление вебхука.
         """
         app_logger.info(Messages.START_BOT.value)
 
@@ -78,6 +84,8 @@ class BotManager:
     async def shutdown_bot(self):
         """
         Останавливает процессы, связанные с ботом.
+        
+        Останавливает polling, закрывает HTTP-сессии и выполняет другие завершающие операции.
         """
         try:
             # Остановка polling
@@ -93,6 +101,8 @@ class BotManager:
     async def restart_bot(self):
         """
         Перезапуск бота.
+        
+        Выполняет остановку и повторный запуск бота.
         """
         try:
             await self.shutdown_bot()
@@ -105,6 +115,8 @@ class BotManager:
     async def graceful_shutdown(self):
         """
         Корректное завершение работы бота.
+        
+        Закрывает все необходимые ресурсы и завершает работу бота.
         """
         app_logger.info("Начато корректное завершение работы бота...")
 

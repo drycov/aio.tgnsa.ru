@@ -4,84 +4,80 @@ import logging
 import socket
 import sys
 from logging.handlers import SysLogHandler
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from logging_config import LoggingConfig
 
 
 class AppLogger:
-    def __init__(self, name=None):
+    def __init__(self, name: Optional[str] = None) -> None:
         """
         Инициализирует логгер с именем вызывающего модуля.
+        :param name: Имя логгера. Если не указано, используется имя модуля, вызвавшего этот класс.
         """
-        # Если name не передан, используем имя модуля, вызвавшего этот класс
-        if name is None:
-            name = inspect.stack()[1].frame.f_globals["__name__"]
+        self.name = name or inspect.stack()[1].frame.f_globals["__name__"]
+        self.logger = logging.getLogger(self.name)
+        self._setup_logger()
 
-        log_level = LoggingConfig.LOGGING_LEVEL
-        log_format = LoggingConfig.LOGGING_FORMAT
-        log_file_path = LoggingConfig.LOG_DIR / LoggingConfig.LOG_FILE
+    def _setup_logger(self) -> None:
+        """Настраивает логгер с обработчиками для консоли, файла и Syslog."""
+        self.logger.setLevel(LoggingConfig.LOGGING_LEVEL)
 
-        # Параметры для Syslog
-        use_syslog = LoggingConfig.USE_SYSLOG
-        syslog_host = LoggingConfig.SYSLOG_HOST
-        syslog_port = LoggingConfig.SYSLOG_PORT
-        syslog_facility = LoggingConfig.SYSLOG_FACILITY
-        syslog_message_format = LoggingConfig.SYSLOG_MESSAGE_FORMAT or "{asctime} - {name} - {levelname} - {message}"
-        syslog_logging_level = LoggingConfig.SYSLOG_LOGGING_LEVEL
-
-        # Создаем логгер с определенным именем модуля
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(log_level)
+        # Общий форматтер для всех обработчиков
+        formatter = logging.Formatter(LoggingConfig.LOGGING_FORMAT, style="{")
 
         # Обработчик для вывода в консоль
         console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(log_level)
-        console_formatter = logging.Formatter(log_format, style='{')
-        console_handler.setFormatter(console_formatter)
+        console_handler.setFormatter(formatter)
         self.logger.addHandler(console_handler)
 
-        # Обработчик для записи в файл с кодировкой utf-8
+        # Обработчик для записи в файл
+        log_file_path = LoggingConfig.LOG_DIR / LoggingConfig.LOG_FILE
         file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
-        file_handler.setLevel(log_level)
-        file_handler.setFormatter(console_formatter)
+        file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
 
-        # Настройка syslog, если включено в конфигурации
-        if use_syslog:
-            self.setup_syslog_handler(
-                host=syslog_host,
-                port=syslog_port,
-                facility=syslog_facility,
-                logging_level=syslog_logging_level,
-                message_format=syslog_message_format
-            )
+        # Обработчик для Syslog, если включен
+        if LoggingConfig.USE_SYSLOG:
+            self._setup_syslog_handler()
 
-        self.logger.info("Logger initialized in module: " + name)
+        self.logger.info(f"Logger initialized in module: {self.name}")
 
-    def setup_syslog_handler(self, host, port, facility, logging_level, message_format):
-        """Настройка Syslog-обработчика для логгера."""
+    def _setup_syslog_handler(self) -> None:
+        """Настраивает Syslog-обработчик для логгера."""
         syslog_handler = SysLogHandler(
-            address=(host, port),
-            facility=facility,
-            socktype=socket.SOCK_DGRAM
+            address=(LoggingConfig.SYSLOG_HOST, LoggingConfig.SYSLOG_PORT),
+            facility=LoggingConfig.SYSLOG_FACILITY,
+            socktype=socket.SOCK_DGRAM,
         )
-
-        syslog_handler.setLevel(logging_level)
-        syslog_formatter = logging.Formatter(message_format, style='{')
+        syslog_formatter = logging.Formatter(
+            LoggingConfig.SYSLOG_MESSAGE_FORMAT or "{asctime} - {name} - {levelname} - {message}",
+            style="{",
+        )
         syslog_handler.setFormatter(syslog_formatter)
+        syslog_handler.setLevel(LoggingConfig.SYSLOG_LOGGING_LEVEL)
         self.logger.addHandler(syslog_handler)
         self.logger.info("Syslog handler initialized.")
 
-    def get_logger(self):
+    def get_logger(self) -> logging.Logger:
+        """Возвращает настроенный логгер."""
         return self.logger
 
 
-# Функция для получения экземпляра логгера, автоматически определяя имя вызывающего модуля
-def get_app_logger():
+def get_app_logger() -> logging.Logger:
+    """
+    Возвращает экземпляр логгера, автоматически определяя имя вызывающего модуля.
+    :return: Настроенный логгер.
+    """
     return AppLogger().get_logger()
 
 
-# Пример использования json.dumps с ensure_ascii=True
-def log_json_data(logger, data):
+def log_json_data(logger: logging.Logger, data: Dict[str, Any]) -> None:
+    """
+    Логирует данные в формате JSON.
+    :param logger: Логгер для записи сообщений.
+    :param data: Данные для логирования.
+    """
     json_data = json.dumps(data, ensure_ascii=True)
     logger.info(f"Received JSON data: {json_data}")

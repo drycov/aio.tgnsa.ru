@@ -1,3 +1,4 @@
+import json
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, ReplyKeyboardRemove
@@ -5,6 +6,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, R
 from bot.constants import MenuLabels
 from bot.keyboards import in_back_keyboard
 from bot.utils import HelperFunctions, DeviceUtils
+from bot.utils.logger_instance import app_logger
 
 router = Router()
 
@@ -57,10 +59,14 @@ async def ddm_info(message: Message, state: FSMContext):
         f"Вывод уровня оптического сигнала/ADSL на устройстве: <code>{host}</code>",
         parse_mode="HTML"
     )
-
+    app_logger.info(json.dumps({
+            "date": current_date,
+            "action": action,
+            "host": host,
+            "usser":message.from_user.id
+        }))
     try:
         ddm_info = await DeviceUtils.get_ddm_info(host, port_if_list, port_if_range, device_data, community)
-
         await message.reply(
             f"Уровень оптического сигнала/ADSL на устройстве: <code>{host}</code>\n<pre>{ddm_info}</pre>"
             f"\n<i>Выполнено:  <code>{current_date}</code></i>",

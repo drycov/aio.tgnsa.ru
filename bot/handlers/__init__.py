@@ -4,7 +4,7 @@ from aiogram import Router
 # Импортируем все маршрутизаторы, сгруппированные по функциональности
 from .admin_handler import admin_router, admin_callback_router,user_mananger
 from .advanced_handlers import cidr_router, p2p_router, ping_router, advanced_router
-from .device_handlers import check_device_router, device_command_router, device_port_router, vlan_router, ddm_router,lldp_router
+from .device_handlers import check_device_router, device_command_router, device_port_router, vlan_router, ddm_router,lldp_router,mac_router
 from .error_handler import router as error_router
 from .ertm_handler import ertm_router, ertm_track
 from .main_handlers import main_callback_router, main_commands_router, registration_router,profile_router
@@ -37,7 +37,8 @@ routers = [
     ddm_router,
     error_router,  # Обработчик ошибок (раскомментируйте при необходимости)
     lldp_router,
-    profile_router
+    profile_router,
+    mac_router
 ]
 
 

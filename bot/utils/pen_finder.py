@@ -1,16 +1,17 @@
 import requests
-
+import re
+from typing import List, Dict
 
 class PENFinder:
     PEN_URL = "https://www.iana.org/assignments/enterprise-numbers.txt"
 
     @staticmethod
-    def fetch_pen_data() -> list[str]:
+    def fetch_pen_data() -> List[str]:
         """
         Загружает данные Private Enterprise Numbers (PEN) из IANA.
 
         Returns:
-            list[str]: Список строк из файла PEN.
+            List[str]: Список строк из файла PEN.
         """
         try:
             response = requests.get(PENFinder.PEN_URL, timeout=10)
@@ -21,7 +22,7 @@ class PENFinder:
             return []
 
     @staticmethod
-    def search_pen(search_term: str) -> list[dict]:
+    def search_pen(search_term: str) -> List[Dict[str, str]]:
         """
         Выполняет поиск по Private Enterprise Numbers (PEN).
 
@@ -29,38 +30,40 @@ class PENFinder:
             search_term (str): Строка для поиска (номер PEN, имя организации, контакт или email).
 
         Returns:
-            list[dict]: Результаты поиска (список словарей).
+            List[Dict[str, str]]: Результаты поиска (список словарей).
         """
         pen_data = PENFinder.fetch_pen_data()
         if not pen_data:
             return []
 
         results = []
-        current_entry = {}
+        current_entry = {"Decimal": None, "Organization": None, "Contact": None, "Email": None}
+
+        pattern = re.compile(r"^(\d+)|^([^@\n]+)|([\w.-]+@[\w.-]+)$")
 
         for line in pen_data:
-            line = line.strip()
-
-            if line.isdigit():
-                # Новая запись
-                if current_entry and search_term.lower() in str(current_entry).lower():
-                    results.append(current_entry)
-                current_entry = {"Decimal": line, "Organization": None, "Contact": None, "Email": None}
-            elif "Organization" in current_entry and current_entry["Organization"] is None:
-                current_entry["Organization"] = line
-            elif "Contact" in current_entry and current_entry["Contact"] is None:
-                current_entry["Contact"] = line
-            elif "Email" in current_entry and current_entry["Email"] is None:
-                current_entry["Email"] = line
+            match = pattern.match(line.strip())
+            if match:
+                if match.group(1):  # Decimal
+                    if current_entry["Decimal"] and search_term.lower() in str(current_entry).lower():
+                        results.append(current_entry.copy())
+                    current_entry = {"Decimal": match.group(1), "Organization": None, "Contact": None, "Email": None}
+                elif match.group(2):  # Organization or Contact
+                    if not current_entry["Organization"]:
+                        current_entry["Organization"] = match.group(2)
+                    elif not current_entry["Contact"]:
+                        current_entry["Contact"] = match.group(2)
+                elif match.group(3):  # Email
+                    current_entry["Email"] = match.group(3)
 
         # Проверка последней записи
-        if current_entry and search_term.lower() in str(current_entry).lower():
+        if current_entry["Decimal"] and search_term.lower() in str(current_entry).lower():
             results.append(current_entry)
 
         return results
 
     @staticmethod
-    def parse_oid(value: str) -> dict:
+    def parse_oid(value: str) -> Dict[str, str]:
         """
         Парсит строку OID и возвращает её компоненты.
 
@@ -68,7 +71,7 @@ class PENFinder:
             value (str): Строка OID.
 
         Returns:
-            dict: Словарь с информацией о компонентах OID.
+            Dict[str, str]: Словарь с информацией о компонентах OID.
         """
         oid_parts = value.split(".")
         if len(oid_parts) < 7:
@@ -82,9 +85,8 @@ class PENFinder:
             "private": oid_parts[4],
             "enterprise": oid_parts[5],
             "pen": oid_parts[6],
-            "subtree": oid_parts[7:]
+            "subtree": ".".join(oid_parts[7:])
         }
-
 
 # Пример использования:
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import uvicorn
 import argparse
 from api import API
+from bot.utils import MACVendorLookup
 from bot.utils.logger_instance import app_logger
 
 
@@ -11,6 +12,14 @@ def create_app():
     """
     api = API()
     app = api.get_app()  # Lifespan уже настроен в классе API
+    mac_lookup = MACVendorLookup()
+
+    # Optionally load saved data
+    mac_lookup.load_from_file()
+    # Update data if necessary
+    if not mac_lookup.macs_to_companies:
+        if mac_lookup.update_data():
+            mac_lookup.save_to_file()
     return app
 
 

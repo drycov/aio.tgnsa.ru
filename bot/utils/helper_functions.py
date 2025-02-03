@@ -23,6 +23,7 @@ from bot.utils.logger_instance import app_logger
 
 
 class HelperFunctions:
+
     @staticmethod
     def parse_expiration_time(expiration: str) -> int:
         """
@@ -101,17 +102,17 @@ class HelperFunctions:
         return "MacOS" if platform.system() == "Darwin" else platform.system()
 
     @staticmethod
-    def format_human_date(date: datetime.datetime, show_time: bool = True) -> str:
+    def format_human_date(date: datetime.datetime, show_time: bool=True) -> str:
         """Форматирование даты в строку в формате 'гггг-мм-дд чч:мм:сс' или 'гггг-мм-дд'."""
         return date.strftime("%Y-%m-%d %H:%M:%S") if show_time else date.strftime("%Y-%m-%d")
 
     @staticmethod
-    def format_human_date_long(date: datetime.datetime, show_time: bool = True) -> str:
+    def format_human_date_long(date: datetime.datetime, show_time: bool=True) -> str:
         """Форматирование даты в строку с полным названием месяца 'гггг месяц дд, чч:мм:сс'."""
         return date.strftime("%Y %B %d, %H:%M:%S") if show_time else date.strftime("%Y %B %d")
 
     @staticmethod
-    def format_date_2digit(date: datetime.datetime, show_time: bool = True) -> str:
+    def format_date_2digit(date: datetime.datetime, show_time: bool=True) -> str:
         """Форматирование даты в строку с двухзначными днями и месяцами 'гг-мм-дд чч:мм:сс'."""
         return date.strftime("%y-%m-%d %H:%M:%S") if show_time else date.strftime("%y-%m-%d")
 
@@ -169,7 +170,7 @@ class HelperFunctions:
         return ' '.join(result)
 
     @staticmethod
-    def generate_verification_code(length: int = 6) -> str:
+    def generate_verification_code(length: int=6) -> str:
         """Генерация верификационного кода заданной длины (по умолчанию 6 цифр)."""
         return ''.join([str(int(time.time()) % 10) for _ in range(length)])
 
@@ -191,6 +192,34 @@ class HelperFunctions:
         """Парсинг команды Telegram, возвращает словарь параметров."""
         return {str(i - 1): word for i, word in enumerate(text.strip().split())}
 
+    @staticmethod
+    def adsl_val_converter(val: float) -> float:
+        """
+        Преобразование ADSL пропускной способности в децибелы (дБм).
+        Если значение недопустимо, возвращает -inf или значение по умолчанию.
+        
+        """
+        try:
+            if val > 0:  # Проверка, что значение допустимо
+                return f"{val / 10:.1f}"
+            else:
+                # Если значение <= 0, возвращаем -inf или 0.0
+                return float('-inf')  # Можно заменить на 0.0, если нужно
+        except Exception as e:
+            # Логирование ошибок
+            HelperFunctions.log_error(action="clean_and_convert",
+                                      error=e)
+            return float('-inf')  # Значение по умолчанию при ошибке
+
+    @staticmethod
+    def convert_to_mbps(value: float) -> str:
+        """
+        Преобразует значение в битах в Мбит/с.
+        :param value: значение в битах
+        :return: строка с округленным значением в Мбит/с
+        """
+        return f"{value / 1_000_000:.2f}"
+        
     @staticmethod
     def convert_mW_to_dBW(val: float) -> float:
         """
@@ -216,7 +245,7 @@ class HelperFunctions:
             return float('-inf')  # Значение по умолчанию при ошибке
 
     @staticmethod
-    def clean_and_convert(value: Union[bytes, int, str], default: float = 0.0, scale: float = 1.0) -> float | None:
+    def clean_and_convert(value: Union[bytes, int, str], default: float=0.0, scale: float=1.0) -> float | None:
         """
         Преобразует значение в float с учетом масштаба и обработкой ошибок.
 
@@ -233,10 +262,10 @@ class HelperFunctions:
 
         try:
             # Проверка на None перед дальнейшей обработкой
-            print(f"Value: '{value}' is {type(value)}.")
+            app_logger.debug(f"Value: '{value}' is {type(value)}.")
 
             if value is None:
-                print(f"Value is None, skipping...")
+                app_logger.debug(f"Value is None, skipping...")
                 return None
             # Преобразование значения в строку, если это необходимо
             if isinstance(value, bytes):
@@ -251,7 +280,7 @@ class HelperFunctions:
                 elif decoded_value.replace(".", "", 1).replace("-", "", 1).isdigit():
                     return float(decoded_value)
                 else:
-                    print(f"Value '{decoded_value}' is not numeric.")
+                    app_logger.debug(f"Value '{decoded_value}' is not numeric.")
                     return default
             elif isinstance(value, (int, str)):
                 decoded_value = str(value).strip()
@@ -260,7 +289,7 @@ class HelperFunctions:
                 raise ValueError("Unsupported value type")
                 # Обработка специальных случаев и пустых значений
         except (ValueError, TypeError) as e:
-            print(f"Error processing value: {value} -> {e}")
+            app_logger.debug(f"Error processing value: {value} -> {e}")
 
         return default
 
@@ -374,7 +403,6 @@ class HelperFunctions:
             app_logger.error(f"Permission error while accessing the file {file_path}: {e}")
             return {}
 
-
     @staticmethod
     def validate(text: str, replace: str, labels: dict) -> str:
         """
@@ -386,7 +414,7 @@ class HelperFunctions:
         return replace if is_command or contains_label_or_command else text
 
     @staticmethod
-    def get_oid(oids: dict, group: str, name: str, subcategory: str = None) -> str:
+    def get_oid(oids: dict, group: str, name: str, subcategory: str=None) -> str:
         """
         Функция для получения OID по имени и группе.
         Параметры:
@@ -511,7 +539,7 @@ class HelperFunctions:
         return active_ports
 
     @staticmethod
-    def log_error(*, action: str, error: Exception, host: Optional[str] = None) -> None:
+    def log_error(*, action: str, error: Exception, host: Optional[str]=None) -> None:
         """
         Логирование ошибок в едином формате. Используйте именованные параметры для гибкости.
         """
@@ -587,6 +615,7 @@ class HelperFunctions:
         if isinstance(substrings, str):
             return substrings in model
         return any(sub in model for sub in substrings)
+
     @staticmethod
     def escape_value(value):
         """
@@ -600,6 +629,30 @@ class HelperFunctions:
             # Возврат экранированного значения в обрамлении кавычек
             return f"'{escaped_value}'"
         except Exception as e:
-            print(f"Error escaping value: {value} -> {e}")
+            app_logger.debug(f"Error escaping value: {value} -> {e}")
             raise
+    @staticmethod
+    async def log_action(action: str, host: str='', user_id: int=None):
+        """Логирование действия с указанием даты, действия, хоста и пользователя."""
+        current_date = HelperFunctions.get_current_date()  # Предполагается, что get_current_date — метод класса
+        app_logger.info(json.dumps({
+            "date": current_date,
+            "action": action,
+            "host": host,
+            "user": user_id
+        }))
+
+    @staticmethod
+    def hex_to_mac(hex_str):
+        # Убираем все символы, не относящиеся к шестнадцатеричной системе
+        clean_hex_str = ''.join(c for c in hex_str if c in '0123456789ABCDEF')
+        
+        # Проверяем длину строки
+        if len(clean_hex_str) != 12:
+            raise ValueError(f"Invalid MAC address length: {len(clean_hex_str)}")
+        
+        # Преобразуем строку в формат MAC
+        mac_addr = ':'.join(clean_hex_str[i:i+2] for i in range(0, 12, 2))
+        return mac_addr
+
 

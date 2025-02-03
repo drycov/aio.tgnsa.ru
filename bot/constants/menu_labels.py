@@ -45,6 +45,7 @@ class MenuLabels(Enum):
     DEVICE_CHECK = f"{Symbols.ACTION_SEARCH.value} Проверить устройство"
     DOF = f"{Symbols.TECH_SHIELD.value} Дежурный сотрудник"
     DUTY_SCHEDULE = f"{Symbols.GROUP_PRIMARY.value} График дежурств"
+    DEVICE_MACS = f"{Symbols.EMOJI_DEVICE.value} MAC Таблица"
 
     SERVICE_REQUEST = f"{Symbols.TECH_INCIDENT.value} Запрос на обслуживание"
     MASS_INCIDENT_ALERT = f"{Symbols.EMOJI_MAGIC_BALL.value} Массовый инцидент"

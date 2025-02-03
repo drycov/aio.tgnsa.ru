@@ -14,6 +14,7 @@ router = Router()
 # Максимальное количество строк на одной странице
 ROWS_PER_PAGE = 20
 
+
 async def generate_pagination_keyboard(page: int, total_pages: int) -> InlineKeyboardMarkup:
     """Создаёт клавиатуру для пагинации с выделением текущей страницы."""
     keyboard = InlineKeyboardMarkup(row_width=5, inline_keyboard=[])
@@ -50,8 +51,10 @@ async def lldp_info(message: Message, state: FSMContext):
     host = data.get('host')
     community = data.get('community')
     try:
+        #             ], dtype=[('local_if_name', 'U50'), ('if_name', 'U50'), ('sys_name', 'U50'), ('sys_model', 'U50')])
+
         lldp_info = await DeviceUtils.get_lldp_data(host, community)
-        table_output = HelperFunctions.table_formatted_output(lldp_info, [])
+        table_output = HelperFunctions.table_formatted_output(lldp_info, ["LocalPort", "RemotePort", "RemoteSysName", "RemoteSysModel"])
         table_lines = table_output.splitlines()
         total_pages = (len(table_lines) - 1) // ROWS_PER_PAGE + 1  # Рассчитываем количество страниц
         page = 1
@@ -66,6 +69,8 @@ async def lldp_info(message: Message, state: FSMContext):
                         reply_markup=in_back_keyboard,
                         parse_mode="HTML",
                     )
+
+
 async def send_page(message: Message, state: FSMContext, page: int, total_pages: int, host: str, current_date: str,
                     ):
     """Отправляет одну страницу с состоянием портов."""
@@ -90,6 +95,7 @@ async def send_page(message: Message, state: FSMContext, page: int, total_pages:
 
     await message.reply(text=full_message, reply_markup=pagination_keyboard, parse_mode="HTML")
 
+
 @router.callback_query(F.data.startswith("page_"))
 async def pagination_callback(callback: CallbackQuery, state: FSMContext):
     """Обработчик для пагинации с использованием callback."""
@@ -98,7 +104,6 @@ async def pagination_callback(callback: CallbackQuery, state: FSMContext):
     total_pages = data.get('total_pages', 1)
     host = data.get('host')
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
 
     # Обновляем текущую страницу и отправляем новую страницу
     await state.update_data(page=page)
