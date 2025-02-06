@@ -46,6 +46,7 @@ class SNMPFunctions:
         joid = HelperFunctions.load_oids()
         if "basic_oids" not in joid:
             raise KeyError("Ключ 'basic_oids' отсутствует в файле oid.json.")
+        
         sysObjectID = joid["basic_oids"]["oid_sysObjectID"]
 
         for community in communities:
@@ -54,8 +55,15 @@ class SNMPFunctions:
                 if result:
                     return community
             except Exception as e:
-                HelperFunctions.log_error(action=action, host=host, error=e)
+                # Логирование ошибки с дополнительной проверкой
+                try:
+                    HelperFunctions.log_error(action=action, host=host, error=e)
+                except Exception as log_error:
+                    # Если логирование тоже вызывает ошибку, обработаем её отдельно
+                    print(f"Ошибка логирования: {log_error}")
+                continue  # Переход к следующему комьюнити
 
+        # Если ни одно из комьюнити не подошло, возвращаем default_community
         return default_community
 
     @staticmethod

@@ -69,7 +69,7 @@ async def scan_network_and_reply(message: Message, network: str, state: FSMConte
         devices = await NetworkUtils.subnet_scan_with_info(network, Config.SNMP_COMMUNITIES)
 
         if not devices:
-            await message.reply("Не найдено доступных устройств в указанной подсети.")
+            await message.reply("Не найдено доступных устройств в указанной подсети.", reply_markup=in_back_keyboard, parse_mode="HTML")
             await state.clear()
             return
 
@@ -81,11 +81,11 @@ async def scan_network_and_reply(message: Message, network: str, state: FSMConte
                 f"<i>Выполнено: <code>{current_date}</code></i>"
             ),
             "reply_markup": in_back_keyboard,
+            
         }
         await message.reply(**display_data, parse_mode="HTML")
         await state.clear()
     except Exception as e:
         await message.reply(f"Ошибка при сканировании сети: {str(e)}")
         await state.clear()
-
 
