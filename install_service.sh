@@ -5,8 +5,8 @@ SERVICE_NAME="aio_tgnsa.service"
 SERVICE_FILE_PATH="/etc/systemd/system/$SERVICE_NAME"
 WORKING_DIR="/opt/aio.tgnsa.ru"
 VENV_DIR="$WORKING_DIR/venv"
-USER="nobody"
-GROUP="nogroup"
+USER="aio_tgnsa"
+GROUP="aio_tgnsa"
 LOGS_DIR="$WORKING_DIR/logs"
 DATA_DIR="$WORKING_DIR/data"
 
@@ -14,6 +14,21 @@ DATA_DIR="$WORKING_DIR/data"
 if [[ $(id -u) -ne 0 ]]; then
     echo "Этот скрипт должен быть выполнен с правами суперпользователя (root)."
     exit 1
+fi
+
+# Проверка, существует ли пользователь и группа
+if ! id "$USER" &>/dev/null; then
+    echo "Создание пользователя $USER..."
+    useradd --system --no-create-home --group "$GROUP" --user-group "$USER"
+else
+    echo "Пользователь $USER уже существует."
+fi
+
+if ! getent group "$GROUP" &>/dev/null; then
+    echo "Создание группы $GROUP..."
+    groupadd "$GROUP"
+else
+    echo "Группа $GROUP уже существует."
 fi
 
 # Создание юнит-файла для systemd
