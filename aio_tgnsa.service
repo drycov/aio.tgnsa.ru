@@ -3,12 +3,43 @@ Description=Aio Tgnsa Service
 After=network.target
 
 [Service]
-User=your_user
-Group=your_group
+# Используем пользователя и группу nobody для повышения безопасности
+User=nobody
+Group=nogroup
+
+# Рабочая директория приложения
 WorkingDirectory=/opt/aio.tgnsa.ru
-ExecStart=/opt/aio.tgnsa.ru/venv/bin/python main.py
+
+# Путь к интерпретатору Python и основному скрипту
+ExecStart=/opt/aio.tgnsa.ru/venv/bin/python /opt/aio.tgnsa.ru/main.py
+
+# Перезапуск сервиса в случае неудачи
 Restart=always
+RestartSec=3s
+
+# Стандартный вывод и ошибки в журнал systemd
+StandardOutput=journal
+StandardError=journal
+
+# Установка переменных окружения
 Environment="PYTHONUNBUFFERED=1"
+Environment="PATH=/opt/aio.tgnsa.ru/venv/bin:$PATH"
+
+# Ограничения на использование ресурсов
+LimitNOFILE=65536
+LimitNPROC=512
+
+# Защита от случайного завершения процесса
+ProtectSystem=full
+ProtectHome=yes
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Разрешение на запись в каталоги logs и data
+ReadWritePaths=/opt/aio.tgnsa.ru/logs
+ReadWritePaths=/opt/aio.tgnsa.ru/data
+
+PrivateDevices=true
 
 [Install]
 WantedBy=multi-user.target

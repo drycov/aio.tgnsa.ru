@@ -38,7 +38,7 @@ async def index(api: API = Depends()):
     }
 
 
-@Index.post("/send_message/")
+@Index.post("/send_message")
 async def send_message(request: MessageRequest):
     """
     Отправка текстового сообщения пользователю через Telegram Bot.
@@ -59,7 +59,7 @@ async def send_message(request: MessageRequest):
         raise HTTPException(status_code=500, detail=f"Неизвестная ошибка: {e}")
 
 
-@Index.post("/broadcast/")
+@Index.post("/broadcast")
 async def broadcast_message(user_ids: List[int], message: str):
     """
     Массовая рассылка текстовых сообщений через Telegram Bot.
@@ -85,7 +85,7 @@ async def broadcast_message(user_ids: List[int], message: str):
     return {"message": "Все сообщения успешно отправлены"}
 
 
-@Index.post("/start_bot/", response_model=None)
+@Index.post("/start_bot", response_model=None)
 async def start_bot(api: API = Depends()):  # Зависимость передана через Depends
     """
     Запуск бота через эндпоинт.
@@ -97,7 +97,7 @@ async def start_bot(api: API = Depends()):  # Зависимость перед�
         raise HTTPException(status_code=500, detail=f"Ошибка запуска бота: {e}")
 
 
-@Index.post("/stop_bot/", response_model=None)
+@Index.post("/stop_bot", response_model=None)
 async def stop_bot(api: API = Depends()):  # Зависимость передана через Depends
     """
     Остановка бота через эндпоинт.
@@ -109,7 +109,7 @@ async def stop_bot(api: API = Depends()):  # Зависимость переда
         raise HTTPException(status_code=500, detail=f"Ошибка остановки бота: {e}")
 
 
-@Index.post("/restart_bot/", response_model=None)
+@Index.post("/restart_bot", response_model=None)
 async def restart_bot(api: API = Depends()):  # Зависимость передана через Depends
     """
     Перезапуск бота через эндпоинт.

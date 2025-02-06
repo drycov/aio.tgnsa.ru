@@ -43,7 +43,7 @@ async def process_device_info(host: str, community: str, message: Message, state
         return
 
     # Добавление устройства в систему
-    ertm.add_device(
+    await ertm.add_device(
         host=host,
         vendor=device_info.get('vendor', 'nAn'),
         sys_name=device_info.get('sw_sys_name', 'nAn'),

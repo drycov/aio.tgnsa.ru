@@ -37,3 +37,4 @@ fastapi~=0.115.5
 starlette~=0.41.3
 uvicorn~=0.32.1
 python-jose~=3.3.0
+dnspython

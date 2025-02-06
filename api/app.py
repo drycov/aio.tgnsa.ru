@@ -7,7 +7,6 @@ import firebase_admin
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware import Middleware
-from fastapi.routing import APIRoute
 from firebase_admin import credentials
 from jose import jwt, JWTError  # Установите библиотеку `python-jose` для работы с JWT
 from pydantic import BaseModel
@@ -20,14 +19,14 @@ from bot.utils.logger_instance import app_logger
 from config import Config
 from healthy import Healthy
 from housekeeper import Housekeeper
-
-
+from bot.models import User
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
     """
     Промежуточное ПО для проверки JWT токенов.
     """
+
     async def dispatch(self, request: Request, call_next):
         if request.url.path in Config.Security.EXCLUDE_PATHS:
             return await call_next(request)
@@ -45,6 +44,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
+
 middleware = [
     Middleware(AuthMiddleware)
 ]
@@ -56,6 +56,7 @@ class LoginRequest(BaseModel):
 
 
 class API:
+
     def __init__(self):
         """
         Инициализация API и фоновых задач.
@@ -111,6 +112,32 @@ class API:
         self.scheduler.shutdown(wait=False)
         await self.manage_bot_task("stop")
 
+    # Функция для аутентификации пользователя
+    async def authenticate_user(self, userid: str, password: str):
+        if not userid or not password:
+            raise HTTPException(status_code=400, detail="Необходимо указать userid и password")
+
+        try:
+            user = User.get_by_tg_id(int(userid))
+            if user.verification_code != password:
+                app_logger.error(f"Неверный код верификации для пользователя с ID {userid}")
+                raise HTTPException(status_code=401, detail="Неверный код верификации")
+        except Exception as e:
+            app_logger.error(f"Ошибка при поиске пользователя {userid}: {e}")
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+        return user
+
+
+    # Функция для генерации JWT токена
+    def generate_access_token(self, user_id: int):
+        return JWTManager.generate_jwt(
+            user_id=user_id,
+            secret_key=Config.SECRET_KEY,
+            expires_in=Config.Security.Tokens.ACCESS_TOKEN_EXPIRATION,
+        )
+
+    # Настройка маршрутов
     def setup_routes(self):
         """
         Настройка маршрутов API.
@@ -118,14 +145,13 @@ class API:
 
         @self.app.post("/login")
         async def login(data: LoginRequest):
-            if data.userid == "6818244868" and data.password == "password":
-                token = JWTManager.generate_jwt(
-                    user_id=int(data.userid) if data.userid.isdigit() else data.userid,
-                    secret_key=Config.SECRET_KEY,
-                    expires_in=Config.Security.Tokens.ACCESS_TOKEN_EXPIRATION,
-                )
+            user = await self.authenticate_user(data.userid, data.password)
+            print(user)
+            if user:
+                token = self.generate_access_token(int(data.userid))
+                print(token)
                 return {"access_token": token, "token_type": "Bearer"}
-
+            
             raise HTTPException(status_code=401, detail="Неверные учетные данные")
 
         register_routes(self.app)

@@ -70,7 +70,7 @@ class ERTM:
             app_logger.error(f"Ошибка получения устройств: {e}")
             return []
 
-    def add_device(self, host: str, vendor: str, sys_name: str, model: str,
+    async def add_device(self, host: str, vendor: str, sys_name: str, model: str,
                    latitude: float, longitude: float, address: str) -> bool:
         """
         Добавляет новое устройство в базу данных.
@@ -96,7 +96,7 @@ class ERTM:
                 session.add(new_device)
                 session.commit()
 
-                HelperFunctions.log_action(f"{__name__}.add_device", host)
+                await HelperFunctions.log_action(f"{__name__}.add_device", host)
                 app_logger.info(f"Устройство {host} успешно добавлено.")
                 return True
         except Exception as e:

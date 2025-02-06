@@ -175,7 +175,12 @@ class Config:
     RAM_USAGE_THRESHOLD_PERCENT = int(
         os.getenv("RAM_USAGE_THRESHOLD_PERCENT", 80))  # Порог использования RAM в процентах
     HEALTHY_CHECK_INTERVAL = int(os.getenv("HEALTHY_CHECK_INTERVAL", 300))  # Интервал проверок в секундах
+    MAX_UPTIME_THRESHOLD = int(int(os.getenv("MAX_UPTIME_THRESHOLD", 86400)))
+    API_RESPONSE_THRESHOLD_SECONDS = int(int(os.getenv("API_RESPONSE_THRESHOLD_SECONDS", 5)))
+    CPU_USAGE_THRESHOLD_PERCENT = int(int(os.getenv("CPU_USAGE_THRESHOLD_PERCENT", 70)))
+    NETWORK_AVAILABILITY_THRESHOLD_PERCENT = int(int(os.getenv("NETWORK_AVAILABILITY_THRESHOLD_PERCENT", 95)))
 
+    # ---------- Настройки безопасности ----------
     class Security:
         """Настройки безопасности."""
         EXCLUDE_PATHS = ["/login", "/docs", "/openapi.json", "/api/ping"]  # Пути, которые не требуют авторизации

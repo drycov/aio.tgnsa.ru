@@ -22,7 +22,7 @@ def register_routes(app: FastAPI) -> None:
         from .user_manager import UserManager
         from .config_manager import ConfigManager
         from .health_manager import HealthManager
-
+        from .subscriber_manager import SubscriberManager
         # from .tasks_manager import TasksManager
 
         # Регистрация маршрутов
@@ -31,7 +31,7 @@ def register_routes(app: FastAPI) -> None:
         app.include_router(ConfigManager, prefix="/api", tags=["Config Management"])
         app.include_router(HealthManager, prefix="/api", tags=["Health Monitoring"])
         app.include_router(PingManager, prefix="/api", tags=["Ping"])  # Добавлено
-
+        app.include_router(SubscriberManager, prefix="/api", tags=["Subscriber"])
         # app.include_router(TasksManager, prefix="/tasks", tags=["Task Management"])
 
         app_logger.info("Маршруты успешно зарегистрированы.")

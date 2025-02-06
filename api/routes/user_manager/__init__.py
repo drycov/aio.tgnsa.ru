@@ -15,7 +15,7 @@ class UserResponse(BaseModel):
     updated_user: User  # Используйте вашу модель `User`
 
 
-@UserManager.get("/users/", response_model=List[User])
+@UserManager.get("/users", response_model=List[User])
 async def get_users() -> List[User]:
     """
     Получение списка всех пользователей.

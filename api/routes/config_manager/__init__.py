@@ -17,17 +17,23 @@ class ConfigManagerAPI:
     """
 
     @staticmethod
-    @ConfigManager.get("/config/")
+    @ConfigManager.get("/configs")
     async def get_config():
         """
         Возвращает текущую конфигурацию.
         """
         from config import Config  # Динамический импорт, чтобы получить актуальные данные
+
+        # Преобразуем Config в словарь
         config_dict = {attr: getattr(Config, attr) for attr in dir(Config) if not attr.startswith("__")}
-        return config_dict
+        
+        # Проверяем и фильтруем, если нужно
+        serializable_config_dict = {key: value for key, value in config_dict.items() if isinstance(value, (str, int, float, bool))}
+
+        return serializable_config_dict
 
     @staticmethod
-    @ConfigManager.post("/config/")
+    @ConfigManager.post("/configs")
     async def update_config(key: str, value: str):
         """
         Обновляет параметр конфигурации.
@@ -53,7 +59,7 @@ class ConfigManagerAPI:
         raise HTTPException(status_code=404, detail=f"Параметр {key} не найден.")
 
     @ConfigManager.post("/config/export")
-    async def export_config(format: Literal["json", "csv", "sql", "env"] = "env"):
+    async def export_config(self, format: Literal["json", "csv", "sql", "env"] = "env"):
         """
         Экспортирует текущие настройки в файл .env.
         """
@@ -77,14 +83,14 @@ class ConfigManagerAPI:
             raise HTTPException(status_code=500, detail=f"Ошибка экспорта конфигурации: {str(e)}")
 
     @ConfigManager.post("/config/import")
-    async def import_config(format: Literal["json", "csv", "sql", "env"] = "env"):
+    async def import_config(self, format: Literal["json", "csv", "sql", "env"] = "env"):
         """
         Импортирует конфигурацию из файла.
         """
         file_path = None
 
     @ConfigManager.post("/config/update")
-    async def update_env_variable(key: str, value: str):
+    async def update_env_variable(self, key: str, value: str):
         """
         Обновляет конкретную переменную окружения в .env.
         """
