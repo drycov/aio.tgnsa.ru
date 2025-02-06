@@ -9,6 +9,7 @@ from bot.constants import NetworkMessages
 from .device_utils import DeviceUtils
 from .helper_functions import HelperFunctions
 from .snmp_functions import SNMPFunctions
+from bot.utils.logger_instance import app_logger
 
 
 class NetworkUtils:
@@ -64,27 +65,33 @@ class NetworkUtils:
             network = ipaddress.ip_network(subnet, strict=False)
             ip_list = [str(ip) for ip in network.hosts()]
 
-            print(f"Начинаем сканирование подсети {subnet}...")
+            app_logger.info(f"Начинаем сканирование подсети {subnet}...")
             alive_hosts = await NetworkUtils._get_alive_hosts(ip_list)
             if not alive_hosts:
-                print(f"Нет доступных устройств в подсети {subnet}.")
+                app_logger.info(f"Нет доступных устройств в подсети {subnet}.")
                 return []
 
-            print(f"Найдено доступных устройств: {len(alive_hosts)}. Проверяем SNMP...")
+            app_logger.info(f"Найдено доступных устройств: {len(alive_hosts)}. Проверяем SNMP...")
             valid_hosts = await NetworkUtils._check_snmp_communities(alive_hosts, communities)
             if not valid_hosts:
                 print("Нет устройств с доступным SNMP.")
                 return []
 
-            print(f"Собираем информацию с {len(valid_hosts)} устройств через SNMP...")
-            return await NetworkUtils._collect_device_info(valid_hosts, ertm)
+            app_logger.info(f"Собираем информацию с {len(valid_hosts)} устройств через SNMP...")
+            device_info = await NetworkUtils._collect_device_info(valid_hosts, ertm)
+
+            # Фильтруем устройства без данных SNMP
+            filtered_info = [info for info in device_info if info]
+
+            app_logger.info(f"Оставлено {len(filtered_info)} устройств с данными SNMP.")
+            return filtered_info
 
         except ValueError as e:
-            print(f"Ошибка: некорректная подсеть {subnet}: {e}")
+            app_logger.error(f"Ошибка: некорректная подсеть {subnet}: {e}")
             HelperFunctions.log_error(action=action, host=subnet, error=e)
             return []
         except Exception as e:
-            print(f"Неизвестная ошибка при сканировании подсети: {e}")
+            app_logger.error(f"Неизвестная ошибка при сканировании подсети: {e}")
             HelperFunctions.log_error(action=action, host=subnet, error=e)
             return []
 
