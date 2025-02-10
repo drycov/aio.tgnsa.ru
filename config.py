@@ -132,7 +132,7 @@ class Config:
     EMAIL_SENDER = f"{APP_NAME} Admin <{MAIL_USERNAME}>"
 
     # ---------- Параметры SNMP ----------
-    SNMP_COMMUNITIES = os.getenv("SNMP_COMMUNITIES", "public,atbu+1,chinaPublic").split(",")
+    SNMP_COMMUNITIES = os.getenv("SNMP_COMMUNITIES", "public,atbu+1,chinaPublic,public+,ChinaPublic").split(",")
     SNMP_RW_COMMUNITIES = os.getenv("SNMP_RW_COMMUNITIES", "private").split(",")
 
     # ---------- Параметры массовых уведомлений ----------

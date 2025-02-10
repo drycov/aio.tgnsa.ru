@@ -1,6 +1,7 @@
 import asyncio
 import json
 import re
+import traceback
 from typing import Any, Dict, List, Optional, Callable
 from puresnmp.varbind import PyVarBind
 from bot.constants import LogMessages, Symbols, ErrorMessages
@@ -178,9 +179,25 @@ class DeviceUtils:
             if port_if_range is None:
                 port_if_range = []
 
+            # Логируем возможное расхождение в длине списков
+            if len(port_if_list) != len(port_if_range):
+                HelperFunctions.log_error(
+                    action=action,
+                    host=host,
+                    error=Exception(f"Несоответствие размеров списков: port_if_list={len(port_if_list)}, port_if_range={len(port_if_range)}")
+                )
+
             for i, port in enumerate(port_if_list):
                 port_str = str(port)  # Преобразуем port в строку
-                # Получение описания интерфейса
+                # Проверяем, не вышли ли за границы списка
+                if i >= len(port_if_range):
+                    port_if_range.append("")  # Добавляем пустое значение
+
+                # Обрабатываем D-Link, только если индекс в пределах списка
+                if i < len(port_if_range) and "D-Link" in port_if_range[i]:
+                    port_if_range[i] = port_if_range[i].split()[1] if "Port" in port_if_range[i] else port_if_range[i]
+
+            # Получение описания интерфейса
                 test_int_descr = HelperFunctions.to_string(await SNMPFunctions.get_single_oid(
                     host, descr_oid + port_str, community
                 ), encoding='iso-8859-1')
@@ -256,13 +273,11 @@ class DeviceUtils:
             return
 
     @staticmethod
-    async def get_basic_info(host: str, community: str) -> Any | None:
+    async def get_basic_info(host: str, community: str) -> dict | None:
         joid = HelperFunctions.load_oids()
 
-        """
-        Получает базовую информацию об устройстве через SNMP.
-        """
         action = "get_basic_info"
+        current_date = HelperFunctions.get_current_date()
 
         app_logger.info(json.dumps({
             "date": current_date,
@@ -278,15 +293,27 @@ class DeviceUtils:
             oid_sysObjectID = joid["basic_oids"]["oid_sysObjectID"]
 
             # Получение данных по OID
-            dirty_data = await SNMPFunctions.get_single_oid(host, oid_model, community)
-            dirty_data = dirty_data.decode('utf-8') if isinstance(dirty_data, bytes) else str(dirty_data)
+            try:
+                dirty_data = await SNMPFunctions.get_single_oid(host, oid_model, community)
+                print(dirty_data)
+                if not dirty_data:
+                    raise ValueError(f"Не удалось получить данные по OID модели для хоста {host}")
+                dirty_data = dirty_data.decode('utf-8') if isinstance(dirty_data, bytes) else str(dirty_data)
+            except Exception as e:
+                app_logger.error(f"Ошибка при получении данных OID модели для хоста {host}: {e}")
+                return None
 
             sw_sys_name = await SNMPFunctions.get_single_oid(host, oid_sysname, community)
+            if not sw_sys_name:
+                raise ValueError(f"Не удалось получить имя устройства для хоста {host}")
             sw_sys_name = sw_sys_name.decode('utf-8') if isinstance(sw_sys_name, bytes) else str(sw_sys_name)
 
             sw_pen = await SNMPFunctions.get_single_oid(host, oid_sysObjectID, community)
             up_time = await SNMPFunctions.get_single_oid(host, oid_uptime, community)
             sys_location = await SNMPFunctions.get_single_oid(host, oid_sysLocation, community)
+
+            if not sw_pen or not up_time or not sys_location:
+                raise ValueError(f"Не удалось получить все необходимые данные для хоста {host}")
 
             parsed_oid = PENFinder.parse_oid(sw_pen)
             vendor = PENFinder.search_pen(parsed_oid['pen'])
@@ -322,7 +349,14 @@ class DeviceUtils:
             }
 
         except Exception as e:
-            HelperFunctions.log_error(action=action, host=host, error=e)
+            # Логирование ошибки с трассировкой
+            app_logger.error(json.dumps({
+                "date": current_date,
+                "action": action,
+                "host": host,
+                "error": str(e),
+                "trace": traceback.format_exc(),
+            }))
             return None
 
     @staticmethod

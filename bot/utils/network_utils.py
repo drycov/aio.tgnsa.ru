@@ -50,8 +50,7 @@ class NetworkUtils:
             HelperFunctions.log_error(action=action, host=host, error=e)
             return False
 
-    @staticmethod
-    async def subnet_scan_with_info(subnet: str, communities: List[str]) -> List[Dict[str, str]]:
+    async def subnet_scan_with_info(self, subnet: str, communities: List[str]) -> List[Dict[str, str]]:
         """
         Сканирует подсеть на доступность устройств и собирает базовую информацию через SNMP.
         :param subnet: Подсеть для сканирования (например, "192.168.1.0/24").
@@ -60,29 +59,31 @@ class NetworkUtils:
         """
         action = f"{__name__}.subnet_scan_with_info"
         from ..bot_instance import ertm
-
+        # print(communities)
         try:
             network = ipaddress.ip_network(subnet, strict=False)
             ip_list = [str(ip) for ip in network.hosts()]
 
             app_logger.info(f"Начинаем сканирование подсети {subnet}...")
-            alive_hosts = await NetworkUtils._get_alive_hosts(ip_list)
+            alive_hosts = await self._get_alive_hosts(ip_list)
+            # print(alive_hosts)
             if not alive_hosts:
                 app_logger.info(f"Нет доступных устройств в подсети {subnet}.")
                 return []
 
             app_logger.info(f"Найдено доступных устройств: {len(alive_hosts)}. Проверяем SNMP...")
-            valid_hosts = await NetworkUtils._check_snmp_communities(alive_hosts, communities)
+            valid_hosts = await self._check_snmp_communities(hosts=alive_hosts, communities=communities)
+            # print(valid_hosts)
             if not valid_hosts:
                 print("Нет устройств с доступным SNMP.")
                 return []
 
             app_logger.info(f"Собираем информацию с {len(valid_hosts)} устройств через SNMP...")
-            device_info = await NetworkUtils._collect_device_info(valid_hosts, ertm)
-
+            device_info = await self._collect_device_info(valid_hosts, ertm)
+            # print(device_info)
             # Фильтруем устройства без данных SNMP
             filtered_info = [info for info in device_info if info]
-
+            # print(filtered_info)
             app_logger.info(f"Оставлено {len(filtered_info)} устройств с данными SNMP.")
             return filtered_info
 
@@ -95,17 +96,16 @@ class NetworkUtils:
             HelperFunctions.log_error(action=action, host=subnet, error=e)
             return []
 
-    @staticmethod
-    async def _get_alive_hosts(ip_list: List[str]) -> List[str]:
+    async def _get_alive_hosts(self, ip_list: List[str]) -> List[str]:
         """Возвращает список доступных хостов."""
-        tasks = [NetworkUtils.is_alive(ip) for ip in ip_list]
+        tasks = [self.is_alive(ip) for ip in ip_list]
         results = await asyncio.gather(*tasks)
         return [ip for ip, is_alive in zip(ip_list, results) if is_alive]
 
     @staticmethod
     async def _check_snmp_communities(hosts: List[str], communities: List[str]) -> List[Tuple[str, str]]:
         """Проверяет SNMP community strings для списка хостов."""
-        tasks = [SNMPFunctions.check_snmp(host, communities) for host in hosts]
+        tasks = [SNMPFunctions.check_snmp(host=host, communities=communities) for host in hosts]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         return [(host, community) for host, community in zip(hosts, results) if isinstance(community, str)]
 
@@ -125,6 +125,7 @@ class NetworkUtils:
                     latitude=result.get('latitude', 0),
                     longitude=result.get('longitude', 0),
                     address=result.get('address', 'nAn'),
+                    vendor=result.get('vendor', 'nAn'),
                 )
                 valid_devices.append(result)
             else:
@@ -153,7 +154,7 @@ class NetworkUtils:
             return NetworkMessages.ERROR_P2P_FORMAT.value
 
     @staticmethod
-    def ping_device_log(host: str, count: int = 4) -> Optional[str]:
+    def ping_device_log(host: str, count: int=4) -> Optional[str]:
         """
         Пинг устройства с логированием.
         :param host: IP-адрес или доменное имя устройства.

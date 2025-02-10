@@ -571,29 +571,28 @@ class HelperFunctions:
     def parse_location(byte_string):
         try:
             decoded_string = byte_string.decode('utf-8')
-            address, coordinates = decoded_string.split('[')
-            coordinates = coordinates.rstrip(']')
+            print(f"RAW STRING: {decoded_string}")  # Вывод для отладки
+
+            # Проверяем, есть ли координаты в строке
+            if '[' not in decoded_string:
+                address = decoded_string.strip()
+                coordinates = None
+            else:
+                # Разделяем адрес и координаты
+                address, coordinates = decoded_string.split('[', 1)
+                coordinates = coordinates.rstrip(']')
 
             # Парсим адрес
             address_parts = address.split(',')
 
-            if len(address_parts) != 4:
-                raise ValueError("Неверный формат адреса")
+            street = address_parts[0].strip() if len(address_parts) > 0 else ""
+            house_number = address_parts[1].strip() if len(address_parts) > 1 else ""
+            city = address_parts[2].strip() if len(address_parts) > 2 else ""
+            country = address_parts[3].strip() if len(address_parts) > 3 else ""
 
-            if address_parts[0].isdigit():
-                # Если первый элемент — номер дома
-                house_number = address_parts[0]
-                street = address_parts[1]
-            else:
-                # Если первый элемент — улица
-                street = address_parts[0]
-                house_number = address_parts[1]
-
-            city = address_parts[2]
-            country = address_parts[3]
-
-            # Парсим координаты
-            latitude, longitude = map(float, coordinates.split(','))
+            latitude = longitude = None
+            if coordinates and ',' in coordinates:
+                latitude, longitude = map(float, coordinates.split(','))
 
             return {
                 "street": street,
@@ -603,10 +602,9 @@ class HelperFunctions:
                 "latitude": latitude,
                 "longitude": longitude,
             }
-
         except Exception as e:
-            HelperFunctions.log_error(action="parse_location`",
-                                      error=ValueError(f"Ошибка обработки строки: {e}"))
+            # Логируем ошибку
+            HelperFunctions.log_error(action="parse_location", error=e)
             return None
 
     @staticmethod

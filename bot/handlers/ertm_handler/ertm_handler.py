@@ -66,7 +66,14 @@ async def scan_network_and_reply(message: Message, network: str, state: FSMConte
         reply_markup=ReplyKeyboardRemove()
     )
     try:
-        devices = await NetworkUtils.subnet_scan_with_info(network, Config.SNMP_COMMUNITIES)
+        # Передаем communities в метод
+        devices = await NetworkUtils().subnet_scan_with_info(
+            subnet=network,
+            communities=Config.SNMP_COMMUNITIES,
+            # Передаем ertm_instance, если он нужен
+            # ertm_instance=getattr(NetworkUtils, 'ertm', None)
+        )
+        print(f"devices: {devices}")
 
         if not devices:
             await message.reply("Не найдено доступных устройств в указанной подсети.", reply_markup=in_back_keyboard, parse_mode="HTML")
@@ -81,11 +88,10 @@ async def scan_network_and_reply(message: Message, network: str, state: FSMConte
                 f"<i>Выполнено: <code>{current_date}</code></i>"
             ),
             "reply_markup": in_back_keyboard,
-            
         }
         await message.reply(**display_data, parse_mode="HTML")
         await state.clear()
-    except Exception as e:
-        await message.reply(f"Ошибка при сканировании сети: {str(e)}")
-        await state.clear()
 
+    except Exception as e:
+        await message.reply(f"Ошибка при сканировании сети: {str(e)}", reply_markup=in_back_keyboard, parse_mode="HTML")
+        await state.clear()

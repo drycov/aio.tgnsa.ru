@@ -1,3 +1,4 @@
+import asyncio
 import json
 import traceback
 from typing import Any, List
@@ -41,31 +42,51 @@ class SNMPFunctions:
             return None
 
     @staticmethod
-    async def check_snmp(host: str, communities: List[str], default_community: str = "public") -> str:
+    async def check_snmp(
+            host: str,
+            communities: List[str],
+            default_community: str = "public",
+            timeout: float = 3.0
+    ) -> str:
+        """
+        Асинхронная проверка SNMP community с расширенной обработкой ошибок.
+        """
         action = f"{__name__}.check_snmp"
-        joid = HelperFunctions.load_oids()
-        if "basic_oids" not in joid:
-            raise KeyError("Ключ 'basic_oids' отсутствует в файле oid.json.")
-        
-        sysObjectID = joid["basic_oids"]["oid_sysObjectID"]
 
-        for community in communities:
-            try:
-                result = await SNMPFunctions.get_single_oid(host, sysObjectID, community)
-                if result:
-                    return community
-            except Exception as e:
-                # Логирование ошибки с дополнительной проверкой
+        try:
+            joid = HelperFunctions.load_oids()
+            if "basic_oids" not in joid:
+                raise KeyError("Ключ 'basic_oids' отсутствует в файле oid.json.")
+
+            sysObjectID = joid["basic_oids"]["oid_sysObjectID"]
+
+            for community in communities:
                 try:
-                    HelperFunctions.log_error(action=action, host=host, error=e)
-                except Exception as log_error:
-                    # Если логирование тоже вызывает ошибку, обработаем её отдельно
-                    print(f"Ошибка логирования: {log_error}")
-                continue  # Переход к следующему комьюнити
+                    result = await asyncio.wait_for(
+                        SNMPFunctions.get_single_oid(host, sysObjectID, community),
+                        timeout=timeout
+                    )
 
-        # Если ни одно из комьюнити не подошло, возвращаем default_community
+                    if result:
+                        return community
+
+                except asyncio.TimeoutError:
+                    app_logger.warning(f"Timeout для community {community} на хосте {host}")
+                except Exception as e:
+                    try:
+                        # Передаем именно объект исключения
+                        HelperFunctions.log_error(
+                            action=action,
+                            host=host,
+                            error=e  # Объект исключения, а не строка
+                        )
+                    except Exception as log_error:
+                        app_logger.error(f"Ошибка логирования: {log_error}")
+
+        except Exception as global_error:
+            app_logger.error(f"Критическая ошибка проверки SNMP: {global_error}")
+
         return default_community
-
     @staticmethod
     async def get_multi_oid(host: str, oid: str, community: str, timeout: int = 6) -> list:
         action = LogMessages.GET_MULTI_OID_ACTION.value

@@ -5,7 +5,7 @@
 **/__pycache__/
 *.sqlite
 *.db
-
+*pid.*
 
 # Виртуальные окружения
 .idea/
@@ -42,3 +42,4 @@ instance/
 # Дополнительно, если требуется
 *.bak  # резервные файлы
 serviceAccountKey.json
+pid.run
