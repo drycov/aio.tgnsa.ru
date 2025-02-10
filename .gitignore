@@ -43,3 +43,4 @@ instance/
 *.bak  # резервные файлы
 serviceAccountKey.json
 pid.run
+api_test/
