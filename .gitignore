@@ -44,3 +44,5 @@ instance/
 serviceAccountKey.json
 pid.run
 api_test/
+env
+.env
