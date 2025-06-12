@@ -39,6 +39,13 @@ class LoggerManager:
     def _setup_logger(self):
         logger.remove()
 
+        log_format = (
+            "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+            "<level>{message}</level>"
+        )
+
         # Консольный лог
         logger.add(
             sys.stdout,
@@ -47,10 +54,7 @@ class LoggerManager:
             diagnose=True,
             level="DEBUG" if self.debug else "INFO",
             colorize=True,
-            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-                   "<level>{level: <8}</level> | "
-                   "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-                   "<level>{message}</level>",
+            format=log_format,
         )
 
         # Файловый лог
@@ -62,7 +66,8 @@ class LoggerManager:
             backtrace=True,
             diagnose=True,
             level="DEBUG" if self.debug else "INFO",
-            encoding="utf-8"
+            encoding="utf-8",
+            format=log_format,  # <-- Явный формат для файлового логгера
         )
 
         logging.root.handlers = [InterceptHandler()]
