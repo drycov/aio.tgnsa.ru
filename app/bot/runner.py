@@ -9,6 +9,12 @@ dp = Dispatcher()
 
 
 async def main():
+    try:
+        dsn = settings.db.get_dsn()
+        logger.info(f"DSN для подключения к БД: {dsn}")
+    except Exception as e:
+        logger.error(f"Ошибка при генерации DSN: {e}")
+
     logger.info("🤖 Запуск бота...")
     try:
         await dp.start_polling(bot)
