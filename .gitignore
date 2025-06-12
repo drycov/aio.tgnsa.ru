@@ -10,10 +10,12 @@
 # Виртуальные окружения
 .idea/
 env/
+.venv/
+.venv/*
 venv/
 venv/*
-env*/  # на случай окружений с разными названиями
-*.env  # файлы конфигурации окружений
+env*/ # на случай окружений с разными названиями
+*.env # файлы конфигурации окружений
 .env
 .idx
 
@@ -29,7 +31,6 @@ logs/
 *.log
 dump.rdb
 
-
 # IDE и редакторы
 .idea/
 .vscode/
@@ -39,12 +40,20 @@ dump.rdb
 # Миграции базы данных
 migrations/
 instance/
+data/
 
 # Дополнительно, если требуется
-*.bak  # резервные файлы
+*.bak # резервные файлы
 serviceAccountKey.json
 pid.run
 api_test/
 env
 .env
 ./serviceAccountKey.json
+.local
+.cache/
+.cache/*
+.github/
+.github/*
+.bash_history
+.python_history
