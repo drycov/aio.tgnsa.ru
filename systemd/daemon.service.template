@@ -1,80 +1,27 @@
 [Unit]
-Description=TGNMS {{ROLE|capitalize}} Service
-Documentation=https://tgnms.example.com/docs
-After=network-online.target postgresql.service redis.service
+Description=TGNMS Daemon Service
+After=network-online.target
 Wants=network-online.target
-ConditionPathExists={{WORKING_DIR}}
-AssertPathExists={{VENV_DIR}}/bin/python3
 
 [Service]
-Type=simple
 User={{USER}}
 Group={{GROUP}}
 WorkingDirectory={{WORKING_DIR}}
-ExecStart={{VENV_DIR}}/bin/python3 -m app --{{ROLE}} --log-file {{LOGS_DIR}}/{{ROLE}}.log
-ExecReload=/bin/kill -HUP $MAINPID
-ExecStop=/bin/kill -TERM $MAINPID
-
-# Process management
-Restart=on-failure
-RestartSec=5s
-StartLimitInterval=60s
-StartLimitBurst=3
-
-# Logging
-StandardOutput=syslog
-StandardError=syslog
-SyslogIdentifier=tgnms-{{ROLE}}
-SyslogFacility=daemon
-LogLevelMax=warning
-LogRateLimitIntervalSec=30s
-LogRateLimitBurst=1000
-
-# Security hardening
-ProtectSystem=strict
-ProtectHome=read-only
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectKernelLogs=true
-ProtectControlGroups=true
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
-RestrictNamespaces=true
-RestrictRealtime=true
-RestrictSUIDSGID=true
+ExecStart={{VENV_DIR}}/bin/python3 -m app --{{ROLE}}
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+Environment="PYTHONUNBUFFERED=1"
+Environment="PATH={{VENV_DIR}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+LimitNOFILE=65536
+LimitNPROC=1024
+ProtectSystem=full
+ProtectHome=yes
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
-PrivateUsers=true
-LockPersonality=true
-MemoryDenyWriteExecute=true
-RemoveIPC=true
-SystemCallFilter=@system-service
-SystemCallArchitectures=native
-CapabilityBoundingSet=
-AmbientCapabilities=
-
-# Resource management
-LimitNOFILE=65536
-LimitNPROC=1024
-LimitMEMLOCK=64M
-LimitSTACK=8M
-LimitFSIZE=1G
-CPUQuota=80%
-MemoryHigh=90%
-MemoryMax=95%
-TasksMax=512
-
-# Environment
-EnvironmentFile=-/etc/default/tgnms
-Environment="PYTHONUNBUFFERED=1"
-Environment="PYTHONHASHSEED=random"
-Environment="PATH={{VENV_DIR}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
-Environment="PYTHONPATH={{WORKING_DIR}}"
-
-# File access
 ReadWritePaths={{LOGS_DIR}} {{DATA_DIR}}
-ReadOnlyPaths={{WORKING_DIR}} {{VENV_DIR}}
-InaccessiblePaths=-/root -/boot -/etc/shadow
 
 [Install]
 WantedBy=multi-user.target
