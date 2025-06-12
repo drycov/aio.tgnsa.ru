@@ -1,5 +1,7 @@
 import asyncio
+
 from aiogram import Bot, Dispatcher
+
 from app.core.config import logger, settings
 
 bot = Bot(token=settings.bot.TOKEN)

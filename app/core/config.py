@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -10,30 +11,13 @@ from app.utils.logger_manager import LoggerManager
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ENV_PATH = BASE_DIR / ".env"
+SUPPORTED_ENGINES = {"sqlite", "postgres", "mysql","mariadb"}
 
-# --- Load .env ---
-# load_dotenv(dotenv_path=ENV_PATH)
+# --- Load .env early ---
+load_dotenv(dotenv_path=ENV_PATH)
 
-
-class BaseConfig(BaseSettings):
-    DEBUG: bool = Field(default=False, env="DEBUG")
-
-    model_config = SettingsConfigDict(
-        env_file=ENV_PATH,
-        env_file_encoding="utf-8",
-        case_sensitive=True,
-        extra="ignore",
-    )
-
-
-# --- Init base config to access debug & role ---
-_base_config = BaseConfig()
-
-# --- Logging ---
-debug_mode = _base_config.DEBUG
-role_name = os.getenv("APP_ROLE", "app")
-
-logger = LoggerManager(name=role_name, debug=debug_mode).get_logger()
+# --- Role setup from env ---
+APP_ROLE = os.getenv("APP_ROLE", "app")
 
 
 class BotConfig(BaseSettings):
@@ -50,11 +34,38 @@ class BotConfig(BaseSettings):
 
 class Settings(BaseSettings):
     USE_REDIS: bool = Field(default=False, env="USE_REDIS")
+    DB_ENGINE: Literal["sqlite", "postgres", "mysql"] = Field(
+        default="sqlite", env="DB_ENGINE")
+    DEBUG: bool = Field(default=False, env="DEBUG")
     bot: BotConfig = Field(default_factory=BotConfig)
 
     model_config = SettingsConfigDict(
-        env_file=ENV_PATH, env_file_encoding="utf-8", extra="ignore"
+        env_file=ENV_PATH,
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
     )
 
 
+# --- Settings init ---
 settings = Settings()
+
+# --- Debug mode resolution ---
+
+
+def resolve_debug_mode() -> bool:
+    try:
+        return bool(settings.DEBUG)
+    except Exception:
+        return os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
+
+
+debug_mode = resolve_debug_mode()
+
+# --- Logger Initialization ---
+logger = LoggerManager(name=APP_ROLE, debug=debug_mode).get_logger()
+
+# --- Validators ---
+
+if settings.DB_ENGINE not in SUPPORTED_ENGINES:
+    raise ValueError(f"❌ DB_ENGINE={settings.DB_ENGINE} не поддерживается.")
