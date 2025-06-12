@@ -1,6 +1,7 @@
 # app/api/server.py
 import uvicorn
 from fastapi import FastAPI
+from app.core.config import settings, logger
 
 app = FastAPI()
 
@@ -9,5 +10,5 @@ async def health_check():
     return {"status": "ok"}
 
 def run_api():
-    print("🌐 Запуск API-сервера...")
+    logger.info("🌐 Запуск API-сервера...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

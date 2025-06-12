@@ -3,6 +3,9 @@ import sys
 import logging
 from pathlib import Path
 
+LOG_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
 
 class InterceptHandler(logging.Handler):
     def emit(self, record):
@@ -18,21 +21,14 @@ class LoggerManager:
     def __init__(self, name: str = "app", debug: bool = False):
         self.name = name
         self.debug = debug
-        self.log_dir = Path(__file__).resolve().parent.parent / "logs"
-        self.log_dir.mkdir(parents=True, exist_ok=True)
-        self.log_file = self.log_dir / f"{self.name}.log"
+        self.log_file_path = LOG_DIR / f"{self.name}.log"
 
-        self._configure()
+        self._setup_logger()
 
-    def _configure(self):
-        # Очистка стандартных логгеров
-        logging.root.handlers = []
-        for logger_name in logging.root.manager.loggerDict.keys():
-            logging.getLogger(logger_name).handlers = []
-
-        # Настройка loguru
+    def _setup_logger(self):
         logger.remove()
 
+        # Консольный лог
         logger.add(
             sys.stdout,
             enqueue=True,
@@ -46,18 +42,20 @@ class LoggerManager:
                    "<level>{message}</level>",
         )
 
+        # Файловый лог
         logger.add(
-            self.log_file,
+            self.log_file_path,
             rotation="10 MB",
             retention="7 days",
             compression="zip",
             backtrace=True,
             diagnose=True,
             level="DEBUG" if self.debug else "INFO",
-            encoding="utf-8",
+            encoding="utf-8"
         )
 
-        logging.basicConfig(handlers=[InterceptHandler()], level=0)
+        logging.root.handlers = [InterceptHandler()]
+        logging.root.setLevel(0)
 
     def get_logger(self):
         return logger.bind(name=self.name)

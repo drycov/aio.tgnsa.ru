@@ -1,15 +1,24 @@
-# app/bot/runner.py
 import asyncio
 from aiogram import Bot, Dispatcher
-from core.config import settings, logger
+from app.core.config import logger, settings
 
-TOKEN = "your_bot_token"
 bot = Bot(token=settings.bot.TOKEN)
 dp = Dispatcher()
 
+
 async def main():
-    print("🤖 Запуск бота...")
-    await dp.start_polling(bot)
+    logger.info("🤖 Запуск бота...")
+    try:
+        await dp.start_polling(bot)
+    except asyncio.CancelledError:
+        logger.warning("Polling отменён.")
+    finally:
+        await bot.session.close()
+        logger.info("Бот остановлен.")
+
 
 def run_bot():
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("⏹ Завершение по сигналу прерывания.")
