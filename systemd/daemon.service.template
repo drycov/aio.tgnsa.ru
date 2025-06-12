@@ -1,7 +1,8 @@
 [Unit]
 Description=TGNMS Daemon Service
-After=network-online.target
-Wants=network-online.target
+Documentation=https://confluence.company.local/tgnms/service-docs
+After=network.target
+Wants=network.target
 
 [Service]
 User={{USER}}
@@ -9,19 +10,22 @@ Group={{GROUP}}
 WorkingDirectory={{WORKING_DIR}}
 ExecStart={{VENV_DIR}}/bin/python3 -m app --{{ROLE}}
 Restart=always
-RestartSec=3
+RestartSec=3s
 StandardOutput=journal
 StandardError=journal
 Environment="PYTHONUNBUFFERED=1"
 Environment="PATH={{VENV_DIR}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
 LimitNOFILE=65536
-LimitNPROC=1024
+LimitNPROC=512
 ProtectSystem=full
 ProtectHome=yes
 NoNewPrivileges=true
 PrivateTmp=true
+ReadWritePaths=
+
+ReadWritePaths={{LOGS_DIR}}
+ReadWritePaths={{DATA_DIR}}
 PrivateDevices=true
-ReadWritePaths={{LOGS_DIR}} {{DATA_DIR}}
 
 [Install]
 WantedBy=multi-user.target

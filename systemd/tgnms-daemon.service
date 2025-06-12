@@ -1,52 +1,31 @@
 [Unit]
 Description=TGNMS Daemon Service
 Documentation=https://confluence.company.local/tgnms/service-docs
-After=network-online.target
-Wants=network-online.target
+After=network.target
+Wants=network.target
 
 [Service]
-Type=simple
-User=tgnms
-Group=tgnms
-WorkingDirectory=/opt/tgnms
-ExecStart=/opt/tgnms/venv/bin/python /opt/tgnms/main.py
-Restart=on-failure
-RestartSec=3
-
+User={{USER}}
+Group={{GROUP}}
+WorkingDirectory={{WORKING_DIR}}
+ExecStart={{VENV_DIR}}/bin/python3 -m app --{{ROLE}}
+Restart=always
+RestartSec=3s
 StandardOutput=journal
 StandardError=journal
-LogNamespace=tgnms
-# Optional syslog forwarding
-ForwardToSyslog=yes
-
 Environment="PYTHONUNBUFFERED=1"
-Environment="PATH=/opt/tgnms/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
-
-# Limits
+Environment="PATH={{VENV_DIR}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
 LimitNOFILE=65536
-LimitNPROC=1024
-TimeoutStopSec=15
-OOMScoreAdjust=-100
-
-# Hardening
-ProtectSystem=strict
+LimitNPROC=512
+ProtectSystem=full
 ProtectHome=yes
-PrivateTmp=true
 NoNewPrivileges=true
+PrivateTmp=true
+ReadWritePaths=
+
+ReadWritePaths={{LOGS_DIR}}
+ReadWritePaths={{DATA_DIR}}
 PrivateDevices=true
-ProtectControlGroups=true
-ProtectKernelModules=true
-ProtectKernelTunables=true
-ProtectClock=true
-LockPersonality=true
-MemoryDenyWriteExecute=true
-
-ReadOnlyPaths=/
-ReadWritePaths=/opt/tgnms/logs /opt/tgnms/data
-
-# Drop unnecessary privileges
-CapabilityBoundingSet=
-AmbientCapabilities=
 
 [Install]
 WantedBy=multi-user.target
