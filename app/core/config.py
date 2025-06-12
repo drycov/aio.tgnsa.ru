@@ -7,8 +7,8 @@ from dotenv import load_dotenv, set_key
 from pydantic import Field, SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.utils.logger_manager import LoggerManager
-from app.utils.utils import generate_password
+from app.core import LoggerManager
+from app.core import generate_password
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
