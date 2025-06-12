@@ -11,7 +11,7 @@ try:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     if not os.access(LOG_DIR, os.W_OK):
         raise PermissionError
-except:
+except Exception:
     LOG_DIR = Path("/tmp/tgnms_logs")
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     print(f"⚠️ Переключение логирования в {LOG_DIR}", file=sys.stderr)
