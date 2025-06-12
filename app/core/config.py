@@ -125,8 +125,7 @@ class DBSettings(BaseSettings):
             return self.sqlite
 
     def get_dsn(self) -> str | None:
-        db_config = self.get_db_config()
-        if db_config:
+        if db_config := self.get_db_config():
             return db_config.dsn()
         else:
             raise ValueError(
@@ -242,11 +241,7 @@ class Security(BaseSettings):
 
     @model_validator(mode="after")
     def conditional_tfa_load(cls, values):
-        if values.TFA_ENABLE:
-            # Загружаем RedisConfig из окружения
-            values.tfa = TFAConfig()
-        else:
-            values.tfa = None
+        values.tfa = TFAConfig() if values.TFA_ENABLE else None
         return values
 
     model_config = SettingsConfigDict(
@@ -352,12 +347,27 @@ class EmailConfig(BaseSettings):
     )
 
 
+class ApiServerConfig(BaseSettings):
+    API_HOST: str = Field(default="127.0.0.1", env="API_HOST")
+    API_PORT: int = Field(default=8000, env="API_PORT")
+    API_WORKERS: int = Field(default=1, env="API_WORKERS")
+    model_config = SettingsConfigDict(
+        env_file=ENV_PATH,
+        env_file_encoding="utf-8",
+
+        env_prefix=" API_",
+        case_sensitive=True,
+        extra="ignore"
+    )
+
+
 class Settings(BaseSettings):
     USE_REDIS: bool = Field(default=False, env="USE_REDIS")
     USE_MONGODB: bool = Field(default=False, env="USE_MONGODB")
     USE_FIREBASE: bool = Field(default=False, env="USE_FIREBASE")
     USE_CACHE: bool = Field(default=False, env="USE_CACHE")
     DEBUG: bool = Field(default=False, env="DEBUG")
+
     bot: BotConfig = Field(default_factory=BotConfig)
     db: DBSettings = Field(default_factory=DBSettings)
     redis: Optional[RedisConfig] = None
@@ -367,6 +377,7 @@ class Settings(BaseSettings):
     cache: Optional[CacheConfig] = None
     misc: MiscConfig = Field(default_factory=MiscConfig)
     email: EmailConfig = Field(default_factory=EmailConfig)
+    api: ApiServerConfig = Field(default_factory=ApiServerConfig)
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -377,29 +388,17 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def conditional_redis_load(cls, values):
-        if values.USE_REDIS:
-            # Загружаем RedisConfig из окружения
-            values.redis = RedisConfig()
-        else:
-            values.redis = None
+        values.redis = RedisConfig() if values.USE_REDIS else None
         return values
 
     @model_validator(mode="after")
     def conditional_nongo_load(cls, values):
-        if values.USE_MONGODB:
-            # Загружаем RedisConfig из окружения
-            values.mongo = MongoDBConfig()
-        else:
-            values.mongo = None
+        values.mongo = MongoDBConfig() if values.USE_MONGODB else None
         return values
 
     @model_validator(mode="after")
     def conditional_cache_load(cls, values):
-        if values.USE_CACHE:
-            # Загружаем RedisConfig из окружения
-            values.cache = CacheConfig()
-        else:
-            values.cache = None
+        values.cache = CacheConfig() if values.USE_CACHE else None
         return values
 
     @model_validator(mode="before")
@@ -433,5 +432,3 @@ debug_mode = resolve_debug_mode()
 
 # --- Logger Initialization ---
 logger = LoggerManager(name=APP_ROLE, debug=debug_mode).get_logger()
-
-logger.debug(settings.model_dump_json(indent=2))

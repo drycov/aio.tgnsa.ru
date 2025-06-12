@@ -70,7 +70,8 @@ class LoggerManager:
             format=log_format,  # <-- Явный формат для файлового логгера
         )
 
-        logging.root.handlers = [InterceptHandler()]
+        if not any(isinstance(h, InterceptHandler) for h in logging.root.handlers):
+            logging.root.addHandler(InterceptHandler())
         logging.root.setLevel(0)
 
     def get_logger(self):

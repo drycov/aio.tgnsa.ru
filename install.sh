@@ -4,7 +4,7 @@ set -euo pipefail
 
 # === Конфигурация ===
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE_PATH="$SCRIPT_DIR/../systemd/tgnms-daemon.service.template"
+TEMPLATE_PATH="$SCRIPT_DIR/../systemd/daemon.service.template"
 SERVICE_NAME="tgnms-daemon.service"
 SERVICE_FILE_PATH="/etc/systemd/system/$SERVICE_NAME"
 WORKING_DIR="/opt/tgnms"
@@ -13,6 +13,7 @@ USER="tgnms"
 GROUP="tgnms"
 LOGS_DIR="$WORKING_DIR/logs"
 DATA_DIR="$WORKING_DIR/data"
+ROLES=("api" "bot" "scheduler")
 
 # === Определение локали ===
 detect_locale() {
@@ -105,15 +106,29 @@ fi
 
 # === Генерация unit-файла из шаблона ===
 msg creating_unit
-sed \
-  -e "s|{{USER}}|$USER|g" \
-  -e "s|{{GROUP}}|$GROUP|g" \
-  -e "s|{{WORKING_DIR}}|$WORKING_DIR|g" \
-  -e "s|{{VENV_DIR}}|$VENV_DIR|g" \
-  -e "s|{{LOGS_DIR}}|$LOGS_DIR|g" \
-  -e "s|{{DATA_DIR}}|$DATA_DIR|g" \
-  "systemd/tgnms-daemon.service.template" >"$SERVICE_FILE_PATH"
+# sed \
+#   -e "s|{{USER}}|$USER|g" \
+#   -e "s|{{GROUP}}|$GROUP|g" \
+#   -e "s|{{WORKING_DIR}}|$WORKING_DIR|g" \
+#   -e "s|{{VENV_DIR}}|$VENV_DIR|g" \
+#   -e "s|{{LOGS_DIR}}|$LOGS_DIR|g" \
+#   -e "s|{{DATA_DIR}}|$DATA_DIR|g" \
+#   "systemd/tgnms-daemon.service.template" >"$SERVICE_FILE_PATH"
+for ROLE in "${ROLES[@]}"; do
+  ROLE_SERVICE="tgnms-${ROLE}.service"
+  sed \
+    -e "s|{{USER}}|$USER|g" \
+    -e "s|{{GROUP}}|$GROUP|g" \
+    -e "s|{{WORKING_DIR}}|$WORKING_DIR|g" \
+    -e "s|{{VENV_DIR}}|$VENV_DIR|g" \
+    -e "s|{{LOGS_DIR}}|$LOGS_DIR|g" \
+    -e "s|{{DATA_DIR}}|$DATA_DIR|g" \
+    -e "s|{{ROLE}}|${ROLE}|g"
+    "$TEMPLATE_PATH" >"/etc/systemd/system/$ROLE_SERVICE"
+done
 msg unit_created
+
+
 
 # === Создание директорий ===
 msg creating_dirs
@@ -124,20 +139,34 @@ msg dirs_created
 # === Назначение прав ===
 msg setting_permissions
 chown -R "$USER:$GROUP" "$WORKING_DIR"
-find "$WORKING_DIR" ! -path "$LOGS_DIR*" ! -path "$DATA_DIR*" -exec chown "$USER:$GROUP" {} +
+find "$WORKING_DIR" \( -path "$LOGS_DIR" -o -path "$DATA_DIR" \) -prune -o -exec chown "$USER:$GROUP" {} +
 msg perms_set
 
 # === Systemd ===
 msg reloading_systemd
 systemctl daemon-reload
 
-msg enabling_service
-systemctl enable "$SERVICE_NAME"
+# msg enabling_service
+# systemctl enable "$SERVICE_NAME"
 
-msg starting_service
-systemctl start "$SERVICE_NAME"
+# msg starting_service
+# systemctl start "$SERVICE_NAME"
 
-msg service_status
-systemctl status "$SERVICE_NAME" --no-pager
+# msg service_status
+# systemctl status "$SERVICE_NAME" --no-pager
+
+for ROLE in "${ROLES[@]}"; do
+  ROLE_SERVICE="tgnms-${ROLE}.service"
+
+  msg enabling_service
+  systemctl enable "$ROLE_SERVICE"
+
+  msg starting_service
+  systemctl start "$ROLE_SERVICE"
+
+  msg service_status
+  systemctl status "$ROLE_SERVICE" --no-pager
+done
+
 
 msg setup_complete
