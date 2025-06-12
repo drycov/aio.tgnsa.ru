@@ -1,40 +1,44 @@
 #!/bin/bash
 
-# Параметры
+# Parameters
 SERVICE_NAME="aio_tgnsa.service"
 SERVICE_FILE_PATH="/etc/systemd/system/$SERVICE_NAME"
-WORKING_DIR="/opt/aio.tgnsa.ru"
+WORKING_DIR="/opt/tgnms"
 VENV_DIR="$WORKING_DIR/venv"
-USER="aio_tgnsa"
-GROUP="aio_tgnsa"
+USER="tgnms"
+GROUP="tgnms"
 LOGS_DIR="$WORKING_DIR/logs"
 DATA_DIR="$WORKING_DIR/data"
 
-# Убедитесь, что скрипт выполняется с правами суперпользователя
+# Make sure the script is run with root privileges
 if [[ $(id -u) -ne 0 ]]; then
-    echo "Этот скрипт должен быть выполнен с правами суперпользователя (root)."
-    exit 1
+echo "This script must be run with root privileges." >&2
+exit 1
 fi
 
-# Проверка, существует ли пользователь и группа
+# Check if the user and group exist
+echo "Checking user $USER..."
 if ! id "$USER" &>/dev/null; then
-    echo "Создание пользователя $USER..."
-    useradd --system --no-create-home --group "$GROUP" --user-group "$USER"
-else
-    echo "Пользователь $USER уже существует."
-fi
-
+echo "User $USER not found. Creating user and group $USER..."
 if ! getent group "$GROUP" &>/dev/null; then
-    echo "Создание группы $GROUP..."
-    groupadd "$GROUP"
+groupadd "$GROUP" || { echo "Error: Failed to create group $GROUP." >&2; exit 1; }
+fi
+useradd --system --no-create-home --group "$GROUP" --user-group "$USER" || { echo "Error: Failed to create user $USER." >&2; exit 1; }
+echo "User $USER created successfully."
 else
-    echo "Группа $GROUP уже существует."
+echo "User $USER already exists."
+if ! getent group "$GROUP" &>/dev/null; then
+echo "Group $GROUP not found. Creating group $GROUP..."
+groupadd "$GROUP" || { echo "Error: Failed to create group $GROUP." >&2; exit 1; }
+echo "Group $GROUP created successfully."
+else
+echo "Group $GROUP already exists."
+fi
 fi
 
-# Создание юнит-файла для systemd
-echo "Создание юнит-файла для сервиса $SERVICE_NAME..."
-
-cat > $SERVICE_FILE_PATH << EOF
+# Creating unit file for systemd
+echo "Creating unit file for service $SERVICE_NAME in $SERVICE_FILE_PATH..."
+cat > "$SERVICE_FILE_PATH" << EOF
 [Unit]
 Description=Aio Tgnsa Service
 After=network.target
@@ -64,19 +68,42 @@ PrivateDevices=true
 WantedBy=multi-user.target
 EOF
 
-# Убедимся, что директории для логов и данных существуют
-echo "Проверка и создание директорий $LOGS_DIR и $DATA_DIR..."
-mkdir -p $LOGS_DIR $DATA_DIR
+if [$? -ne 0 ]; then 
+echo "Error: Failed to create service unit file." >&2
+exit 1
+fi
+echo "Service unit file created successfully."
 
-# Установка прав доступа
-echo "Установка прав доступа на директории..."
+# Make sure log and data directories exist and have correct permissions
+echo "Checking and creating $LOGS_DIR and $DATA_DIR directories with permissions set..."
+install -d -o "$USER" -g "$GROUP" -m 755 "$LOGS_DIR" || { echo "Error: Failed to create log directory $LOGS_DIR." >&2; exit 1; }
+install -d -o "$USER" -g "$GROUP" -m 755 "$DATA_DIR" || { echo "Error: Failed to create data directory $DATA_DIR." >&2; exit 1; }
+echo "Log and data directories created and permissions set."
+
+# Setting permissions on the working directory, excluding logs and data (they are already processed)
+echo "Setting permissions on the working directory $WORKING_DIR..."
 chown -R $USER:$GROUP $WORKING_DIR
-chmod -R 755 $LOGS_DIR $DATA_DIR
+# Disable recursive permissions for LOGS_DIR and DATA_DIR, since they are already set install -d
+find "$WORKING_DIR" ! -path "$LOGS_DIR*" ! -path "$DATA_DIR*" -exec chown $USER:$GROUP {} +
+if [ $? -ne 0 ]; then
+echo "Warning: Unable to fully set ownership of the working directory." >&2
+fi
+echo "Permissions on the working directory have been set."
 
-# Перезагрузка systemd и запуск сервиса
-echo "Перезагрузка systemd и запуск сервиса..."
-systemctl daemon-reload
-systemctl enable $SERVICE_NAME
-systemctl start $SERVICE_NAME
+# Restart systemd and start the service
+echo "Restarting systemd..."
+systemctl daemon-reload || { echo "Error: Failed to restart systemd." >&2; exit 1; }
+echo "systemd restarted."
 
-echo "Сервис $SERVICE_NAME успешно настроен и запущен."
+echo "Enabling service $SERVICE_NAME..."
+systemctl enable "$SERVICE_NAME" || { echo "Error: Failed to enable service $SERVICE_NAME." >&2; exit 1; }
+echo "Service $SERVICE_NAME enabled."
+
+echo "Starting service $SERVICE_NAME..."
+systemctl start "$SERVICE_NAME" || { echo "Error: Failed to start service $SERVICE_NAME. Check service logs with 'journalctl -u $SERVICE_NAME'." >&2; exit 1; }
+echo "Service $SERVICE_NAME started successfully."
+
+echo "Checking the status of service $SERVICE_NAME..."
+systemctl status "$SERVICE_NAME"
+
+echo "Configuration of service $SERVICE_NAME completed."

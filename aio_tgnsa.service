@@ -3,41 +3,41 @@ Description=Aio Tgnsa Service
 After=network.target
 
 [Service]
-# Используем пользователя и группу nobody для повышения безопасности
-User=nobody
-Group=nogroup
+# Use user and group 'tgnms' for running the service
+User=tgnms
+Group=tgnms
 
-# Рабочая директория приложения
-WorkingDirectory=/opt/aio.tgnsa.ru
+# Application working directory
+WorkingDirectory=/opt/tgnms
 
-# Путь к интерпретатору Python и основному скрипту
-ExecStart=/opt/aio.tgnsa.ru/venv/bin/python /opt/aio.tgnsa.ru/main.py
+# Path to Python interpreter and main script
+ExecStart=/opt/tgnms/venv/bin/python /opt/tgnms/main.py
 
-# Перезапуск сервиса в случае неудачи
+# Restart service if failed
 Restart=always
 RestartSec=3s
 
-# Стандартный вывод и ошибки в журнал systemd
+# Standard output and errors to systemd journal
 StandardOutput=journal
 StandardError=journal
 
-# Установка переменных окружения
+# Setting environment variables
 Environment="PYTHONUNBUFFERED=1"
-Environment="PATH=/opt/aio.tgnsa.ru/venv/bin:$PATH"
+Environment="PATH=/opt/tgnms/venv/bin:$PATH"
 
-# Ограничения на использование ресурсов
+# Resource usage restrictions
 LimitNOFILE=65536
 LimitNPROC=512
 
-# Защита от случайного завершения процесса
+# Protection against accidental process termination
 ProtectSystem=full
 ProtectHome=yes
 NoNewPrivileges=true
 PrivateTmp=true
 
-# Разрешение на запись в каталоги logs и data
-ReadWritePaths=/opt/aio.tgnsa.ru/logs
-ReadWritePaths=/opt/aio.tgnsa.ru/data
+# Permission to write to logs and data directories
+ReadWritePaths=/opt/tgnms/logs
+ReadWritePaths=/opt/tgnms/data
 
 PrivateDevices=true
 
