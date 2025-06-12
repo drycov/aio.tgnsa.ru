@@ -1,10 +1,20 @@
-from loguru import logger
-import sys
 import logging
+import os
+import sys
 from pathlib import Path
 
+from loguru import logger
+
 LOG_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+
+try:
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    if not os.access(LOG_DIR, os.W_OK):
+        raise PermissionError
+except:
+    LOG_DIR = Path("/tmp/tgnms_logs")
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"⚠️ Переключение логирования в {LOG_DIR}", file=sys.stderr)
 
 
 class InterceptHandler(logging.Handler):
@@ -14,7 +24,8 @@ class InterceptHandler(logging.Handler):
         except ValueError:
             level = record.levelno
 
-        logger.opt(depth=6, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=6, exception=record.exc_info).log(
+            level, record.getMessage())
 
 
 class LoggerManager:
