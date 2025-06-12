@@ -4,7 +4,7 @@ set -euo pipefail
 
 # === Configuration ===
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly TEMPLATE_PATH="$SCRIPT_DIR/../systemd/daemon.service.template"
+readonly TEMPLATE_PATH="$SCRIPT_DIR/systemd/daemon.service.template"
 readonly WORKING_DIR="/opt/tgnms"
 readonly VENV_DIR="$WORKING_DIR/venv"
 readonly USER="tgnms"
