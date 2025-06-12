@@ -26,7 +26,8 @@ readonly LOCALE=$(detect_locale)
 msg() {
     local key=$1
     local lang=${2:-$LOCALE}
-    
+    local message_key="${key}/${lang}"
+
     declare -A messages=(
         ["must_be_root/en"]="Error: This script must be run as root."
         ["must_be_root/ru"]="Ошибка: скрипт должен быть запущен от имени root."
@@ -64,8 +65,14 @@ msg() {
         ["setup_complete/ru"]="Настройка завершена."
     )
 
-    printf "${messages["${key}/${lang}"]}" "${@:2}"
+    if [[ -n "${messages[$message_key]+set}" ]]; then
+        printf "${messages[$message_key]}" "${@:2}"
+        echo
+    else
+        echo "[$lang] Message key not found: $message_key" >&2
+    fi
 }
+
 
 # === Check root ===
 if [[ $(id -u) -ne 0 ]]; then
