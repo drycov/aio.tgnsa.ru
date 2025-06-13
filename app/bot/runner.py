@@ -7,11 +7,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core import initialize_storage
 from app.core.config import logger, settings
+from app.core.db import get_session
 
 # === Инициализация ===
 storage = initialize_storage()
-engine = create_async_engine(settings.db.get_dsn())
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+session = get_session()
 bot = Bot(token=settings.bot.TOKEN,
           default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=storage)
@@ -23,9 +23,10 @@ def setup_dispatcher():
     from app.bot.handlers import register_handlers
     from app.bot.middlewares import register_middlewares
 
-    register_middlewares(dp, db_sessionmaker=SessionLocal,
+    register_middlewares(dp, db_sessionmaker=session,
                          settings=settings, logger=logger)
-    register_handlers(dp, db_sessionmaker=SessionLocal, settings=settings, logger=logger)
+    register_handlers(dp, db_sessionmaker=session,
+                      settings=settings, logger=logger)
 
 
 async def on_startup():

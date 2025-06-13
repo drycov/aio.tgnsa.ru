@@ -1,5 +1,6 @@
 import os
 import secrets
+from functools import cached_property
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -20,6 +21,57 @@ load_dotenv(dotenv_path=ENV_PATH)
 
 # --- Role setup from env ---
 APP_ROLE = os.getenv("APP_ROLE", "app")
+
+
+class AppSettings(BaseSettings):
+    """
+    Основные настройки приложения FastBill.
+
+    Attributes:
+        APP_NAME (str): Название приложения
+        DEBUG (bool): Режим отладки
+        VERSION (str): Версия приложения
+        DESCRIPTION (str): Описание приложения
+        DEFAULT_TIMEZONE (str): Часовой пояс по умолчанию
+        DEFAULT_USER (str): Имя пользователя по умолчанию
+        DEFAULT_PASSWORD (str): Пароль по умолчанию
+        DEFAULT_EMAIL (str): Email по умолчанию
+        DEFAULT_USER_FULLNAME (str): Полное имя пользователя по умолчанию
+    """
+    APP_NAME: str = "TG NMS"
+    VERSION: str = "1.0.0"
+    DESCRIPTION: str = "**ZeusBill** – микробиллинг для мини-ISP. Автоматизация расчётов, управление абонентами, интеграция с платежными системами и сетевым оборудованием. Простота, надёжность, масштабируемость."
+    DEFAULT_USER: str = "root"
+    DEFAULT_PASSWORD: str = "root"
+    DEFAULT_EMAIL: str = "admin@example.com"
+    DEFAULT_USER_FULLNAME: str = "Admin"
+    FAVICON_PATH: str = "img/logo.png"
+    # Настройки статических файлов
+    STATIC_URL: str = "/static"
+    MEDIA_URL: str = "/media"
+
+    @property
+    def app_str(self) -> str:
+        """Возвращает строку с информацией о приложении."""
+        return f"{self.APP_NAME} v{self.VERSION}"
+
+    @property
+    def favicon_url(self) -> str:
+        """Возвращает полный URL для favicon."""
+        return f"{self.STATIC_URL}/{self.FAVICON_PATH}"
+
+    @property
+    def static_url(self) -> str:
+        """Возвращает URL для статических файлов."""
+        return self.STATIC_URL
+
+    model_config = {
+        "env_file": ENV_PATH,
+        "env_file_encoding": "utf-8",
+        "case_sensitive": True,
+        "extra": "ignore",
+        "env_prefix": "APP_",
+    }
 
 
 class PostgresConfig(BaseSettings):
@@ -51,11 +103,18 @@ class PostgresConfig(BaseSettings):
 class SqliteConfig(BaseSettings):
     FILE: str = Field("app.db", env="SQLITE_FILE")
 
-    def dsn(self) -> str:
+    def _resolved_path(self) -> str:  # ✅ должна быть функция
         db_path = self.FILE
-        if not os.path.isabs(db_path):
-            db_path = str(DATA_DIR / db_path)
-        return f"sqlite+aiosqlite:///{db_path}"  # ✅ ключевая правка
+        return db_path if os.path.isabs(db_path) else str(DATA_DIR / db_path)
+
+    def dsn(self) -> str:
+        return f"sqlite+aiosqlite:///{self._resolved_path()}"
+
+    def async_dsn(self) -> str:
+        return f"sqlite+aiosqlite:///{self._resolved_path()}"
+
+    def sync_dsn(self) -> str:
+        return f"sqlite:///{self._resolved_path()}"
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -85,6 +144,47 @@ class MySQLConfig(BaseSettings):
     )
 
 
+class DBSettings(BaseSettings):
+    engine: Literal["sqlite", "postgres", "mysql"] = Field(
+        default="sqlite", env="DB_ENGINE")
+    postgres: Optional[PostgresConfig] = None
+    mysql: Optional[MySQLConfig] = None
+    sqlite: Optional[SqliteConfig] = None
+    echo: bool = Field(default=False, env="DB_ECHO")
+
+    @model_validator(mode="after")
+    def load_db_config(cls, values):
+        match values.engine:
+            case "postgres":
+                values.postgres = PostgresConfig()
+            case "mysql":
+                values.mysql = MySQLConfig()
+            case "sqlite":
+                values.sqlite = SqliteConfig()
+        return values
+
+    def get_db_config(self):
+        return {
+            "postgres": self.postgres,
+            "mysql": self.mysql,
+            "sqlite": self.sqlite,
+        }.get(self.engine)
+
+    def get_dsn(self) -> str:
+        if config := self.get_db_config():
+            return config.dsn()
+        else:
+            raise ValueError(
+                f"❌ DB_ENGINE={self.engine} не поддерживается или не сконфигурирован")
+
+    def get_sync_dsn(self) -> str:
+        if config := self.get_db_config():
+            return config.sync_dsn() if hasattr(config, "sync_dsn") else config.dsn()
+        else:
+            raise ValueError(
+                f"❌ DB_ENGINE={self.engine} не поддерживается или не сконфигурирован")
+
+
 class BotConfig(BaseSettings):
     TOKEN: str
 
@@ -95,40 +195,6 @@ class BotConfig(BaseSettings):
         extra="ignore",
         env_prefix="BOT_",
     )
-
-
-class DBSettings(BaseSettings):
-    engine: Literal["sqlite", "postgres", "mysql"] = Field(
-        default="sqlite", env="DB_ENGINE")
-    postgres: Optional[PostgresConfig] = None
-    mysql: Optional[MySQLConfig] = None
-    sqlite: Optional[SqliteConfig] = None
-
-    @model_validator(mode="after")
-    def load_db_config(cls, values):
-        engine = values.engine
-        if engine == "postgres":
-            values.postgres = PostgresConfig()
-        elif engine == "mysql":
-            values.mysql = MySQLConfig()
-        elif engine == "sqlite":
-            values.sqlite = SqliteConfig()
-        return values
-
-    def get_db_config(self):
-        if self.engine == "postgres":
-            return self.postgres
-        elif self.engine == "mysql":
-            return self.mysql
-        elif self.engine == "sqlite":
-            return self.sqlite
-
-    def get_dsn(self) -> str | None:
-        if db_config := self.get_db_config():
-            return db_config.dsn()
-        else:
-            raise ValueError(
-                f"❌ DB_ENGINE={self.engine} не поддерживается или конфигурация отсутствует.")
 
 
 class MongoDBConfig(BaseSettings):
@@ -379,7 +445,7 @@ class Settings(BaseSettings):
     misc: MiscConfig = Field(default_factory=MiscConfig)
     email: EmailConfig = Field(default_factory=EmailConfig)
     api: ApiServerConfig = Field(default_factory=ApiServerConfig)
-
+    app: AppSettings = Field(default_factory=AppSettings)
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
         env_file_encoding="utf-8",

@@ -6,7 +6,9 @@ python-dotenv
 pydantic
 pydantic-settings
 python-decouple
-
+pydantic[email]
+passlib[bcrypt]
+pyotp
 
 # ============================================
 # ⚙️ Async / Task Scheduling
@@ -36,6 +38,7 @@ Jinja2
 # ============================================
 sqlalchemy
 aiosqlite
+alembic
 
 # ============================================
 # 🧠 Caching / Messaging
@@ -62,3 +65,7 @@ idna
 setuptools
 wheel
 uvicorn
+
+pytz
+
+psutil

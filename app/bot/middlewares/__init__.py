@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from aiogram import Dispatcher
 from pydantic_settings import BaseSettings
@@ -16,7 +16,7 @@ from .tfa import TfaMiddleware
 
 
 class InjectMiddleware:
-    def __init__(self, key: str, value: Any, logger: LoggerManager | None = None):
+    def __init__(self, key: str, value: Any, logger: Optional[LoggerManager] = None):
         self.key = key
         self.value = value
         self.logger = logger
@@ -34,42 +34,47 @@ def register_middlewares(
     db_sessionmaker: async_sessionmaker,
     settings: BaseSettings,
     logger: LoggerManager,
-    redis: Redis | None = None,
+    redis: Optional[Redis] = None,
 ):
     """Регистрирует все middleware в нужном порядке."""
 
     logger.debug("🔧 Регистрация middleware...")
-
-    # Технические middleware
-    dp.message.middleware(ProfilerMiddleware(logger=logger))
-    logger.debug("✅ ProfilerMiddleware зарегистрирован.")
-
-    dp.message.middleware(CommandLoggingMiddleware(logger=logger))
-    logger.debug("✅ CommandLoggingMiddleware зарегистрирован.")
-
-    # Бизнес-логика
-    dp.message.middleware(AuthMiddleware(logger=logger))
-    logger.debug("✅ AuthMiddleware зарегистрирован.")
-
-    dp.message.middleware(BannedCheckMiddleware(logger=logger))
-    logger.debug("✅ BannedCheckMiddleware зарегистрирован.")
-
-    dp.message.middleware(TfaMiddleware(logger=logger))
-    logger.debug("✅ TfaMiddleware зарегистрирован.")
-
-    dp.message.middleware(RoleMiddleware(
-        logger=logger,
-        required_roles=["admin", "moderator"]
-    ))
-    logger.debug("✅ RoleMiddleware зарегистрирован (admin, moderator).")
-
-    # Внедрение зависимостей
-    dp.message.middleware(InjectMiddleware("db", db_sessionmaker, logger))
-    dp.message.middleware(InjectMiddleware("settings", settings, logger))
-    dp.message.middleware(InjectMiddleware("logger", logger, logger))
-
+    
+    # Группировка middleware по категориям для более организованной регистрации
+    technical_middlewares = [
+        ("ProfilerMiddleware", ProfilerMiddleware(logger=logger)),
+        ("CommandLoggingMiddleware", CommandLoggingMiddleware(logger=logger)),
+    ]
+    
+    business_middlewares = [
+        ("AuthMiddleware", AuthMiddleware(logger=logger)),
+        ("BannedCheckMiddleware", BannedCheckMiddleware(logger=logger)),
+        ("TfaMiddleware", TfaMiddleware(logger=logger)),
+        ("RoleMiddleware", RoleMiddleware(logger=logger, required_roles=["admin", "moderator"])),
+    ]
+    
+    # Базовые зависимости для внедрения
+    dependencies = [
+        ("db", db_sessionmaker),
+        ("settings", settings),
+        ("logger", logger),
+    ]
+    
+    # Регистрация middleware по группам
+    for name, middleware in technical_middlewares:
+        dp.message.middleware(middleware)
+        logger.debug(f"✅ {name} зарегистрирован.")
+        
+    for name, middleware in business_middlewares:
+        dp.message.middleware(middleware)
+        logger.debug(f"✅ {name} зарегистрирован" + (" (admin, moderator)." if name == "RoleMiddleware" else "."))
+    
+    # Регистрация инъекций зависимостей
+    for key, value in dependencies:
+        dp.message.middleware(InjectMiddleware(key, value, logger))
     logger.debug("✅ InjectMiddleware: db, settings, logger зарегистрированы.")
-
+    
+    # Опциональная регистрация Redis
     if redis:
         dp.message.middleware(InjectMiddleware("redis", redis, logger))
         logger.debug("✅ InjectMiddleware: redis зарегистрирован.")
