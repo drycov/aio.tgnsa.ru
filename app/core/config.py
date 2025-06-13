@@ -8,7 +8,6 @@ from pydantic import Field, SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core import LoggerManager
-from app.core import generate_password
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -254,6 +253,8 @@ class Security(BaseSettings):
 
     @model_validator(mode="after")
     def generate_and_save_missing_secrets(cls, values):
+        from .password import generate_password  # новый путь
+
         updated = False
 
         def save_secret_to_env(key: str, secret_value: str):
