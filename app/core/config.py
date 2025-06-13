@@ -55,7 +55,7 @@ class SqliteConfig(BaseSettings):
         db_path = self.FILE
         if not os.path.isabs(db_path):
             db_path = str(DATA_DIR / db_path)
-        return f"sqlite:///{db_path}"
+        return f"sqlite+aiosqlite:///{db_path}"  # ✅ ключевая правка
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
