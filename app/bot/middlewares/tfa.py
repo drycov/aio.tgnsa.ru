@@ -4,8 +4,11 @@ from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
 from aiogram.types import Message, TelegramObject
+
+from app.bot.constants.messages import TFA_MESSAGES
 from app.core.config import settings
-from app.core.services.tfa import verify_tfa_code  # Предполагается наличие TOTP-проверки
+from app.core.services.tfa import \
+    verify_tfa_code  # Предполагается наличие TOTP-проверки
 
 # Кеш временного хранения подтверждённых пользователей
 _verified_users = set()
@@ -30,41 +33,42 @@ class TfaMiddleware(BaseMiddleware):
             self.logger.warning("User not found in context data")
             return await handler(event, data)
 
-        user_id = user.id
+        user_id = getattr(user, "id", None)
+        tg_id = getattr(user, "tg_id", user_id)
 
-        # Если TFA отключён глобально — пропускаем
+        if data.get("is_superuser"):
+            self.logger.debug(
+                f"🔁 Суперпользователь tg_id={tg_id} — пропуск TFA.")
+            return await handler(event, data)
+
         if not settings.security.TFA_ENABLE:
             return await handler(event, data)
 
-        # Если у пользователя не включён TFA — пропускаем
         if not getattr(user, "tfa_enabled", False):
             return await handler(event, data)
 
-        # Если пользователь уже подтвердил — пропускаем
         if user_id in _verified_users:
             return await handler(event, data)
 
-        await event.answer("🔐 У вас включена двухфакторная авторизация.\nПожалуйста, введите код подтверждения:")
+        await event.answer(TFA_MESSAGES["prompt"])
 
         def check(m: Message) -> bool:
             return m.from_user.id == event.from_user.id and m.text and m.text.isdigit()
 
         try:
             from aiogram import Dispatcher
-            dp: Dispatcher = data["dispatcher"]
+            dp = data["dispatcher"]
             response: Message = await dp.wait_for("message", timeout=self.timeout, check=check)
         except asyncio.TimeoutError:
-            await event.answer("⏱️ Время ожидания кода истекло. Повторите попытку позже.")
+            await event.answer(TFA_MESSAGES["timeout"])
             self.logger.warning(f"TFA timeout for user_id={user_id}")
             return
 
-        # Проверка кода (предположительно — через TOTP-секрет)
         if not verify_tfa_code(user.tfa_secret, response.text):
-            await event.answer("❌ Неверный код двухфакторной авторизации.")
+            await event.answer(TFA_MESSAGES["fail"])
             self.logger.warning(f"TFA failed for user_id={user_id}")
             return
 
-        # Пометить как подтверждённого
         _verified_users.add(user_id)
-        await event.answer("✅ Успешная авторизация. Продолжаем.")
+        await event.answer(TFA_MESSAGES["success"])
         return await handler(event, data)

@@ -187,6 +187,10 @@ class DBSettings(BaseSettings):
 
 class BotConfig(BaseSettings):
     TOKEN: str
+    # .env: ADMINS=123456789,987654321
+    ADMINS: list[str] = Field(default_factory=list, env="ADMINS")
+    # .env: SUPERUSERS=123456789,987654321
+    SUPERUSERS: list[str] = Field(default_factory=list, env="SUPERUSERS")
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -278,7 +282,7 @@ class CacheRedisConfig(BaseSettings):
 
 class TFAConfig(BaseSettings):
     ENABLE: bool = Field(default=False, env="TFA_ENABLE")
-    MANDATORY: Optional[bool] = Field(default=False, env="TFA_MANDATORY")
+    MANDATORY: list[int] = Field(default_factory=list, env="TFA_MANDATORY")
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -349,8 +353,8 @@ class NetworkConfig(BaseSettings):
     PING_COUNT: int = Field(default=4, env="NETWORK_PING_COUNT")
     PING_INTERVAL: int = Field(default=2, env="NETWORK_PING_INTERVAL")
     PING_TIMEOUT: int = Field(default=10, env="NETWORK_PING_TIMEOUT")
-    SNMP_RO: Optional[str] = Field(default=None, env="NETWORK_SNMP_RO")
-    SNMP_RW: Optional[str] = Field(default=None, env="NETWORK_SNMP_RW")
+    SNMP_RO: list[str] = Field(default_factory=list, env="NETWORK_SNMP_RO")
+    SNMP_RW: list[str] = Field(default_factory=list, env="NETWORK_SNMP_RW")
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

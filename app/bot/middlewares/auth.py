@@ -5,16 +5,13 @@ from aiogram import BaseMiddleware
 from aiogram.types import Message, TelegramObject
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.user import UserSearchField, UserService
+from app.bot.constants.messages import Messages
+from app.core.db import get_session
 from app.exceptions.exceptions import UserBannedError, UserNotFoundError
+from app.services.user import UserSearchField, UserService
 
 
 class AuthMiddleware(BaseMiddleware):
-    """
-    Middleware для аутентификации пользователя по Telegram ID.
-    Проверяет существование пользователя и статус бана.
-    """
-
     def __init__(self, logger: Logger):
         self.logger = logger
 
@@ -27,52 +24,48 @@ class AuthMiddleware(BaseMiddleware):
         if not isinstance(event, Message):
             return await handler(event, data)
 
-        session_gen = data.get("db")
-        if session_gen is None:
-            self.logger.error("❗️ DB session generator not found in middleware context.")
-            await event.answer("⚠️ Внутренняя ошибка. Попробуйте позже.")
-            return None
-
         tg_id = event.from_user.id
-        session: Optional[AsyncSession] = None
+
+        session_gen = get_session()
+        session: AsyncSession = await anext(session_gen)
 
         try:
-            # Получаем сессию из генератора
-            session = await session_gen.__anext__()
             user_service = UserService(session)
 
+            # Пропуск полной аутентификации, если суперпользователь уже авторизован вручную
+            if data.get("is_superuser"):
+                user = await user_service.get_user(tg_id, UserSearchField.TG_ID)
+                data["user"] = user
+                data["session"] = session
+                self.logger.debug(
+                    f"🔁 Суперпользователь — пропуск проверки на бан и регистрацию для tg_id={tg_id}")
+                return await handler(event, data)
+
+            # Стандартная логика авторизации
             user = await user_service.get_user(tg_id, UserSearchField.TG_ID)
 
-            if user is None:
-                self.logger.warning(f"User with tg_id={tg_id} not found.")
-                await event.answer("❌ Пользователь не найден.")
-                return None
-
             if user.is_banned:
-                self.logger.info(f"User with tg_id={tg_id} is banned.")
-                await event.answer("🚫 Ваш аккаунт заблокирован.")
-                return None
+                raise UserBannedError()
 
-            self.logger.info(f"✅ Authenticated user: tg_id={tg_id}, id={user.id}")
             data["user"] = user
+            data["session"] = session
 
+            self.logger.info(
+                f"✅ Authenticated user: tg_id={tg_id}, id={user.id}")
             return await handler(event, data)
 
         except UserNotFoundError:
             self.logger.warning(f"UserNotFoundError for tg_id={tg_id}")
-            await event.answer("❌ Пользователь не найден.")
-            return None
+            await event.answer(Messages.USER_NOT_FOUND.value)
 
         except UserBannedError:
-            self.logger.info(f"UserBannedError for tg_id={tg_id}")
-            await event.answer("🚫 Ваш аккаунт заблокирован.")
-            return None
+            self.logger.info(f"Banned user: tg_id={tg_id}")
+            await event.answer(Messages.ACCCOUNT_BANNED.value)
 
-        except Exception as exc:
-            self.logger.exception(f"Unhandled exception in AuthMiddleware for tg_id={tg_id}: {exc}")
-            await event.answer("⚠️ Внутренняя ошибка. Попробуйте позже.")
-            return None
+        except Exception as e:
+            self.logger.exception(
+                f"Unhandled exception for tg_id={tg_id}: {e}")
+            await event.answer(Messages.INTERNAL_ERROR.value)
 
         finally:
-            if session:
-                await session.close()
+            await session_gen.aclose()

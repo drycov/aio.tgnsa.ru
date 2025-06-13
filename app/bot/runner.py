@@ -21,7 +21,7 @@ dp = Dispatcher(storage=storage)
 
 def setup_dispatcher():
     from app.bot.handlers import register_handlers
-    from app.bot.middlewares import register_middlewares
+    from app.bot.middlewares.registry import register_middlewares
 
     register_middlewares(dp, db_sessionmaker=session,
                          settings=settings, logger=logger)
