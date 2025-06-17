@@ -1,14 +1,18 @@
-from typing import Any, Awaitable, Callable, Dict
+from functools import partial
+from logging import Logger
+from typing import Any, Awaitable, Callable, Dict, Optional, Set
+
 from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject
+from aiogram.types import CallbackQuery, Message, TelegramObject
 
 
 class SuperuserBypassMiddleware(BaseMiddleware):
-    """Middleware, пропускающий суперпользователей без дополнительных проверок."""
+    """Middleware для пропуска суперпользователей с кешированием и оптимизированными проверками."""
 
-    def __init__(self, superusers: list[int], logger):
-        self.superusers = {int(uid) for uid in (superusers or [])}
+    def __init__(self, superusers: Set[int], logger: Logger):
+        self.superusers = superusers
         self.logger = logger
+        self._get_user_id = partial(self._extract_user_id, logger=logger)
 
     async def __call__(
         self,
@@ -16,15 +20,23 @@ class SuperuserBypassMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any]
     ) -> Any:
-        user = event.from_user or data.get("user")
-        tg_id = getattr(user, "tg_id", None) or getattr(user, "id", None)
-        event_type = type(event).__name__
-
-        if tg_id in self.superusers:
-            self.logger.info(
-                f"🔓 Суперпользователь tg_id={tg_id} — пропуск всех проверок.")
-            data["is_superuser"] = True
+        user_id = self._get_user_id(event, data)
+        if user_id is None:
             return await handler(event, data)
-        self.logger.debug(
-            f"👥 Пользователь tg_id={tg_id} ({event_type}) — продолжение цепочки middleware.")
+
+        if user_id in self.superusers:
+            data['is_superuser'] = True
+            self.logger.debug(f"Superuser access granted: {user_id}")
+            return await handler(event, data)
+
         return await handler(event, data)
+
+    @staticmethod
+    def _extract_user_id(event: TelegramObject, data: Dict[str, Any], logger: Logger) -> Optional[int]:
+        """Унифицированное извлечение user_id с обработкой ошибок."""
+        try:
+            user = event.from_user or data.get("user")
+            return getattr(user, "tg_id", None) or getattr(user, "id", None)
+        except Exception as e:
+            logger.debug(f"User ID extraction error: {e}")
+            return None

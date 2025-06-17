@@ -1,7 +1,7 @@
 from logging import Logger
 from typing import Any, Awaitable, Callable, Dict, Optional
 
-from aiogram import BaseMiddleware
+from aiogram import BaseMiddleware, Dispatcher
 from aiogram.types import Message, TelegramObject
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,8 +12,10 @@ from app.services.user import UserSearchField, UserService
 
 
 class AuthMiddleware(BaseMiddleware):
-    def __init__(self, logger: Logger):
+    def __init__(self, logger: Logger, dispatcher: Dispatcher):
         self.logger = logger
+        self.dispatcher = dispatcher
+        
 
     async def __call__(
         self,
@@ -25,14 +27,13 @@ class AuthMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         tg_id = event.from_user.id
-
         session_gen = get_session()
         session: AsyncSession = await anext(session_gen)
 
         try:
             user_service = UserService(session)
 
-            # Пропуск полной аутентификации, если суперпользователь уже авторизован вручную
+            # Пропуск проверки, если суперпользователь уже авторизован
             if data.get("is_superuser"):
                 user = await user_service.get_user(tg_id, UserSearchField.TG_ID)
                 data["user"] = user
@@ -41,8 +42,27 @@ class AuthMiddleware(BaseMiddleware):
                     f"🔁 Суперпользователь — пропуск проверки на бан и регистрацию для tg_id={tg_id}")
                 return await handler(event, data)
 
-            # Стандартная логика авторизации
-            user = await user_service.get_user(tg_id, UserSearchField.TG_ID)
+            # Основная авторизация
+            try:
+                user = await user_service.get_user(tg_id, UserSearchField.TG_ID)
+           # Вставка внутри блока except UserNotFoundError:
+            except UserNotFoundError:
+                self.logger.info(f"👤 Новый пользователь: начало регистрации tg_id={tg_id}")
+                
+                # Привязываем FSM-состояние
+                if isinstance(event, Message):
+                    from app.bot.handlers.main_handlers.registration_handler import start_registration
+                    from aiogram.fsm.context import FSMContext
+    
+                    # FSMContext создаётся из Dispatcher в обычных условиях. Здесь нужно получить вручную:
+                    from aiogram import Dispatcher
+                    dispatcher: Dispatcher = data["dispatcher"]
+                    fsm_context: FSMContext = dispatcher.fsm.get_context(event.chat.id, event.from_user.id)
+
+                    # Запуск регистрации
+                    await start_registration(event, fsm_context)
+                    return  # Выход, не вызываем handler
+
 
             if user.is_banned:
                 raise UserBannedError()
@@ -51,20 +71,16 @@ class AuthMiddleware(BaseMiddleware):
             data["session"] = session
 
             self.logger.info(
-                f"✅ Authenticated user: tg_id={tg_id}, id={user.id}")
+                f"✅ Авторизован: tg_id={tg_id}, user_id={user.id}")
             return await handler(event, data)
 
-        except UserNotFoundError:
-            self.logger.warning(f"UserNotFoundError for tg_id={tg_id}")
-            await event.answer(Messages.USER_NOT_FOUND.value)
-
         except UserBannedError:
-            self.logger.info(f"Banned user: tg_id={tg_id}")
+            self.logger.info(f"🚫 Забанен: tg_id={tg_id}")
             await event.answer(Messages.ACCCOUNT_BANNED.value)
 
         except Exception as e:
             self.logger.exception(
-                f"Unhandled exception for tg_id={tg_id}: {e}")
+                f"❌ Необработанная ошибка tg_id={tg_id}: {e}")
             await event.answer(Messages.INTERNAL_ERROR.value)
 
         finally:

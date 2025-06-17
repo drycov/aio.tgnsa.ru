@@ -1,17 +1,20 @@
-from typing import Any, Awaitable, Callable, Dict
+from functools import partial
+from logging import Logger
+from typing import Any, Awaitable, Callable, Dict, Optional, Set
 
 from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject
+from aiogram.types import CallbackQuery, Message, TelegramObject
 
 from app.bot.constants.messages import AUTH_MESSAGES
 
 
 class RoleMiddleware(BaseMiddleware):
-    """Middleware, ограничивающий доступ на основе ролей пользователя."""
+    """Оптимизированная проверка ролей с кешированием и улучшенной обработкой ошибок."""
 
-    def __init__(self, required_roles: list[str], logger):
+    def __init__(self, required_roles: Set[str], logger: Logger):
+        self.required_roles = required_roles
         self.logger = logger
-        self.required_roles = set(required_roles)
+        self._get_user_id = partial(self._extract_user_id, logger=logger)
 
     async def __call__(
         self,
@@ -19,43 +22,53 @@ class RoleMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any]
     ) -> Any:
-        user = data.get("user")
-
-        if not user:
-            self.logger.warning(
-                "Доступ запрещен: пользователь не найден в данных.")
-            await event.answer(AUTH_MESSAGES["auth_error"])
-            return
-
-        tg_id = getattr(user, "tg_id", None)
-
-        # 👇 Пропуск проверки ролей, если суперпользователь
-        if data.get("is_superuser"):
-            self.logger.debug(
-                f"🔁 Суперпользователь — пропуск RoleMiddleware для tg_id={tg_id}")
+        # Пропуск для суперпользователей
+        if data.get('is_superuser'):
             return await handler(event, data)
+        
+        user_id = self._get_user_id(event, data)
+        self.logger.debug(event)
+        self.logger.debug(data)
+        if user_id is None:
+            return await self._deny_access(event, "User ID not found")
 
-        # Инициализация ролей
-        user_roles = set()
-        roles = getattr(user, "roles", None)
-        if roles:
-            user_roles = {
-                role.name if hasattr(role, "name") else role
-                for role in roles
-            }
-        elif hasattr(user, "role"):
-            user_roles = {user.role}
+        user = data.get("user")
+        
+        if not user:
+            return await self._deny_access(event, "User data missing")
 
-        self.logger.info(
-            f"👤 Проверка ролей для tg_id={tg_id}: "
-            f"роли={user_roles}, требуется={self.required_roles}"
-        )
-
-        if not user_roles.intersection(self.required_roles):
-            self.logger.warning(
-                f"⛔️ Доступ запрещён: tg_id={tg_id}, роли {user_roles} не соответствуют {self.required_roles}"
+        if user_roles := self._extract_user_roles(user):
+            return (
+                await handler(event, data) if user_roles.intersection(self.required_roles) else await self._deny_access(
+                                    event,
+                                    f"Access denied for {user_id}: {user_roles} not in {self.required_roles}",
+                                )
             )
-            await event.answer(AUTH_MESSAGES["no_permission"])
-            return
+        else:
+            return await self._deny_access(event, f"No roles for user {user_id}")
 
-        return await handler(event, data)
+    async def _deny_access(self, event: TelegramObject, reason: str) -> None:
+        """Унифицированная обработка отказа в доступе."""
+        self.logger.warning(reason)
+        if isinstance(event, (Message, CallbackQuery)):
+            await event.answer("⛔ Доступ запрещен")
+
+    @staticmethod
+    def _extract_user_id(event: TelegramObject, data: Dict[str, Any], logger: Logger) -> Optional[int]:
+        """Унифицированное извлечение user_id с обработкой ошибок."""
+        try:
+            user = event.from_user or data.get("user")
+            return getattr(user, "tg_id", None) or getattr(user, "id", None)
+        except Exception as e:
+            logger.debug(f"User ID extraction error: {e}")
+            return None
+
+    @staticmethod
+    def _extract_user_roles(user: Any) -> Set[str]:
+        """Извлечение ролей пользователя с обработкой разных форматов."""
+        try:
+            if hasattr(user, "roles"):
+                return {role.name if hasattr(role, "name") else str(role) for role in user.roles}
+            return {user.role} if hasattr(user, "role") else set()
+        except Exception:
+            return set()

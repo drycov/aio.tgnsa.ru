@@ -1,5 +1,5 @@
-from datetime import timedelta
 import inspect
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Type
 
 from aiogram import BaseMiddleware, Dispatcher
@@ -21,7 +21,7 @@ class MiddlewareConfig(BaseModel):
     role_access: Dict[str, List[str]] = {}
     enable_profiler: bool = False
     enable_tfa: bool = False
-    max_spam:int = 5
+    max_spam: int = 5
 
 
 class DependencyInjector(BaseMiddleware):
@@ -61,11 +61,11 @@ class MiddlewareRegistry:
 
         # Порядок имеет значение!
         self.middleware_priority = [
+            "CommandLoggingMiddleware",
             "SuperuserBypassMiddleware",
             "SmartRateLimitMiddleware",
-            "CommandLoggingMiddleware",
-            "RoleMiddleware",
             "AuthMiddleware",
+            "RoleMiddleware",
             "BannedUserMiddleware",
             "TFAMiddleware",
             "ProfilerMiddleware",

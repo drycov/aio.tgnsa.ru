@@ -1,4 +1,4 @@
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup,InlineKeyboardMarkup,InlineKeyboardButton
 
 from app.bot.constants.labels import MenuLabels
 
@@ -26,3 +26,10 @@ send_contact_keyboard = ReplyKeyboardMarkup(
     one_time_keyboard=False  # Оставляет клавиатуру видимой
 )
 send_contact_keyboard.input_field_placeholder = MenuLabels.SHARE_CONTACT.value
+
+send_confirm_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm")],
+        [InlineKeyboardButton(text="❌ Отменить", callback_data="cancel")],
+    ],   
+)

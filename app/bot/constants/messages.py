@@ -29,3 +29,15 @@ AUTH_MESSAGES = {
     "no_permission": f"{Symbols.STATUS_STOP} Недостаточно прав для выполнения этой команды.",
     "auth_error": f"{Symbols.STATUS_STOP.value} Ошибка авторизации.",
 }
+    # Сообщения для формы регистрации пользователя
+
+REGISTER_MESSAGES = {
+    "enter_first_name": f"{Symbols.USER_LOGIN.value} Введите имя",
+    "enter_last_name": f"{Symbols.USER_LOGIN.value} Введите фамилию",
+    "enter_position": f"{Symbols.USER_LOGIN.value} Введите должность",
+    "enter_phone": f"{Symbols.USER_LOGIN.value} Поделитесь контактом, нажав кнопку внизу",
+    "enter_email": f"{Symbols.USER_LOGIN.value} Введите корпоративную почту",
+    "enter_department": f"{Symbols.USER_LOGIN.value} Введите филиал",
+    "enter_country": f"{Symbols.USER_LOGIN.value} Введите участок обслуживания",
+    "success": f"{Symbols.ACTION_CONFIRM.value} Успешная регистрация. Продолжаем.",
+}
