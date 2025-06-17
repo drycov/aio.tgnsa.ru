@@ -1,122 +1,181 @@
+from datetime import timedelta
 import inspect
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Type
 
 from aiogram import BaseMiddleware, Dispatcher
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.bot.middlewares import (auth, banned, command_log, profiler, role,
-                                 superuser, tfa)
+from app.bot.middlewares.role import RoleMiddleware
+from app.bot.middlewares.superuser import SuperuserBypassMiddleware
+from app.bot.middlewares.throttling import SmartRateLimitMiddleware
+from app.core.config import Settings, settings
 from app.core.utils.logger_manager import LoggerManager
 
 
-class InjectMiddleware:
-    def __init__(self, key: str, value: Any, logger: Optional[LoggerManager] = None):
-        self.key = key
-        self.value = value
-        self.logger = logger
+class MiddlewareConfig(BaseModel):
+    """Конфигурация middleware"""
+    rate_limit: float = 1.0
+    superusers: List[int] = []
+    role_access: Dict[str, List[str]] = {}
+    enable_profiler: bool = False
+    enable_tfa: bool = False
+    max_spam:int = 5
+
+
+class DependencyInjector(BaseMiddleware):
+    """Универсальный инжектор зависимостей"""
+
+    def __init__(self, **dependencies):
+        self.dependencies = dependencies
 
     async def __call__(self, handler, event, data):
-        data[self.key] = self.value
-        if self.logger:
-            self.logger.debug(f"📦 Значение '{self.key}' внедрено в data.")
+        data.update(self.dependencies)
         return await handler(event, data)
 
 
-def _collect_middlewares_from_module(module, logger: LoggerManager, **kwargs) -> Dict[str, BaseMiddleware]:
-    """
-    Автоматически собирает middleware-классы из модуля.
-    Класс должен быть наследником BaseMiddleware и иметь __init__(**kwargs)
-    """
-    middlewares = {}
-    for name, obj in inspect.getmembers(module):
-        if inspect.isclass(obj) and issubclass(obj, BaseMiddleware) and obj is not BaseMiddleware:
-            try:
-                instance = obj(logger=logger, **kwargs)
-                middlewares[name] = instance
-                logger.debug(f"🧩 Найден middleware: {name}")
-            except Exception as e:
-                logger.warning(
-                    f"⚠️ Не удалось инициализировать middleware {name}: {e}")
-    return middlewares
+class MiddlewareRegistry:
+    """Централизованная система регистрации middleware"""
+
+    def __init__(
+        self,
+        dp: Dispatcher,
+        db_sessionmaker: async_sessionmaker,
+        settings: BaseModel,
+        logger: LoggerManager,
+        redis: Optional[Redis] = None,
+        config: Optional[MiddlewareConfig] = None
+    ):
+        self.dp = dp
+        self.logger = logger
+        self.config = config or MiddlewareConfig()
+
+        self.core_dependencies = {
+            "db": db_sessionmaker,
+            "settings": settings,
+            "logger": logger,
+            "redis": redis,
+            "config": self.config
+        }
+
+        # Порядок имеет значение!
+        self.middleware_priority = [
+            "SuperuserBypassMiddleware",
+            "SmartRateLimitMiddleware",
+            "CommandLoggingMiddleware",
+            "RoleMiddleware",
+            "AuthMiddleware",
+            "BannedUserMiddleware",
+            "TFAMiddleware",
+            "ProfilerMiddleware",
+        ]
+
+    def _init_middleware(self, middleware_class: Type[BaseMiddleware], **kwargs) -> Optional[BaseMiddleware]:
+        """Инициализация middleware с обработкой ошибок"""
+        try:
+            kwargs["logger"] = self.logger
+            return middleware_class(**kwargs)
+        except Exception as e:
+            self.logger.error(
+                f"Middleware init failed for {middleware_class.__name__}: {e}")
+            return None
+
+    async def register(self):
+        """Основной метод регистрации middleware"""
+        self.logger.info("🛠 Starting middleware registration...")
+
+        # 1. Регистрация зависимостей
+        self.dp.message.middleware(
+            DependencyInjector(**self.core_dependencies))
+        self.logger.debug("✅ Core dependencies injected")
+
+        # 2. Регистрация middleware по приоритету
+        registered = set()
+
+        for mw_name in self.middleware_priority:
+            if mw_instance := self._get_middleware_instance(mw_name):
+                self.dp.message.middleware(mw_instance)
+                registered.add(mw_name)
+                self.logger.debug(f"✅ {mw_name} registered")
+
+        # 3. Проверка что все обязательные middleware зарегистрированы
+        self._validate_registration(registered)
+
+        self.logger.info(
+            f"🏁 Completed! Registered {len(registered)} middleware")
+
+    def _get_middleware_instance(self, mw_name: str) -> Optional[BaseMiddleware]:
+        """Фабрика для создания экземпляров middleware"""
+        if mw_name == "SuperuserBypassMiddleware":
+            return self._init_middleware(
+                SuperuserBypassMiddleware,
+                superusers=self.config.superusers
+            )
+
+        if mw_name == "SmartRateLimitMiddleware":
+            return self._init_middleware(
+                SmartRateLimitMiddleware,
+                rate_limit=self.config.rate_limit,
+                max_spam=self.config.max_spam,
+                cooldown=timedelta(minutes=5),
+                exempt_user_ids=self.config.superusers
+            )
+
+        if mw_name == "RoleMiddleware":
+            return self._init_middleware(
+                RoleMiddleware,
+                required_roles=self.config.role_access
+            )
+
+        # Для остальных middleware используем автоматическое создание
+        try:
+            if module := globals().get(mw_name.replace("Middleware", "").lower()):
+                for name, obj in inspect.getmembers(module, inspect.isclass):
+                    if name == mw_name and issubclass(obj, BaseMiddleware):
+                        return self._init_middleware(obj)
+        except Exception as e:
+            self.logger.warning(f"Auto-registration failed for {mw_name}: {e}")
+
+        return None
+
+    def _validate_registration(self, registered: set):
+        """Проверка что все критические middleware зарегистрированы"""
+        critical_middleware = {
+            "SuperuserBypassMiddleware",
+            "SmartRateLimitMiddleware",
+            "RoleMiddleware"
+        }
+
+        if missing := critical_middleware - registered:
+            self.logger.error(f"Critical middleware missing: {missing}")
+            raise RuntimeError(
+                f"Failed to register critical middleware: {missing}")
 
 
-def register_middlewares(
+# Пример использования
+async def setup_middleware(
     dp: Dispatcher,
-    *,
     db_sessionmaker: async_sessionmaker,
-    settings: BaseSettings,
+    settings: Settings,
     logger: LoggerManager,
-    redis: Optional[Redis] = None,
-    role_middleware_roles: Optional[list[str]] = None,
-    additional_middlewares: Optional[Dict[str, Any]] = None,
+    redis: Optional[Redis] = None
 ):
-    """
-    Регистрирует middleware слоя приложения:
-    - Автоматически собирает middleware из модулей
-    - Инъецирует зависимости
-    """
-    logger.debug("🔧 Регистрация middleware...")
+    """Инициализация middleware системы"""
+    config = MiddlewareConfig(
+        superusers=settings.bot.SUPERUSERS,
+        rate_limit=settings.bot.RATE_LIMIT,
+        role_access=settings.bot.ROLE_ACCESS,
+        enable_tfa=settings.security.TFA_ENABLE
+    )
 
-    # RoleMiddleware с ручной инициализацией (требуются роли)
-    try:
-        commandLog = command_log.CommandLoggingMiddleware(
-            logger=logger,
-        )
-        dp.message.middleware(commandLog)
-        logger.debug(
-            f"✅ commandLog зарегистрирован ({commandLog or '[]'}).")
-    except Exception as e:
-        logger.warning(f"⚠️ Ошибка регистрации CommandLoggingMiddleware: {e}")
+    registry = MiddlewareRegistry(
+        dp=dp,
+        db_sessionmaker=db_sessionmaker,
+        settings=settings,
+        logger=logger,
+        redis=redis,
+        config=config
+    )
 
-    # Superuser всегда первый, чтобы пропускать остальные
-    try:
-        dp.message.middleware(
-            superuser.SuperuserBypassMiddleware(
-                superusers=settings.bot.SUPERUSERS, logger=logger)
-        )
-        logger.debug("✅ SuperuserBypassMiddleware зарегистрирован первым.")
-    except Exception as e:
-        logger.warning(f"⚠️ Ошибка регистрации SuperuserBypassMiddleware: {e}")
-
-    # Авто-регистрация из модулей
-    modules = [profiler, auth, banned, tfa]
-    for module in modules:
-        mws = _collect_middlewares_from_module(module, logger=logger)
-        for name, mw in mws.items():
-            dp.message.middleware(mw)
-            logger.debug(f"✅ Middleware {name} зарегистрирован.")
-
-    # RoleMiddleware с ручной инициализацией (требуются роли)
-    try:
-        role_middleware = role.RoleMiddleware(
-            required_roles=role_middleware_roles or [],
-            logger=logger,
-        )
-        dp.message.middleware(role_middleware)
-        logger.debug(
-            f"✅ RoleMiddleware зарегистрирован ({role_middleware_roles or '[]'}).")
-    except Exception as e:
-        logger.warning(f"⚠️ Ошибка регистрации RoleMiddleware: {e}")
-
-    # Инъекция зависимостей
-    dependencies = {
-        "db": db_sessionmaker,
-        "settings": settings,
-        "logger": logger,
-    }
-    if redis:
-        dependencies["redis"] = redis
-
-    for key, value in dependencies.items():
-        dp.message.middleware(InjectMiddleware(key, value, logger))
-        logger.debug(f"✅ InjectMiddleware: {key} зарегистрирован.")
-
-    # Кастомные
-    if additional_middlewares:
-        for name, middleware in additional_middlewares.items():
-            dp.message.middleware(middleware)
-            logger.debug(f"✅ CustomMiddleware: {name} зарегистрирован.")
-
-    logger.info("🛠 Middleware успешно зарегистрированы.")
+    await registry.register()

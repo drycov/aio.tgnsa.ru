@@ -86,7 +86,7 @@ class StateManager:
     #     """
     #     await state.set_state(MainCommands.MAIN_MENU)
     #     keyboard = generate_main_keyboard(is_admin)
-    #     await message.answer(text=MenuLabels.MAIN_MENU.value, reply_markup=keyboard)
+    #     await message.answer(text=MenuLabels.MAIN_MENU.value,     reply_markup=keyboard)
 
     @staticmethod
     def serialize_markup(markup) -> Dict[str, Any]:

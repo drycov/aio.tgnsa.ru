@@ -19,11 +19,11 @@ dp = Dispatcher(storage=storage)
 # Подключение middlewares, filters, routers
 
 
-def setup_dispatcher():
+async def setup_dispatcher():
     from app.bot.handlers import register_handlers
-    from app.bot.middlewares.registry import register_middlewares
+    from app.bot.middlewares.registry import setup_middleware
 
-    register_middlewares(dp, db_sessionmaker=session,
+    await setup_middleware(dp, db_sessionmaker=session,
                          settings=settings, logger=logger)
     register_handlers(dp, db_sessionmaker=session,
                       settings=settings, logger=logger)
@@ -40,7 +40,7 @@ async def on_shutdown():
 
 
 async def main():
-    setup_dispatcher()
+    await setup_dispatcher()
     await on_startup()
     try:
         await dp.start_polling(bot)

@@ -8,6 +8,7 @@ class MenuLabels(Enum):
     TASK_MANAGER = "📋 Задачи"
     USER_PROFILE = "👤 Профиль"
     EXIT = "🚪 Выход"
+    SHARE_CONTACT = "📞 Поделиться контактом"
 
     ADMIN_PANEL = "🛠 Админ-панель"
     VIEW_USERS = "👥 Пользователи"

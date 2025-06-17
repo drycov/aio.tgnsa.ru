@@ -2,7 +2,7 @@ import os
 import secrets
 from functools import cached_property
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Dict, List, Literal, Optional, Set
 
 from dotenv import load_dotenv, set_key
 from pydantic import Field, SecretStr, ValidationError, model_validator
@@ -188,9 +188,24 @@ class DBSettings(BaseSettings):
 class BotConfig(BaseSettings):
     TOKEN: str
     # .env: ADMINS=123456789,987654321
-    ADMINS: list[str] = Field(default_factory=list, env="ADMINS")
-    # .env: SUPERUSERS=123456789,987654321
-    SUPERUSERS: list[str] = Field(default_factory=list, env="SUPERUSERS")
+    ADMINS: List[str] = Field(
+        default_factory=list,
+        description="Список ID администраторов",
+        env="ADMINS"
+    )
+
+    SUPERUSERS: Set[str] = Field(
+        default_factory=set,
+        description="Список ID суперпользователей (имеют полный доступ)",
+        env="SUPERUSERS"
+    )
+    RATE_LIMIT: float = Field(
+        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT")
+
+    ROLE_ACCESS: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Словарь прав доступа для ролей", env="ROLE_ACCESS"
+    )
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -349,6 +364,56 @@ class Security(BaseSettings):
         return values
 
 
+class MiddlewareConfig(BaseSettings):
+    """Конфигурация middleware для бота
+
+    Attributes:
+        rate_limit: Лимит запросов в секунду
+        admins: Список ID администраторов
+        superusers: Список ID суперпользователей (имеют полный доступ)
+        role_access: Словарь прав доступа для ролей
+        enable_profiler: Включить профилирование
+        enable_tfa: Включить двухфакторную аутентификацию
+    """
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+        env_prefix="BOT_",
+    )
+
+    # Настройки ограничений
+    rate_limit: float = Field(
+        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT")
+
+    # Настройки доступа
+
+    # Настройки ограничений
+    rate_limit: float = Field(
+        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT")
+
+    role_access: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Словарь прав доступа для ролей", env="ROLE_ACCESS"
+    )
+
+    # Флаги функциональности
+    enable_profiler: bool = Field(
+        default=False,
+        description="Включить профилирование производительности",
+        env="ENABLE_PROFILER"
+    )
+
+    def is_superuser(self, user_id: str) -> bool:
+        """Проверяет, является ли пользователь суперпользователем"""
+        return user_id in self.superusers
+
+    def is_admin(self, user_id: str) -> bool:
+        """Проверяет, является ли пользователь администратором"""
+        return user_id in self.admins or self.is_superuser(user_id)
+
+
 class NetworkConfig(BaseSettings):
     PING_COUNT: int = Field(default=4, env="NETWORK_PING_COUNT")
     PING_INTERVAL: int = Field(default=2, env="NETWORK_PING_INTERVAL")
@@ -450,6 +515,7 @@ class Settings(BaseSettings):
     email: EmailConfig = Field(default_factory=EmailConfig)
     api: ApiServerConfig = Field(default_factory=ApiServerConfig)
     app: AppSettings = Field(default_factory=AppSettings)
+
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
         env_file_encoding="utf-8",

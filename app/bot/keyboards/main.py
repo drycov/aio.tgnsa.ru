@@ -1,4 +1,5 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
+
 from app.bot.constants.labels import MenuLabels
 
 
@@ -11,9 +12,9 @@ def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
             KeyboardButton(text=MenuLabels.DEVICE_CHECK.value),
             KeyboardButton(text=MenuLabels.ADVANCED.value),
         ],
-        [KeyboardButton(text=MenuLabels.ERTM_MENU.value)],
+        # [KeyboardButton(text=MenuLabels.ERTM_MENU.value)],
         [
-            KeyboardButton(text=MenuLabels.TASK_MANAGER.value),
+            # KeyboardButton(text=MenuLabels.TASK_MANAGER.value),
             KeyboardButton(text=MenuLabels.USER_PROFILE.value),
         ],
         [KeyboardButton(text=MenuLabels.EXIT.value)],
@@ -24,9 +25,8 @@ def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
 
     return ReplyKeyboardMarkup(
         keyboard=keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=False,
-        input_field_placeholder="Выберите действие из меню"
+
+        is_persistent=True, resize_keyboard=True
     )
 
 
@@ -39,7 +39,8 @@ def admin_menu() -> ReplyKeyboardMarkup:
             KeyboardButton(text=MenuLabels.VIEW_USERS.value),
             KeyboardButton(text=MenuLabels.SEND_BROADCAST.value),
         ],
-        [KeyboardButton(text=MenuLabels.SYSTEM_STATUS.value)],  # <- рекомендуется вынести в Enum
+        # <- рекомендуется вынести в Enum
+        [KeyboardButton(text=MenuLabels.SYSTEM_STATUS.value)],
         [KeyboardButton(text=MenuLabels.BACK.value)],
     ]
     return ReplyKeyboardMarkup(
