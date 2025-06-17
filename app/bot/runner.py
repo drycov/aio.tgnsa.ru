@@ -14,7 +14,7 @@ storage = initialize_storage()
 session = get_session()
 bot = Bot(token=settings.bot.TOKEN,
           default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-dp = Dispatcher(storage=storage)
+dp = Dispatcher(storage=storage, session=session, bot=bot)
 
 # Подключение middlewares, filters, routers
 
@@ -24,7 +24,7 @@ async def setup_dispatcher():
     from app.bot.middlewares.registry import setup_middleware
 
     await setup_middleware(dp, db_sessionmaker=session,
-                         settings=settings, logger=logger)
+                           settings=settings, logger=logger)
     register_handlers(dp, db_sessionmaker=session,
                       settings=settings, logger=logger)
 

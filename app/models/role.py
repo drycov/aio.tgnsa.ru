@@ -17,9 +17,9 @@ class Role(Base):
 
     @staticmethod
     def default_roles():
-        return ["admin", "moderator", "user"]
-
-    users: Mapped[List["User"]] = relationship(
+        return ["admin", "user","candidat"]
+    
+    users: Mapped[List["User"]] = relationship( # type: ignore
         "User",
         back_populates="roles",
         # Название таблицы many-to-many (указано явно, допустимо)

@@ -54,8 +54,12 @@ class User(Base):
         onupdate=func.now(),
         nullable=False
     )
+    banned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),
+                                                       server_default=func.now(),
+                                                       onupdate=func.now(),
+                                                       nullable=False)
 
-    roles: Mapped[List[Role]] = relationship(
+    roles: Mapped[List[Role]] = relationship( # type: ignore
         "Role",
         secondary=user_roles,
         back_populates="users",

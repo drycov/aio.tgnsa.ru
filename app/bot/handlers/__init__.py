@@ -5,8 +5,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.core.utils.logger_manager import LoggerManager
 
-from .startHandler import router as start_router
+from .main_handlers.main_commands import router as main_router
 from .main_handlers.registration_handler import router as registration_router
+from .startHandler import router as start_router
+
 
 def register_handlers(
     dp: Dispatcher,
@@ -22,6 +24,7 @@ def register_handlers(
 
     # Подключаем routers (маршрутизаторы по областям)
     dp.include_router(start_router)
+    dp.include_router(main_router)
     dp.include_router(registration_router)
 
     logger.debug("✅ Роутеры зарегистрированы")

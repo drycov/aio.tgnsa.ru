@@ -33,3 +33,5 @@ send_confirm_keyboard = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="❌ Отменить", callback_data="cancel")],
     ],   
 )
+
+on_enter_keyboard = build_auth_keyboard(False)

@@ -3,14 +3,12 @@ from enum import Enum
 from typing import Union
 
 from sqlalchemy import select
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import logger
 from app.core.services.paswword import hash_password
-from app.exceptions.exceptions import UserBannedError  # Кастомные исключения
-from app.exceptions.exceptions import UserNotFoundError
+from app.exceptions.exceptions import UserBannedError, UserNotFoundError
 from app.models import Role, User
 from app.schemas.user import UserCreate
 
@@ -26,67 +24,47 @@ class UserService:
 
     async def get_user(
         self, value: Union[int, str], field: UserSearchField = UserSearchField.ID
-    ) -> User | None:
-        logger.info(f"Поиск пользователя по полю {field} со значением {value}")
-        try:
-            match field:
-                case UserSearchField.ID:
-                    stmt = select(User).where(User.id == value)
-                case UserSearchField.TG_ID:
-                    stmt = select(User).where(User.tg_id == value)
-                case _:
-                    raise ValueError(f"Unsupported search field: {field}")
+    ) -> User:
+        stmt = select(User).options(selectinload(User.roles))
+        stmt = stmt.filter(getattr(User, field.value) == value)
 
-            # Подключаем eager loading ролей
-            stmt = stmt.options(selectinload(User.roles))
+        user = (await self.session.execute(stmt)).scalar_one_or_none()
+        if not user:
+            logger.warning(f"User not found: {field}={value}")
+            raise UserNotFoundError(f"{field}={value}")
 
-            result = await self.session.execute(stmt)
-            user = result.unique().scalar_one_or_none()
+        if user.is_banned:
+            logger.info(f"User is banned: {user.id}")
+            raise UserBannedError(f"{user.id}")
 
-            if user:
-                logger.info(
-                    f"Пользователь найден: id={user.id}, tg_id={user.tg_id}, роли={', '.join([r.name for r in user.roles])}")
-            else:
-                logger.warning(f"Пользователь не найден по {field} = {value}")
-
-            return user
-        except Exception as e:
-            logger.exception(f"Ошибка при поиске пользователя: {e}")
-            raise
+        return user
 
     async def get_all_users(self) -> list[User]:
-        logger.info("Получение всех пользователей из базы данных")
-        try:
-            stmt = select(User)
-            result = await self.session.execute(stmt)
-            users = result.unique().scalars().all()
-            logger.info(f"Получено пользователей: {len(users)}")
-            return users
-        except Exception as e:
-            logger.exception(f"Ошибка при получении списка пользователей: {e}")
-            raise
+        result = await self.session.scalars(select(User))
+        users = result.all()
+        logger.info(f"Fetched {len(users)} users")
+        return users
 
     async def create_user(self, user_data: UserCreate, role_name: str = "user") -> User:
-        # 1. Хешируем пароль
-        data = user_data.model_dump()
-        data['hashed_password'] = hash_password(data.pop('password'))
+        payload = user_data.model_dump()
+        payload['hashed_password'] = hash_password(payload.pop('password'))
+        new_user = User(**payload)
 
-        # 2. Ищем роль в базе
-        stmt = select(Role).where(Role.name == role_name)
-        result = await self.session.execute(stmt)
-        role = result.scalar_one_or_none()
-
-        # 3. Если роли нет, создаём
+        # Attach role, create if needed
+        role = (await self.session.execute(select(Role).filter_by(name=role_name))).scalar_one_or_none()
         if not role:
             role = Role(name=role_name)
             self.session.add(role)
-            await self.session.flush()  # flush чтобы получить id роли
+            await self.session.flush()
 
-        # 4. Создаём пользователя с ролью
-        new_user = User(**data)
         new_user.roles.append(role)
-
         self.session.add(new_user)
         await self.session.commit()
         await self.session.refresh(new_user)
         return new_user
+
+    async def ban_user(self, user: User) -> None:
+        user.is_banned = True
+        user.banned_at = datetime.now(timezone.utc)
+        await self.session.commit()
+        logger.info(f"User banned: {user.id}")

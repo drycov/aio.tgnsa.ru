@@ -7,6 +7,7 @@ class MenuLabels(Enum):
     ERTM_MENU = "📡 Подсистема ЭРТМ"
     TASK_MANAGER = "📋 Задачи"
     USER_PROFILE = "👤 Профиль"
+    ENTER = "🔐 Войти"
     EXIT = "🚪 Выход"
     SHARE_CONTACT = "📞 Поделиться контактом"
 
