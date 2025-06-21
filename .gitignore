@@ -36,6 +36,7 @@ dump.rdb
 .vscode/
 .DS_Store
 .history/
+.vs/
 
 # Миграции базы данных
 migrations/

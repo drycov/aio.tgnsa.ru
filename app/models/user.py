@@ -37,6 +37,7 @@ class User(Base):
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_phone_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
     last_login_at: Mapped[datetime | None] = mapped_column(

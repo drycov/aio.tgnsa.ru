@@ -1,14 +1,17 @@
+import json
 import os
 import secrets
 from functools import cached_property
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Set
+from typing import Any, Dict, List, Literal, Optional, Set
 
 from dotenv import load_dotenv, set_key
-from pydantic import Field, SecretStr, ValidationError, model_validator
+from pydantic import (Field, SecretStr, ValidationError, computed_field, field_validator,
+                      model_validator)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core import LoggerManager
+from app.utils.version import __version__
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -17,7 +20,7 @@ ENV_PATH = BASE_DIR / ".env"
 SUPPORTED_ENGINES = {"sqlite", "postgres", "mysql", "mariadb"}
 
 # --- Load .env early ---
-load_dotenv(dotenv_path=ENV_PATH)
+load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 # --- Role setup from env ---
 APP_ROLE = os.getenv("APP_ROLE", "app")
@@ -39,7 +42,6 @@ class AppSettings(BaseSettings):
         DEFAULT_USER_FULLNAME (str): Полное имя пользователя по умолчанию
     """
     APP_NAME: str = "TG NMS"
-    VERSION: str = "1.0.0"
     DESCRIPTION: str = "**ZeusBill** – микробиллинг для мини-ISP. Автоматизация расчётов, управление абонентами, интеграция с платежными системами и сетевым оборудованием. Простота, надёжность, масштабируемость."
     DEFAULT_USER: str = "root"
     DEFAULT_PASSWORD: str = "root"
@@ -188,13 +190,13 @@ class DBSettings(BaseSettings):
 class BotConfig(BaseSettings):
     TOKEN: str
     # .env: ADMINS=123456789,987654321
-    ADMINS: List[str] = Field(
-        default_factory=list,
+    ADMINS: Set[int] = Field(
+        default_factory=set,
         description="Список ID администраторов",
         env="ADMINS"
     )
 
-    SUPERUSERS: Set[str] = Field(
+    SUPERUSERS: Set[int] = Field(
         default_factory=set,
         description="Список ID суперпользователей (имеют полный доступ)",
         env="SUPERUSERS"
@@ -206,6 +208,46 @@ class BotConfig(BaseSettings):
         default_factory=dict,
         description="Словарь прав доступа для ролей", env="ROLE_ACCESS"
     )
+
+    @field_validator("ADMINS", "SUPERUSERS", mode="before")
+    @classmethod
+    def parse_json_or_csv(cls, v: Any) -> Set[int]:
+        if isinstance(v, str):
+            v = v.strip()
+            try:
+                # Пробуем JSON-декодинг
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return {int(i) for i in parsed if str(i).isdigit()}
+            except json.JSONDecodeError:
+                # Фоллбек: CSV-разбор
+                return {int(i.strip()) for i in v.split(",") if i.strip().isdigit()}
+        elif isinstance(v, list | set):
+            return {int(i) for i in v}
+        return set()
+
+    @field_validator("ROLE_ACCESS", mode="before")
+    @classmethod
+    def parse_role_access(cls, v):
+        import json
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                # Пытаемся распарсить как JSON
+                parsed = json.loads(v)
+                if isinstance(parsed, dict):
+                    return parsed
+                elif isinstance(parsed, list):
+                    # Преобразуем ["admin", "user"] в {"default": [...]}
+                    return {"default": parsed}
+            except json.JSONDecodeError:
+                # CSV fallback: admin,user → {"default": [...]}
+                return {"default": [item.strip() for item in v.split(",") if item.strip()]}
+        elif isinstance(v, list):
+            return {"default": v}
+        raise ValueError(
+            "Неверный формат ROLE_ACCESS — должен быть словарём или списком")
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -550,6 +592,10 @@ class Settings(BaseSettings):
         if engine not in SUPPORTED_ENGINES:
             raise ValueError(f"❌ DB_ENGINE={engine} не поддерживается.")
         return values
+    @computed_field
+    @property
+    def VERSION(self) -> str:
+        return __version__
 
 
 # --- Settings init ---

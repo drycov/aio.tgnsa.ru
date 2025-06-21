@@ -1,40 +1,73 @@
-click
-python-dotenv
-pyasn1
-aiogram
-netaddr
-ping3
-pydantic
-firebase-admin
+﻿# ============================================
+# 🧱 Core / Environment / Settings
+# ============================================
 pip
-attrs
-protobuf
-cryptography
+python-dotenv
+pydantic
+pydantic-settings
+python-decouple
+pydantic[email]
+passlib[bcrypt]
+pyotp
+
+# ============================================
+# ⚙️ Async / Task Scheduling
+# ============================================
+asyncio
+APScheduler
+
+# ============================================
+# 📝 Logging
+# ============================================
 loguru
-tabulate
-dnspython
-idna
-pymongo
-motor
-aiohttp
-requests
-certifi
-Booktype
-puresnmp
-PyJWT
+
+# ============================================
+# 🤖 Telegram Bot
+# ============================================
+aiogram
+
+# ============================================
+# 🌐 Web / API
+# ============================================
+fastapi
+Jinja2
+
+
+# ============================================
+# 🗃️ Database / ORM / Storage
+# ============================================
+sqlalchemy
+aiosqlite
+alembic
+
+# ============================================
+# 🧠 Caching / Messaging
+# ============================================
 redis
 aioredis
-asyncio
-tqdm
-pandas
-prettytable
-pyasn1_modules
-psutil
-chardet
-Jinja2
-APScheduler
-SQLAlchemy
-fastapi
-starlette
+
+# ============================================
+# 🔐 Security / Cryptography
+# ============================================
+cryptography
+
+# ============================================
+# 🌍 Networking / IP / DNS / ICMP
+# ============================================
+ping3
+netaddr
+dnspython
+idna
+
+# ============================================
+# 📦 Packaging / Distribution (опционально)
+# ============================================
+setuptools
+wheel
 uvicorn
-python-jose
+
+pytz
+
+psutil
+typer
+rich

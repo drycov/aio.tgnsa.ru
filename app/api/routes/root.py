@@ -66,7 +66,7 @@ async def root(request: Request):
             "favicon_url": settings.app.favicon_url,
             "static_url": settings.app.static_url,
             "description": settings.app.DESCRIPTION,
-            "version": settings.app.VERSION,
+            "version": settings.VERSION,
             "environment": environment,
             "timezone": settings.misc.TIMEZONE,
             "current_time": current_time,  # Передаем объект datetime

@@ -16,6 +16,7 @@ from app.schemas.user import UserCreate
 class UserSearchField(str, Enum):
     ID = "id"
     TG_ID = "tg_id"
+    ROLE="role"
 
 
 class UserService:
