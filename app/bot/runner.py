@@ -26,6 +26,8 @@ def setup_plugins(dp: Dispatcher):
     manager = PluginManager.create_once()
     manager.load_all()
     manager.init_all(settings)
+    manager.post_init_integration()
+
     manager.register_aiogram(dp)
 
 

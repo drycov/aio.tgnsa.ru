@@ -1,17 +1,19 @@
-import time
-import inspect
 import asyncio
+import inspect
+import time
 from datetime import datetime, timezone
-from typing import Callable, Awaitable, Union, Dict, List, Tuple, Literal, Optional
+from typing import (Awaitable, Callable, Dict, List, Literal, Optional, Tuple,
+                    Union)
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
-from app.plugins.base import Plugin
+from fastapi.responses import JSONResponse, PlainTextResponse
 
+from app.plugins.base import Plugin
 
 ProbeFn = Callable[[], Union[bool, Awaitable[bool]]]
 ProbeGroup = Literal["critical", "optional"]
-SystemStatus = Literal["OK", "DEGRADED", "FAIL", "SHUTDOWN", "UNKNOWN", "MAINTENANCE", "INIT"]
+SystemStatus = Literal["OK", "DEGRADED", "FAIL",
+                       "SHUTDOWN", "UNKNOWN", "MAINTENANCE", "INIT"]
 
 
 class HealthCheckPlugin(Plugin):
@@ -28,7 +30,7 @@ class HealthCheckPlugin(Plugin):
         self._alive: bool = True
         self._ready: bool = False  # Starts as not ready until initialization completes
         self._status: SystemStatus = "INIT"
-        
+
         # Probe management
         self._probes: Dict[ProbeGroup, List[Tuple[str, ProbeFn]]] = {
             "critical": [],
@@ -42,7 +44,7 @@ class HealthCheckPlugin(Plugin):
         if not callable(fn):
             raise ValueError("Probe must be callable")
         self._probes[group].append((name, fn))
-        
+
         if self._status == "INIT" and group == "critical":
             self._status = "DEGRADED"  # System is partially initialized
 
@@ -58,13 +60,15 @@ class HealthCheckPlugin(Plugin):
 
     def set_status(self, status: SystemStatus):
         """Set the overall system status."""
-        allowed: List[SystemStatus] = ["OK", "DEGRADED", "FAIL", "SHUTDOWN", "UNKNOWN", "MAINTENANCE", "INIT"]
+        allowed: List[SystemStatus] = ["OK", "DEGRADED", "FAIL",
+                                       "SHUTDOWN", "UNKNOWN", "MAINTENANCE", "INIT"]
         if status not in allowed:
             raise ValueError(f"Invalid status '{status}'. Allowed: {allowed}")
-        
+
         self._status = status
         if hasattr(self, "logger"):
-            self.logger.info(f"[healthcheck] System status changed to: {status}")
+            self.logger.info(
+                f"[healthcheck] System status changed to: {status}")
 
     def _update_aggregate_status(self):
         """Automatically update status based on component states."""
@@ -84,28 +88,28 @@ class HealthCheckPlugin(Plugin):
         self._auto_register_probes()
 
         # Core health endpoints
-        @self.router.get(f"{base_path}", tags=["health"])
+        @self.router.get(f"{base_path}")
         async def base_health():
             return JSONResponse({
                 "status": self._status,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             })
 
-        @self.router.get(f"{base_path}/liveness", tags=["health"])
+        @self.router.get(f"{base_path}/liveness")
         async def liveness_check():
             return JSONResponse({
                 "alive": self._alive,
                 "status": self._status
             }, status_code=200 if self._alive else 503)
 
-        @self.router.get(f"{base_path}/readiness", tags=["health"])
+        @self.router.get(f"{base_path}/readiness")
         async def readiness_check():
             return JSONResponse({
                 "ready": self._ready,
                 "status": self._status
             }, status_code=200 if self._ready else 503)
 
-        @self.router.get(f"{base_path}/details", tags=["health"])
+        @self.router.get(f"{base_path}/details")
         async def detailed_status():
             return JSONResponse({
                 "status": self._status,
@@ -119,7 +123,7 @@ class HealthCheckPlugin(Plugin):
                 }
             })
 
-        @self.router.get(f"{base_path}/probes", tags=["health"])
+        @self.router.get(f"{base_path}/probes")
         async def probes_status():
             """Detailed probe status that automatically updates system status."""
             result = {
@@ -134,7 +138,7 @@ class HealthCheckPlugin(Plugin):
                 for name, check_fn in checks:
                     probe_result = await self._run_probe(name, check_fn)
                     group_results[name] = probe_result
-                    
+
                     if not probe_result["ok"] and group == "critical":
                         result["critical_failures"] += 1
 
@@ -149,6 +153,15 @@ class HealthCheckPlugin(Plugin):
                 result["status"] = "OK"
 
             return JSONResponse(result, status_code=200 if result["status"] == "OK" else 503)
+
+        @self.router.get(f"{base_path}/metrics", include_in_schema=False)
+        async def metrics():
+            metrics = [
+                f"health_status{{state=\"{self._status}\"}} 1",
+                f"probes_total{{group=\"critical\"}} {len(self._probes['critical'])}",
+                f"probes_total{{group=\"optional\"}} {len(self._probes['optional'])}"
+            ]
+            return PlainTextResponse("\n".join(metrics), media_type="text/plain")
 
         # Mark system as ready after successful initialization
         self.set_ready(True)
@@ -167,7 +180,8 @@ class HealthCheckPlugin(Plugin):
             if success:
                 self._last_success[name] = time.time()
             else:
-                self._last_failure[name] = (time.time(), "Probe returned False")
+                self._last_failure[name] = (
+                    time.time(), "Probe returned False")
 
             return {
                 "ok": success,
@@ -187,7 +201,8 @@ class HealthCheckPlugin(Plugin):
         """Auto-register probes for common services from config."""
         # Redis integration
         if redis := self._config.get("redis_client"):
-            self.register_probe("redis_ping", lambda: redis.ping(), group="critical")
+            self.register_probe(
+                "redis_ping", lambda: redis.ping(), group="critical")
 
         # Database integration
         if db := self._config.get("db_client"):
@@ -202,7 +217,7 @@ class HealthCheckPlugin(Plugin):
     def register_fastapi(self, app):
         """Register routes and lifecycle handlers."""
         app.include_router(self.router)
-        
+
         # Startup handler - mark system as ready
         @app.on_event("startup")
         async def startup_handler():

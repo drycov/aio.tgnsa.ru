@@ -50,6 +50,25 @@ class PluginManager:
 
     # --- Core Methods ---
     
+    def post_init_integration(self) -> None:
+        """Связывает плагины после инициализации, например, регистрацию в healthcheck."""
+        health_plugin = self.plugins.get("healthcheck")
+        if not health_plugin or not getattr(health_plugin, "enabled", False):
+            logger.warning("⚠️ Healthcheck plugin не найден или отключён")
+            return
+
+        for plugin in self.plugins.values():
+            if not getattr(plugin, "enabled", False):
+                continue
+
+            if hasattr(plugin, "register_healthcheck"):
+                try:
+                    plugin.register_healthcheck(health_plugin)
+                    logger.debug(f"🔗 {plugin.name} зарегистрировал проверки в healthcheck")
+                except Exception as e:
+                    logger.warning(f"⚠️ {plugin.name} не смог зарегистрировать healthcheck: {e}")
+
+        
     def load_all(self) -> None:
         """Load all plugins from all sources and resolve dependencies."""
         if self._initialized:

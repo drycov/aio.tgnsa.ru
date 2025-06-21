@@ -36,6 +36,7 @@ def setup_plugins(app: FastAPI):
     manager = PluginManager.create_once()
     manager.load_all()
     manager.init_all(settings)
+    manager.post_init_integration()
     manager.register_fastapi(app)
 
 def create_app() -> FastAPI:
