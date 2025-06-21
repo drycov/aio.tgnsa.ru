@@ -14,10 +14,10 @@ from app.core.config import debug_mode, logger, settings
 from app.core.errors import (general_error_handler, http_error_handler,
                              validation_error_handler)
 from app.core.patchs import ProjectPaths
+from app.plugins.manager import PluginManager
 
 EXCLUDE_PATHS: List[str] = [
     "/",
-    "/health",
     "/metrics",
     "/favicon.ico",
 ]
@@ -30,6 +30,13 @@ EXCLUDE_PATTERNS: List[Pattern] = [
     re.compile(r"^/api/system-info$"),
 ]
 
+
+
+def setup_plugins(app: FastAPI):
+    manager = PluginManager.create_once()
+    manager.load_all()
+    manager.init_all(settings)
+    manager.register_fastapi(app)
 
 def create_app() -> FastAPI:
     """
@@ -74,11 +81,8 @@ def create_app() -> FastAPI:
 
     # Роутинг
     app.include_router(api_router)
-
-    @app.get("/health", tags=["System"])
-    async def health_check():
-        """Проверка статуса сервиса."""
-        return {"status": "ok"}
+    
+    setup_plugins(app)
 
     return app
 

@@ -71,3 +71,5 @@ pytz
 psutil
 typer
 rich
+tomli-w
+tomli

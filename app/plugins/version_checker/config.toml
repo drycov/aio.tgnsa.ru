@@ -1,0 +1,3 @@
+enabled = true
+path = "/version"
+summary_path = "/"

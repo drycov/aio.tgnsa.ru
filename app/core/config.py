@@ -15,6 +15,9 @@ from app.utils.version import __version__
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+APP_DIR = BASE_DIR / "app"
+PLUGIN_DIR = APP_DIR / "plugins"
+PLUGIN_CONGIG_DIR = BASE_DIR / "config"
 DATA_DIR = BASE_DIR / "data"
 ENV_PATH = BASE_DIR / ".env"
 SUPPORTED_ENGINES = {"sqlite", "postgres", "mysql", "mariadb"}
@@ -32,7 +35,6 @@ class AppSettings(BaseSettings):
 
     Attributes:
         APP_NAME (str): Название приложения
-        DEBUG (bool): Режим отладки
         VERSION (str): Версия приложения
         DESCRIPTION (str): Описание приложения
         DEFAULT_TIMEZONE (str): Часовой пояс по умолчанию
@@ -42,7 +44,11 @@ class AppSettings(BaseSettings):
         DEFAULT_USER_FULLNAME (str): Полное имя пользователя по умолчанию
     """
     APP_NAME: str = "TG NMS"
-    DESCRIPTION: str = "**ZeusBill** – микробиллинг для мини-ISP. Автоматизация расчётов, управление абонентами, интеграция с платежными системами и сетевым оборудованием. Простота, надёжность, масштабируемость."
+    DESCRIPTION: str = (
+        "**TG NMS** — модульная система управления сетевой инфраструктурой для малых и средних ISP. "
+        "Включает мониторинг, автоматизацию расчётов, управление абонентами, интеграцию с платёжными системами "
+        "и сетевыми устройствами. Ориентирована на надёжность, простоту и масштабируемость."
+    )
     DEFAULT_USER: str = "root"
     DEFAULT_PASSWORD: str = "root"
     DEFAULT_EMAIL: str = "admin@example.com"
@@ -80,7 +86,7 @@ class PostgresConfig(BaseSettings):
     HOST: str = Field(..., env="POSTGRES_HOST")
     PORT: int = Field(5432, env="POSTGRES_PORT")
     USER: str = Field(..., env="POSTGRES_USER")
-    PASSWORD: str = Field(..., env="POSTGRES_PASSWORD")
+    PASSWORD: SecretStr = Field(..., env="POSTGRES_PASSWORD")
     NAME: str = Field(..., env="POSTGRES_DB")
 
     def dsn(self, driver: Optional[str] = None) -> str:
@@ -131,7 +137,7 @@ class MySQLConfig(BaseSettings):
     HOST: str = Field(..., env="MYSQL_HOST")
     PORT: int = Field(3306, env="MYSQL_PORT")
     USER: str = Field(..., env="MYSQL_USER")
-    PASSWORD: str = Field(..., env="MYSQL_PASSWORD")
+    PASSWORD: SecretStr = Field(..., env="MYSQL_PASSWORD")
     NAME: str = Field(..., env="MYSQL_DB")
 
     def dsn(self) -> str:
@@ -188,7 +194,7 @@ class DBSettings(BaseSettings):
 
 
 class BotConfig(BaseSettings):
-    TOKEN: str
+    TOKEN: SecretStr
     # .env: ADMINS=123456789,987654321
     ADMINS: Set[int] = Field(
         default_factory=set,
@@ -263,7 +269,7 @@ class MongoDBConfig(BaseSettings):
     DB_NAME: str = Field(default="", env="MONGO_DB_NAME")
     PORT: Optional[int] = Field(default=None, env="MONGO_PORT")
     USER: Optional[str] = Field(default=None, env="MONGO_USER")
-    PASSWORD: Optional[str] = Field(default=None, env="MONGO_PASSWORD")
+    PASSWORD: Optional[SecretStr] = Field(default=None, env="MONGO_PASSWORD")
     USE_SRV: bool = Field(False, env="MONGO_USE_SRV")
 
     def dsn(self) -> str:
@@ -298,7 +304,7 @@ class MongoDBConfig(BaseSettings):
 class RedisConfig(BaseSettings):
     HOST: str = Field("localhost", env="REDIS_HOST")
     PORT: int = Field(6379, env="REDIS_PORT")
-    PASSWORD: str | None = Field(None, env="REDIS_PASSWORD")
+    PASSWORD: SecretStr | None = Field(None, env="REDIS_PASSWORD")
     DB: int = Field(0, env="REDIS_DB")
     USE_TLS: bool = Field(False, env="CACHE_REDIS_USE_TLS")
 
@@ -319,7 +325,7 @@ class RedisConfig(BaseSettings):
 class CacheRedisConfig(BaseSettings):
     HOST: str = Field("localhost", env="CACHE_REDIS_HOST")
     PORT: int = Field(6379, env="CACHE_REDIS_PORT")
-    PASSWORD: Optional[str] = Field(None, env="CACHE_REDIS_PASSWORD")
+    PASSWORD: Optional[SecretStr] = Field(None, env="CACHE_REDIS_PASSWORD")
     DB: int = Field(1, env="CACHE_REDIS_DB")
     USE_TLS: bool = Field(False, env="CACHE_REDIS_USE_TLS")
 
@@ -508,7 +514,7 @@ class EmailConfig(BaseSettings):
     SMTP_HOST: str = Field(..., env="EMAIL_SMTP_HOST")
     SMTP_PORT: int = Field(..., env="EMAIL_SMTP_PORT")
     SMTP_USER: str = Field(..., env="EMAIL_SMTP_USER")
-    SMTP_PASSWORD: str = Field(..., env="EMAIL_SMTP_PASSWORD")
+    SMTP_PASSWORD: SecretStr = Field(..., env="EMAIL_SMTP_PASSWORD")
     FROM_EMAIL: Optional[str] = Field(default=None, env="EMAIL_FROM")
     ENABLE_TLS: bool = Field(default=True, env="EMAIL_ENABLE_TLS")
     SUPPORT_EMAIL: Optional[str] = Field(
@@ -557,6 +563,7 @@ class Settings(BaseSettings):
     email: EmailConfig = Field(default_factory=EmailConfig)
     api: ApiServerConfig = Field(default_factory=ApiServerConfig)
     app: AppSettings = Field(default_factory=AppSettings)
+
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Config Viewer</title>
+    <link rel="icon" type="image/png" href="{{ favicon_url }}">
+    <link rel="stylesheet" href="{{ static_url }}/css/styles.css">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- jQuery JSON Viewer -->
+    <link rel="stylesheet" href="{{ static_url }}/json-viewer/jquery.json-viewer.css" />
+    <script src="{{ static_url }}/json-viewer/jquery.json-viewer.js"></script>
+
+    <script src="{{ static_url }}/js/app.js" defer></script>
+</head>
+<body>
+    <h1>🔧 System Configuration</h1>
+
+    <!-- JSON Viewer Container -->
+     <pre id="json-renderer"></pre>
+
+    <!-- Simple Table for Top-Level Key-Value -->
+
+    <button class="theme-toggle" onclick="toggleTheme()" title="Переключить тему">
+        🌓
+    </button>
+
+    <script>
+        const configData = {{ config | tojson }};
+        $(document).ready(function () {
+            $("#json-renderer").jsonViewer(configData, {
+                collapsed: false,
+                rootCollapsable: true,
+                withQuotes: true,
+                withLinks: false
+            });
+        });
+    </script>
+</body>
+</html>

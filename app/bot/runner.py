@@ -3,20 +3,30 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core import initialize_storage
 from app.core.config import logger, settings
 from app.core.db import get_session
+from app.plugins.manager import PluginManager
 
 # === Инициализация ===
 storage = initialize_storage()
 session = get_session()
-bot = Bot(token=settings.bot.TOKEN,
+bot = Bot(token=settings.bot.TOKEN.get_secret_value(),
           default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=storage, session=session, bot=bot)
 
 # Подключение middlewares, filters, routers
+
+
+
+def setup_plugins(dp: Dispatcher):
+    manager = PluginManager.create_once()
+    manager.load_all()
+    manager.init_all(settings)
+    manager.register_aiogram(dp)
 
 
 async def setup_dispatcher():
@@ -27,6 +37,7 @@ async def setup_dispatcher():
                            settings=settings, logger=logger)
     register_handlers(dp, db_sessionmaker=session,
                       settings=settings, logger=logger)
+    setup_plugins(dp)
 
 
 async def on_startup():
