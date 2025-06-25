@@ -1,0 +1,55 @@
+2025-06-25 21:52:59.651 | INFO     | app.plugins.manager:_load_plugin_config_file:208 - 📦 Loaded plugin configs from: /home/drykov/my_projects/aio.tgnsa.ru/config/plugins.toml
+2025-06-25 21:52:59.654 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: plugins_ui (core:app.plugins.plugins_ui)
+2025-06-25 21:52:59.655 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: healthcheck (core:app.plugins.healthcheck)
+2025-06-25 21:52:59.656 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: config_viewer (core:app.plugins.config_viewer)
+2025-06-25 21:52:59.657 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: netstat_ui (local:app.plugins.netstat_ui)
+2025-06-25 21:52:59.657 | DEBUG    | app.plugins.manager:_load_local_plugins:123 - 🔁 Skipping local plugin 'healthcheck' (core plugin exists)
+2025-06-25 21:52:59.658 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: dns_checker (local:app.plugins.dns_checker)
+2025-06-25 21:52:59.658 | DEBUG    | app.plugins.manager:_load_local_plugins:123 - 🔁 Skipping local plugin 'config_viewer' (core plugin exists)
+2025-06-25 21:52:59.659 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: traceroute_ui (local:app.plugins.traceroute_ui)
+2025-06-25 21:52:59.659 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: version_checker (local:app.plugins.version_checker)
+2025-06-25 21:52:59.659 | DEBUG    | app.plugins.manager:_load_local_plugins:123 - 🔁 Skipping local plugin 'plugins_ui' (core plugin exists)
+2025-06-25 21:52:59.660 | INFO     | app.plugins.manager:_add_plugin:350 - ✅ Registered plugin: middleware_viewer (local:app.plugins.middleware)
+2025-06-25 21:52:59.666 | INFO     | app.plugins.manager:load_all:83 - ✅ Loaded 8 plugins
+2025-06-25 21:52:59.667 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: config_viewer
+2025-06-25 21:52:59.668 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: middleware_viewer
+2025-06-25 21:52:59.669 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: netstat_ui
+2025-06-25 21:52:59.671 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: dns_checker
+2025-06-25 21:52:59.675 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: traceroute_ui
+2025-06-25 21:52:59.676 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: version_checker
+2025-06-25 21:52:59.677 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: plugins_ui
+2025-06-25 21:52:59.678 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: healthcheck
+2025-06-25 21:52:59.678 | DEBUG    | app.plugins.manager:post_init_integration:65 - 🔗 dns_checker зарегистрировал проверки в healthcheck
+2025-06-25 21:52:59.679 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: config_viewer
+2025-06-25 21:52:59.679 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: middleware_viewer
+2025-06-25 21:52:59.680 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: netstat_ui
+2025-06-25 21:52:59.682 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: dns_checker
+2025-06-25 21:52:59.686 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: traceroute_ui
+2025-06-25 21:52:59.687 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: version_checker
+2025-06-25 21:52:59.688 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: plugins_ui
+2025-06-25 21:52:59.689 | DEBUG    | app.plugins.manager:register_fastapi:428 - 🌐 Registered FastAPI routes: healthcheck
+2025-06-25 21:52:59.690 | INFO     | app.core.utils.utils:initialize_storage:15 - Redis-клиент успешно подключен
+2025-06-25 21:52:59.722 | SUCCESS  | app.cli:_run_service:89 - 🚀 Starting Telegram Bot...
+2025-06-25 21:52:59.722 | DEBUG    | asyncio.selector_events:__init__:64 - Using selector: EpollSelector
+2025-06-25 21:52:59.731 | INFO     | app.bot.middlewares.registry:register:101 - 🔧 Регистрация middleware...
+2025-06-25 21:52:59.732 | DEBUG    | app.bot.middlewares.registry:register:105 - ✅ DependencyInjector подключен
+2025-06-25 21:52:59.733 | DEBUG    | app.bot.middlewares.registry:register:114 - ✅ Middleware зарегистрирован: CommandLoggingMiddleware
+2025-06-25 21:52:59.733 | DEBUG    | app.bot.middlewares.registry:register:114 - ✅ Middleware зарегистрирован: SmartRateLimitMiddleware
+2025-06-25 21:52:59.733 | DEBUG    | app.bot.middlewares.registry:register:114 - ✅ Middleware зарегистрирован: DatabaseMiddleware
+2025-06-25 21:52:59.735 | DEBUG    | app.bot.middlewares.registry:register:114 - ✅ Middleware зарегистрирован: ProfilerMiddleware
+2025-06-25 21:52:59.735 | INFO     | app.bot.middlewares.registry:register:118 - 🏁 Завершена регистрация 4 middleware
+2025-06-25 21:52:59.735 | DEBUG    | app.bot.handlers:register_handlers:30 - ✅ Роутеры зарегистрированы
+2025-06-25 21:52:59.735 | DEBUG    | app.bot.handlers:register_handlers:39 - 🔧 workflow_data обновлена
+2025-06-25 21:52:59.735 | WARNING  | app.plugins.manager:load_all:72 - ⚠️ PluginManager already initialized
+2025-06-25 21:52:59.736 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: config_viewer
+2025-06-25 21:52:59.736 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: middleware_viewer
+2025-06-25 21:52:59.737 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: netstat_ui
+2025-06-25 21:52:59.738 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: dns_checker
+2025-06-25 21:52:59.741 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: traceroute_ui
+2025-06-25 21:52:59.742 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: version_checker
+2025-06-25 21:52:59.742 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: plugins_ui
+2025-06-25 21:52:59.743 | INFO     | app.plugins.manager:_init_plugin:260 - 🛠️ Initialized plugin: healthcheck
+2025-06-25 21:52:59.743 | DEBUG    | app.plugins.manager:post_init_integration:65 - 🔗 dns_checker зарегистрировал проверки в healthcheck
+2025-06-25 21:52:59.743 | INFO     | app.bot.runner:on_startup:48 - 🟢 Бот запускается...
+2025-06-25 21:52:59.747 | INFO     | aiogram.dispatcher.dispatcher:start_polling:566 - Start polling
+2025-06-25 21:53:00.133 | INFO     | aiogram.dispatcher.dispatcher:_polling:363 - Run polling for bot @tgnmsbot id=7761402264 - 'tgnmsbot'

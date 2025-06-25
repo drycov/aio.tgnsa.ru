@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core import initialize_storage
 from app.core.config import logger, settings
-from app.core.db import get_session
+from app.core.db import get_sessionmaker
 from app.plugins.manager import PluginManager
 
 # === Инициализация ===
 storage = initialize_storage()
-session = get_session()
+session = get_sessionmaker()
 bot = Bot(token=settings.bot.TOKEN.get_secret_value(),
           default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=storage, session=session, bot=bot)
@@ -28,7 +28,9 @@ def setup_plugins(dp: Dispatcher):
     manager.init_all(settings)
     manager.post_init_integration()
 
-    manager.register_aiogram(dp)
+    for plugin in manager.sorted_plugins:
+        if getattr(plugin, "enabled", False) and hasattr(plugin, "register_aiogram"):
+            plugin.register_aiogram(dp)
 
 
 async def setup_dispatcher():

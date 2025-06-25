@@ -19,3 +19,13 @@ ENV_VARS_TO_CLEAR = [
     "TFA_ENABLE", "TFA_MANDATORY",
     "TIMEZONE", "MAX_PAYLOAD_SIZE_MB", "EXCLUDED_SUBSTRINGS",
 ]
+
+from pathlib import Path
+import os
+
+DEFAULT_CONFIG_PATHS = [
+    Path(os.getenv("TGNMS_ENV_FILE", "")),             # явный путь из ENV
+    Path.cwd() / ".tgnmsrc",                           # локальный в проекте
+    Path.home() / ".tgnmsrc",                          # пользовательский
+    Path("/etc/tgnms/.tgnmsrc"),                       # системный (для Docker/K8s)
+]

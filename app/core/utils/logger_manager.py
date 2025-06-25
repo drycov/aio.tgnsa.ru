@@ -2,77 +2,152 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Optional, Union
+from logging.handlers import RotatingFileHandler
 
-from loguru import logger
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.theme import Theme
 
-LOG_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
+# === Цветовая тема для Rich ===
+RICH_THEME = Theme({
+        "logging.level.trace": "dim white",
+    "logging.level.notice": "bold magenta",
+    "logging.level.success": "bold green",
+    "logging.level.debug": "dim blue",
+    "logging.level.info": "bold cyan",
+    "logging.level.warning": "bold yellow",
+    "logging.level.error": "bold red",
+    "logging.level.critical": "bold white on red",
+    "logging.time": "dim",
+    "logging.name": "cyan",
+})
 
-try:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    if not os.access(LOG_DIR, os.W_OK):
-        raise PermissionError
-except Exception:
-    LOG_DIR = Path("/tmp/tgnms_logs")
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"⚠️ Переключение логирования в {LOG_DIR}", file=sys.stderr)
+# === Кастомные уровни ===
+# NOTICE_LEVEL_NUM = 21
+# SUCCESS_LEVEL_NUM = 25
+# TRACE_LEVEL_NUM = 5
+
+# Определяем кастомные уровни
+CUSTOM_LOG_LEVELS = {
+    'TRACE': 21,
+    'NOTICE': 23,
+    'SUCCESS': 25,
+}
+
+# logging.addLevelName(TRACE_LEVEL_NUM, "TRACE")
+
+# logging.addLevelName(NOTICE_LEVEL_NUM, "NOTICE")
+# logging.addLevelName(SUCCESS_LEVEL_NUM, "SUCCESS")
+
+# === Путь по умолчанию для логов ===
+DEFAULT_LOG_DIRS = [
+    Path(__file__).resolve().parent.parent.parent / "logs",
+    Path("/var/log/tgnms"),
+    Path("/tmp/tgnms_logs"),
+]
 
 
-class InterceptHandler(logging.Handler):
-    def emit(self, record):
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
+# === Расширение базового логгера методами success/notice ===
+def patch_logger_with_custom_levels():
+    def _make_custom_method(level_name: str, level_num: int):
+        def log_method(self, message, *args, **kwargs):
+            if self.isEnabledFor(level_num):
+                self._log(level_num, message, args, **kwargs)
+        return log_method
 
-        logger.opt(depth=6, exception=record.exc_info).log(
-            level, record.getMessage())
+    for name, num in CUSTOM_LOG_LEVELS.items():
+        logging.addLevelName(num, name)
+        setattr(logging.Logger, name.lower(), _make_custom_method(name, num))
 
 
+patch_logger_with_custom_levels()
+
+
+# === Основной логгер-менеджер ===
 class LoggerManager:
-    def __init__(self, name: str = "app", debug: bool = False):
+    def __init__(
+        self,
+        name: str = "app",
+        debug: bool = False,
+        log_dir: Optional[Union[str, Path]] = None,
+        log_level: Optional[str] = None,
+        enable_file_logging: bool = True,
+        enable_console_logging: bool = True,
+        max_file_size: int = 10 * 1024 * 1024,
+        backup_count: int = 5,
+    ):
         self.name = name
         self.debug = debug
-        self.log_file_path = LOG_DIR / f"{self.name}.log"
+        self.log_level = (log_level or "DEBUG" if debug else "INFO").upper()
+        self.enable_file_logging = enable_file_logging
+        self.enable_console_logging = enable_console_logging
+        self.max_file_size = max_file_size
+        self.backup_count = backup_count
 
-        self._setup_logger()
+        self.log_dir = self._resolve_log_dir(log_dir)
+        self.logger = self._setup_logger()
 
-    def _setup_logger(self):
-        logger.remove()
+    def _resolve_log_dir(self, log_dir: Optional[Union[str, Path]]) -> Path:
+        if log_dir:
+            path = Path(log_dir).expanduser()
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+                if os.access(path, os.W_OK):
+                    return path
+            except Exception as e:
+                print(f"⚠️ Невозможно создать каталог логов: {e}", file=sys.stderr)
 
-        log_format = (
-            "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-            "<level>{level: <8}</level> | "
-            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-            "<level>{message}</level>"
+        for dir_path in DEFAULT_LOG_DIRS:
+            try:
+                dir_path.mkdir(parents=True, exist_ok=True)
+                if os.access(dir_path, os.W_OK):
+                    return dir_path
+            except Exception:
+                continue
+
+        fallback = Path.cwd() / "logs"
+        fallback.mkdir(parents=True, exist_ok=True)
+        print(f"⚠️ Все варианты директорий недоступны, логи будут в {fallback}", file=sys.stderr)
+        return fallback
+
+    def _setup_logger(self) -> logging.Logger:
+        logger = logging.getLogger(self.name)
+        logger.setLevel(getattr(logging, self.log_level, logging.INFO))
+        logger.handlers.clear()
+
+        formatter = logging.Formatter(
+            fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
         )
 
-        # Консольный лог
-        logger.add(
-            sys.stdout,
-            enqueue=True,
-            backtrace=True,
-            diagnose=True,
-            level="DEBUG" if self.debug else "INFO",
-            colorize=True,
-            format=log_format,
-        )
+        # === Файловое логирование ===
+        if self.enable_file_logging:
+            file_handler = RotatingFileHandler(
+                self.log_dir / f"{self.name}.log",
+                maxBytes=self.max_file_size,
+                backupCount=self.backup_count,
+                encoding="utf-8"
+            )
+            file_handler.setFormatter(formatter)
+            file_handler.setLevel(getattr(logging, self.log_level))
+            logger.addHandler(file_handler)
 
-        # Файловый лог
-        logger.add(
-            self.log_file_path,
-            rotation="10 MB",
-            retention="7 days",
-            compression="zip",
-            backtrace=True,
-            diagnose=True,
-            level="DEBUG" if self.debug else "INFO",
-            encoding="utf-8",
-            format=log_format,  # <-- Явный формат для файлового логгера
-        )
+        # === Консольное логирование с Rich ===
+        if self.enable_console_logging:
+            rich_console = Console(theme=RICH_THEME)
+            console_handler = RichHandler(
+                console=rich_console,
+                markup=True,
+                rich_tracebacks=self.debug,
+                show_path=self.debug,
+                tracebacks_show_locals=self.debug,
+            )
+            console_handler.setFormatter(logging.Formatter(fmt="%(message)s"))
+            console_handler.setLevel(getattr(logging, self.log_level))
+            logger.addHandler(console_handler)
 
-        if not any(isinstance(h, InterceptHandler) for h in logging.root.handlers):
-            logging.root.addHandler(InterceptHandler())
-        logging.root.setLevel(0)
+        return logger
 
-    def get_logger(self):
-        return logger.bind(name=self.name)
+    def get_logger(self) -> logging.Logger:
+        return self.logger

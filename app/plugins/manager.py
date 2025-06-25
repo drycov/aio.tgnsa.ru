@@ -3,6 +3,7 @@ import tempfile
 import importlib
 import logging
 import sys
+import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Type
 from collections import defaultdict
@@ -12,11 +13,8 @@ import tomli_w
 import tomllib
 from fastapi import APIRouter, FastAPI
 
-from app.core.config import BASE_DIR, PLUGIN_CONGIG_DIR, APP_DIR
+from app.core.config import BASE_DIR, PLUGIN_CONGIG_DIR, APP_DIR,logger
 from app.plugins.base import Plugin
-
-logger = logging.getLogger("PluginManager")
-
 
 class PluginManager:
     _instance: Optional["PluginManager"] = None
@@ -28,28 +26,28 @@ class PluginManager:
 
         self.plugin_dir = plugin_dir or APP_DIR / "plugins"
         self.plugin_config_file = plugin_config_file or (PLUGIN_CONGIG_DIR / "plugins.toml")
-        
+
         # Plugin storage
         self.plugins: Dict[str, Plugin] = {}
         self.plugin_configs: Dict[str, dict] = {}
         self.core_plugins: Dict[str, Plugin] = {}
         self.sorted_plugins: List[Plugin] = []
-        
+
         # Core plugins that should always be loaded
         self.core_plugin_modules = [
             "app.plugins.plugins_ui",
             "app.plugins.healthcheck",
             "app.plugins.config_viewer"
         ]
-        
+
         # Cache for performance
         self._config_cache: Dict[str, dict] = {}
         self._module_cache: Dict[str, Any] = {}
-        
+
         PluginManager._instance = self
 
     # --- Core Methods ---
-    
+
     def post_init_integration(self) -> None:
         """Связывает плагины после инициализации, например, регистрацию в healthcheck."""
         health_plugin = self.plugins.get("healthcheck")
@@ -68,32 +66,43 @@ class PluginManager:
                 except Exception as e:
                     logger.warning(f"⚠️ {plugin.name} не смог зарегистрировать healthcheck: {e}")
 
-        
     def load_all(self) -> None:
         """Load all plugins from all sources and resolve dependencies."""
         if self._initialized:
             logger.warning("⚠️ PluginManager already initialized")
             return
-            
-        logger.info(f"🔍 Scanning plugin directory: {self.plugin_dir}")
-        
+
+        logger.debug(f"🔍 Scanning plugin directory: {self.plugin_dir}")
+
         self._load_plugin_config_file()
         self._load_core_plugins()
         self._load_local_plugins()
         self._load_entrypoint_plugins()
         self._resolve_dependencies()
-        
-        logger.info(f"✅ Loaded {len(self.sorted_plugins)} plugins")
+
+        logger.success(f"✅ Loaded {len(self.sorted_plugins)} plugins")
         self._initialized = True
 
     def init_all(self, settings: Any) -> None:
         """Initialize all loaded plugins with their configurations."""
         if not self._initialized:
             raise RuntimeError("PluginManager not initialized. Call load_all() first")
-            
+
         for plugin in self.sorted_plugins:
             self._init_plugin(plugin, settings)
 
+        self._maybe_start_metrics_aggregator()
+
+    def _maybe_start_metrics_aggregator(self) -> None:
+        metrics_plugin = self.plugins.get("metrics")
+        if metrics_plugin and getattr(metrics_plugin, "enabled", False):
+            try:
+                subprocess.Popen([
+                    sys.executable, "-m", "app.plugins.metrics.aggregator"
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                logger.success("🚀 Started metrics aggregator subprocess")
+            except Exception as e:
+                logger.warning(f"❌ Failed to start metrics aggregator subprocess: {e}")
     # --- Plugin Loading ---
 
     def _load_core_plugins(self) -> None:
@@ -102,7 +111,7 @@ class PluginManager:
             try:
                 self._load_plugin_from_module(module_path, source_prefix="core")
             except Exception as e:
-                logger.exception(f"❌ Failed to load core plugin '{module_path}': {e}")
+                logger.error(f"❌ Failed to load core plugin '{module_path}': {e}")
 
     def _load_local_plugins(self) -> None:
         """Load plugins from the local plugins directory."""
@@ -117,7 +126,7 @@ class PluginManager:
             try:
                 self._load_plugin_from_module(module_path, source_prefix="local")
             except Exception as e:
-                logger.exception(f"❌ Failed to load plugin '{plugin_module}': {e}")
+                logger.error(f"❌ Failed to load plugin '{plugin_module}': {e}")
 
     def _load_entrypoint_plugins(self) -> None:
         """Load plugins registered via package entry points."""
@@ -248,7 +257,7 @@ class PluginManager:
                 return
 
             plugin.init(config)
-            logger.info(f"🛠️ Initialized plugin: {plugin.name}")
+            logger.debug(f"🛠️ Initialized plugin: {plugin.name}")
             
         except Exception as e:
             logger.error(f"⚠️ Plugin '{plugin.name}' init failed: {e}")
@@ -338,7 +347,7 @@ class PluginManager:
             return
             
         self.plugins[plugin.name] = plugin
-        logger.info(f"✅ Registered plugin: {plugin.name} ({source})")
+        # logger.success(f"✅ Registered plugin: {plugin.name} ({source})")
 
     def reload_plugin(self, plugin_name: str, app: Any = None, dp: Any = None, scheduler: Any = None) -> bool:
         """Reload a plugin and its routes/handlers."""
@@ -366,11 +375,11 @@ class PluginManager:
             # Reregister
             self._register_plugin(plugin, app, dp, scheduler)
             
-            logger.info(f"🔁 Successfully reloaded plugin: {plugin_name}")
+            logger.success(f"🔁 Successfully reloaded plugin: {plugin_name}")
             return True
             
         except Exception as e:
-            logger.exception(f"❌ Failed to reload plugin '{plugin_name}': {e}")
+            logger.error(f"❌ Failed to reload plugin '{plugin_name}': {e}")
             return False
 
     def _reload_plugin_module(self, plugin: Plugin) -> bool:
@@ -380,7 +389,7 @@ class PluginManager:
         try:
             return self._extracted_from__reload_plugin_module_6(module_path, plugin)
         except Exception as e:
-            logger.exception(f"❌ Failed to reload module '{module_path}': {e}")
+            logger.error(f"❌ Failed to reload module '{module_path}': {e}")
             return False
 
     # TODO Rename this here and in `_reload_plugin_module`

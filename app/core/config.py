@@ -622,3 +622,14 @@ debug_mode = resolve_debug_mode()
 
 # --- Logger Initialization ---
 logger = LoggerManager(name=APP_ROLE, debug=debug_mode).get_logger()
+
+logger.debug("Отладка (DEBUG)")
+logger.info("Инфо (INFO)")
+logger.trace("Детальная трассировка (TRACE)")
+logger.notice("Обратите внимание (NOTICE)")
+logger.success("Операция завершена (SUCCESS)")
+logger.warning("Предупреждение (WARNING)")
+logger.error("Ошибка (ERROR)")
+logger.critical("Критическая ошибка (CRITICAL)")
+
+

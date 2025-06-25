@@ -4,11 +4,15 @@ from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
 from aiogram.types import Message, TelegramObject
-
 from app.bot.constants.messages import Messages
 
 
 class BannedCheckMiddleware(BaseMiddleware):
+    """
+    Middleware для проверки, заблокирован ли пользователь.
+    Если пользователь заблокирован — сообщение не обрабатывается.
+    """
+
     def __init__(self, logger: Logger):
         self.logger = logger
 
@@ -20,16 +24,22 @@ class BannedCheckMiddleware(BaseMiddleware):
     ) -> Any:
         user = data.get("user")
         tg_id = getattr(user, "tg_id", None)
+        is_banned = getattr(user, "is_banned", False)
+        is_superuser = data.get("is_superuser", False)
 
-        if data.get("is_superuser"):
-            self.logger.debug(
-                f"🔁 Суперпользователь — пропуск проверки блокировки для tg_id={tg_id}")
+        if is_superuser:
+            self.logger.debug(f"🔁 Суперпользователь tg_id={tg_id} — игнор блокировки")
             return await handler(event, data)
 
-        if user and getattr(user, "is_banned", False):
-            self.logger.warning(
-                f"⛔️ Заблокированный пользователь: tg_id={tg_id}")
-            await event.answer(Messages.YOU_ARE_BANNED.value)
-            return
+        if user and is_banned:
+            self.logger.warning(f"⛔️ Заблокирован tg_id={tg_id} — доступ запрещён")
 
+            if isinstance(event, Message):
+                await event.answer(Messages.YOU_ARE_BANNED.value)
+            else:
+                self.logger.debug("⚠️ Event не поддерживает .answer(), пропуск уведомления")
+
+            return  # Прекращаем обработку
+
+        # Пользователь не заблокирован
         return await handler(event, data)

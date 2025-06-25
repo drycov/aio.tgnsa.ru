@@ -39,3 +39,6 @@ async def session_from_generator(
         yield session
     finally:
         await session.close()
+
+def get_sessionmaker() -> async_sessionmaker:
+    return SessionLocal

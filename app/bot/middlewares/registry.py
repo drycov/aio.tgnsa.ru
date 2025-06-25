@@ -1,33 +1,32 @@
 import inspect
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 from aiogram import BaseMiddleware, Dispatcher
 from pydantic import BaseModel
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.bot.middlewares.role import RoleMiddleware
-from app.bot.middlewares.superuser import SuperuserBypassMiddleware
+from app.bot.middlewares.database import DatabaseMiddleware
 from app.bot.middlewares.throttling import SmartRateLimitMiddleware
-from app.core.config import Settings, settings
+from app.core.config import Settings
 from app.core.utils.logger_manager import LoggerManager
 
 
 class MiddlewareConfig(BaseModel):
-    """Конфигурация middleware"""
     rate_limit: float = 1.0
     superusers: List[int] = []
     role_access: Dict[str, List[str]] = {}
     enable_profiler: bool = False
     enable_tfa: bool = False
     max_spam: int = 5
+    priorities: Dict[str, int] = {}  # 👈 добавлено
 
 
 class DependencyInjector(BaseMiddleware):
-    """Универсальный инжектор зависимостей"""
+    """Инжектор зависимостей в `data` словарь хендлера."""
 
-    def __init__(self, **dependencies):
+    def __init__(self, **dependencies: Any):
         self.dependencies = dependencies
 
     async def __call__(self, handler, event, data):
@@ -36,137 +35,158 @@ class DependencyInjector(BaseMiddleware):
 
 
 class MiddlewareRegistry:
-    """Централизованная система регистрации middleware"""
+    """Централизованная система регистрации middleware."""
 
     def __init__(
         self,
         dp: Dispatcher,
         db_sessionmaker: async_sessionmaker,
-        settings: BaseModel,
+        settings: Settings,
         logger: LoggerManager,
         redis: Optional[Redis] = None,
-        config: Optional[MiddlewareConfig] = None
+        config: Optional[MiddlewareConfig] = None,
     ):
         self.dp = dp
         self.logger = logger
         self.config = config or MiddlewareConfig()
+        self.redis = redis
+        self.settings = settings
 
         self.core_dependencies = {
             "db": db_sessionmaker,
             "settings": settings,
             "logger": logger,
             "redis": redis,
-            "config": self.config
+            "config": self.config,
         }
 
-        # Порядок имеет значение!
-        self.middleware_priority = [
-            "CommandLoggingMiddleware",
-            "SuperuserBypassMiddleware",
-            "SmartRateLimitMiddleware",
-            "AuthMiddleware",
-            "RoleMiddleware",
-            "BannedUserMiddleware",
-            "TFAMiddleware",
-            "ProfilerMiddleware",
-        ]
+        self.middleware_priority = self._build_priority_order()
 
-    def _init_middleware(self, middleware_class: Type[BaseMiddleware], **kwargs) -> Optional[BaseMiddleware]:
-        """Инициализация middleware с обработкой ошибок"""
-        try:
-            kwargs["logger"] = self.logger
-            return middleware_class(**kwargs)
-        except Exception as e:
-            self.logger.error(
-                f"Middleware init failed for {middleware_class.__name__}: {e}")
-            return None
 
-    async def register(self):
-        """Основной метод регистрации middleware"""
-        self.logger.info("🛠 Starting middleware registration...")
-
-        # 1. Регистрация зависимостей
-        self.dp.message.middleware(
-            DependencyInjector(**self.core_dependencies))
-        self.logger.debug("✅ Core dependencies injected")
-
-        # 2. Регистрация middleware по приоритету
-        registered = set()
-
-        for mw_name in self.middleware_priority:
-            if mw_instance := self._get_middleware_instance(mw_name):
-                self.dp.message.middleware(mw_instance)
-                registered.add(mw_name)
-                self.logger.debug(f"✅ {mw_name} registered")
-
-        # 3. Проверка что все обязательные middleware зарегистрированы
-        self._validate_registration(registered)
-
-        self.logger.info(
-            f"🏁 Completed! Registered {len(registered)} middleware")
-
-    def _get_middleware_instance(self, mw_name: str) -> Optional[BaseMiddleware]:
-        """Фабрика для создания экземпляров middleware"""
-        if mw_name == "SuperuserBypassMiddleware":
-            return self._init_middleware(
-                SuperuserBypassMiddleware,
-                superusers=self.config.superusers
-            )
-
-        if mw_name == "SmartRateLimitMiddleware":
-            return self._init_middleware(
-                SmartRateLimitMiddleware,
+        # Явно регистрируемые middleware
+        # ...
+        self.custom_factories: Dict[str, Callable[[], BaseMiddleware]] = {
+            "SmartRateLimitMiddleware": lambda: SmartRateLimitMiddleware(
                 rate_limit=self.config.rate_limit,
                 max_spam=self.config.max_spam,
                 cooldown=timedelta(minutes=5),
-                exempt_user_ids=self.config.superusers
+                exempt_user_ids=self.config.superusers,
+                logger=self.logger
+            ),
+            "DatabaseMiddleware": lambda: DatabaseMiddleware(
+                sessionmaker=self.core_dependencies["db"],  # ✅ здесь нужный sessionmaker
+                logger=self.logger,
+                auto_commit=True  # или False, по политике
             )
-
-        if mw_name == "RoleMiddleware":
-            return self._init_middleware(
-                RoleMiddleware,
-                required_roles=self.config.role_access
-            )
-
-        # Для остальных middleware используем автоматическое создание
-        try:
-            if module := globals().get(mw_name.replace("Middleware", "").lower()):
-                for name, obj in inspect.getmembers(module, inspect.isclass):
-                    if name == mw_name and issubclass(obj, BaseMiddleware):
-                        return self._init_middleware(obj)
-        except Exception as e:
-            self.logger.warning(f"Auto-registration failed for {mw_name}: {e}")
-
-        return None
-
-    def _validate_registration(self, registered: set):
-        """Проверка что все критические middleware зарегистрированы"""
-        critical_middleware = {
-            "SuperuserBypassMiddleware",
-            "SmartRateLimitMiddleware",
-            "RoleMiddleware"
         }
 
-        if missing := critical_middleware - registered:
-            self.logger.error(f"Critical middleware missing: {missing}")
-            raise RuntimeError(
-                f"Failed to register critical middleware: {missing}")
+
+    def _build_priority_order(self) -> List[str]:
+        """Построение списка middleware с учётом приоритета."""
+        default = {
+            "CommandLoggingMiddleware": 50,
+            "SmartRateLimitMiddleware": 10,
+            "TFAMiddleware": 30,
+            "ProfilerMiddleware": 70,
+            "DatabaseMiddleware":15,
+            
+        }
+
+        priorities = {**default, **self.config.priorities}
+        return [k for k, _ in sorted(priorities.items(), key=lambda item: item[1])]
 
 
-# Пример использования
+    async def register(self) -> None:
+        """Регистрация всех middleware."""
+        self.logger.info("🔧 Регистрация middleware...")
+
+        # Core dependencies
+        self.dp.message.middleware(DependencyInjector(**self.core_dependencies))
+        self.logger.debug("✅ DependencyInjector подключен")
+
+        registered: Set[str] = set()
+
+        for mw_name in self.middleware_priority:
+            mw = await self._build_middleware(mw_name)
+            if mw:
+                self.dp.message.middleware(mw)
+                registered.add(mw_name)
+                self.logger.debug(f"✅ Middleware зарегистрирован: {mw_name}")
+
+        self._ensure_critical(registered)
+
+        self.logger.info(f"🏁 Завершена регистрация {len(registered)} middleware")
+
+    async def _build_middleware(self, name: str) -> Optional[BaseMiddleware]:
+        """Фабрика инициализации middleware по имени."""
+        if name in self.custom_factories:
+            try:
+                return self.custom_factories[name]()
+            except Exception as e:
+                self.logger.error(f"⚠️ Ошибка инициализации {name}: {e}")
+                return None
+        return self._auto_resolve(name)
+
+
+    def _safe_init(self, cls: Type[BaseMiddleware], **kwargs) -> Optional[BaseMiddleware]:
+        """Безопасная инициализация middleware."""
+        try:
+            return cls(
+                rate_limit=self.config.rate_limit,
+                max_spam=self.config.max_spam,
+                cooldown=timedelta(minutes=5),
+                exempt_user_ids=self.config.superusers,
+                logger=self.logger,
+                **kwargs
+            ) if cls is SmartRateLimitMiddleware else cls(logger=self.logger, **kwargs)
+        except Exception as e:
+            self.logger.error(f"⚠️ Ошибка инициализации {cls.__name__}: {e}")
+            return None
+
+    def _auto_resolve(self, name: str) -> Optional[BaseMiddleware]:
+        """Автоматический импорт и инициализация middleware по имени."""
+
+        module_name = name.replace("Middleware", "").lower()
+        try:
+            module = __import__(f"app.bot.middlewares.{module_name}", fromlist=["*"])
+            for _, obj in inspect.getmembers(module, inspect.isclass):
+                if obj.__name__ == name and issubclass(obj, BaseMiddleware):
+                    return self._safe_init(obj)
+        except Exception as e:
+            self.logger.warning(f"❌ Не удалось подключить {name}: {e}")
+        return None
+
+    def _ensure_critical(self, registered: Set[str]) -> None:
+        """Проверка обязательных middleware."""
+        critical = {"SmartRateLimitMiddleware"}
+        missing = critical - registered
+        if missing:
+            self.logger.critical(f"❌ Отсутствуют критически важные middleware: {missing}")
+            raise RuntimeError(f"Не зарегистрированы middleware: {missing}")
+
+
+# 🔌 Функция подключения
 async def setup_middleware(
     dp: Dispatcher,
     db_sessionmaker: async_sessionmaker,
     settings: Settings,
     logger: LoggerManager,
-    redis: Optional[Redis] = None
-):
-    """Инициализация middleware системы"""
+    redis: Optional[Redis] = None,
+) -> None:
+    """Инициализация MiddlewareRegistry с приоритетами."""
     config = MiddlewareConfig(
         superusers=settings.bot.SUPERUSERS,
         rate_limit=settings.bot.RATE_LIMIT,
         role_access=settings.bot.ROLE_ACCESS,
-        enable_tfa=settings.security.TFA_ENABLE
+        enable_tfa=settings.security.TFA_ENABLE,
+        priorities={
+            "CommandLoggingMiddleware": 5,
+            "SmartRateLimitMiddleware": 10,
+            "TFAMiddleware": 50,
+            "ProfilerMiddleware": 100,
+                        "DatabaseMiddleware":15,
+
+        },
     )
 
     registry = MiddlewareRegistry(
@@ -175,7 +195,7 @@ async def setup_middleware(
         settings=settings,
         logger=logger,
         redis=redis,
-        config=config
+        config=config,
     )
 
     await registry.register()
