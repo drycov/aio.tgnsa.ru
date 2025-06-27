@@ -29,6 +29,7 @@
 """
 
 from .users import router as users_router
+
 # from .auth import auth_router
 from .root import router as root_router
 from fastapi import APIRouter

@@ -2,10 +2,8 @@ from typing import List
 from aiogram.types import KeyboardButton
 from aiogram import Router
 from app.plugins.base import Plugin
-from .inline import register_inline_query
 from .menu import get_menu_buttons
 from .handlers import register_handlers
-from app.core.config import logger
 
 
 class AdvancedMenuPlugin(Plugin):

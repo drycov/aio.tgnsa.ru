@@ -2,6 +2,8 @@ import datetime
 from enum import Enum
 
 from .symbols import Symbols
+from typing import Dict, Optional, Type, Union
+from aiogram.fsm.state import State
 
 
 class Messages(Enum):
@@ -51,11 +53,6 @@ REGISTER_MESSAGES = {
     "enter_email": f"{Symbols.USER_LOGIN.value} Введите корпоративную почту",
     "success": f"{Symbols.USER_LOGOUT.value} Успешная регистрация. Продолжаем.",
 }
-
-
-from enum import Enum
-from typing import Dict, Optional, Type, Union
-from aiogram.fsm.state import State
 
 
 class HelpCategory(Enum):

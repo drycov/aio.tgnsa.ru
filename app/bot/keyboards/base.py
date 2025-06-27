@@ -5,6 +5,8 @@ from aiogram.types import (
     InlineKeyboardButton,
 )
 
+
+from typing import Union
 from app.bot.constants.labels import MenuLabels
 from app.bot.constants.positions import POSITIONS_BY_DEPARTMENT
 
@@ -38,14 +40,6 @@ send_confirm_keyboard = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="❌ Отменить", callback_data="cancel")],
     ],
 )
-
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from typing import Optional, Union
 
 
 def generate_confirm_keyboard(

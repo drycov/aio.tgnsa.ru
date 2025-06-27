@@ -12,7 +12,6 @@ import logging
 from enum import Enum
 from dataclasses import asdict, is_dataclass
 
-from app.bot.constants.labels import MenuLabels
 from app.bot.constants.messages import Messages
 from app.bot.keyboards.main import generate_main_keyboard
 

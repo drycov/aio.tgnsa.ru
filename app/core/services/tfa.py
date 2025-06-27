@@ -2,6 +2,7 @@
 
 import pyotp
 
+
 def verify_tfa_code(secret: str, code: str) -> bool:
     try:
         totp = pyotp.TOTP(secret)

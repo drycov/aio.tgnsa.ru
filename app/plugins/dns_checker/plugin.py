@@ -1,10 +1,9 @@
 import asyncio
 import socket
 import platform
-from typing import List
 
 import psutil
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from app.plugins.base import Plugin
@@ -63,7 +62,9 @@ class DNSCheckerPlugin(Plugin):
         if hasattr(hc_plugin, "register_probe"):
             hc_plugin.register_probe("dns_probe", dns_gateway_probe, group="optional")
         else:
-            hc_plugin.register_fastapi_probe("dns_probe", dns_gateway_probe, group="optional")
+            hc_plugin.register_fastapi_probe(
+                "dns_probe", dns_gateway_probe, group="optional"
+            )
 
     async def resolve_domain(self, domain: str):
         try:
@@ -91,9 +92,7 @@ class DNSCheckerPlugin(Plugin):
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await proc.communicate()
 
@@ -109,7 +108,7 @@ class DNSCheckerPlugin(Plugin):
                 "host": host,
                 "returncode": proc.returncode,
                 "output": safe_decode(stdout),
-                "error": safe_decode(stderr) if stderr else None
+                "error": safe_decode(stderr) if stderr else None,
             }
 
         except Exception as e:

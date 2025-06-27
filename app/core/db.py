@@ -6,39 +6,72 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from app.core.base import Base
 from app.core.config import settings
 
-__all__ = ("engine", "SessionLocal", "get_session")
+__all__ = (
+    "engine",
+    "SessionLocal",
+    "get_session",
+    "session_from_generator",
+    "get_sessionmaker",
+)
 
-# Создание асинхронного движка и фабрики сессий
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. Создание движка и фабрики асинхронных сессий
+# ─────────────────────────────────────────────────────────────────────────────
 engine = create_async_engine(settings.db.get_dsn(), echo=False, future=True)
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+SessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    engine, expire_on_commit=False, class_=AsyncSession
+)
 
 
-
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. Депенденси для FastAPI
+# ─────────────────────────────────────────────────────────────────────────────
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
-    Асинхронный генератор SQLAlchemy-сессии.
-    Используется в FastAPI как Depends(get_session).
+    Асинхронное создание сессии для FastAPI.
+
+    Используется как Depends(get_session).
+    При завершении запроса сессия автоматически закрывается.
     """
     async with SessionLocal() as session:
         yield session
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. Контекстный менеджер для aiogram
+# ─────────────────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def session_from_generator(
-    session_gen: Callable[..., AsyncGenerator[AsyncSession, Any]]
+    session_gen: Callable[..., AsyncGenerator[AsyncSession, Any]],
 ) -> AsyncGenerator[AsyncSession, None]:
     """
-    Контекстный менеджер для извлечения сессии из генератора вручную (например, в aiogram).
-    Обеспечивает безопасное закрытие после использования.
+    Позволяет вручную получить сессию из генератора (например, get_session) вне FastAPI.
+
+    Пример:
+        async with session_from_generator(get_session) as session:
+            result = await session.execute(...)
+            ...
+
+    Сессия закрывается автоматически.
     """
-    session = await session_gen.__anext__()
+    session = await session_gen().__anext__()
     try:
         yield session
     finally:
         await session.close()
 
-def get_sessionmaker() -> async_sessionmaker:
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. Прямая фабрика сессий
+# ─────────────────────────────────────────────────────────────────────────────
+def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
+    """
+    Возвращает объект async_sessionmaker для создания сессий вручную.
+    Например:
+        session = get_sessionmaker()()
+        await session.begin()
+        ...
+    """
     return SessionLocal

@@ -1,7 +1,6 @@
 import json
 import os
 import secrets
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Set
 
@@ -9,7 +8,6 @@ from dotenv import load_dotenv, set_key
 from pydantic import (
     Field,
     SecretStr,
-    ValidationError,
     computed_field,
     field_validator,
     model_validator,
@@ -292,7 +290,7 @@ class MongoDBConfig(BaseSettings):
 
         # Базовая часть: хост и порт
         host = "localhost"
-        port = self.PORT or 27017
+        # port = self.PORT or 27017
 
         # Аутентификация
         auth = ""

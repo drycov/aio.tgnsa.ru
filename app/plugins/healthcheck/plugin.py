@@ -1,9 +1,7 @@
-import asyncio
 import inspect
 import time
 from datetime import datetime, timezone
-from typing import (Awaitable, Callable, Dict, List, Literal, Optional, Tuple,
-                    Union)
+from typing import Awaitable, Callable, Dict, List, Literal, Tuple, Union
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -12,8 +10,9 @@ from app.plugins.base import Plugin
 
 ProbeFn = Callable[[], Union[bool, Awaitable[bool]]]
 ProbeGroup = Literal["critical", "optional"]
-SystemStatus = Literal["OK", "DEGRADED", "FAIL",
-                       "SHUTDOWN", "UNKNOWN", "MAINTENANCE", "INIT"]
+SystemStatus = Literal[
+    "OK", "DEGRADED", "FAIL", "SHUTDOWN", "UNKNOWN", "MAINTENANCE", "INIT"
+]
 
 
 class HealthCheckPlugin(Plugin):
@@ -34,7 +33,7 @@ class HealthCheckPlugin(Plugin):
         # Probe management
         self._probes: Dict[ProbeGroup, List[Tuple[str, ProbeFn]]] = {
             "critical": [],
-            "optional": []
+            "optional": [],
         }
         self._last_success: Dict[str, float] = {}
         self._last_failure: Dict[str, Tuple[float, str]] = {}
@@ -60,15 +59,21 @@ class HealthCheckPlugin(Plugin):
 
     def set_status(self, status: SystemStatus):
         """Set the overall system status."""
-        allowed: List[SystemStatus] = ["OK", "DEGRADED", "FAIL",
-                                       "SHUTDOWN", "UNKNOWN", "MAINTENANCE", "INIT"]
+        allowed: List[SystemStatus] = [
+            "OK",
+            "DEGRADED",
+            "FAIL",
+            "SHUTDOWN",
+            "UNKNOWN",
+            "MAINTENANCE",
+            "INIT",
+        ]
         if status not in allowed:
             raise ValueError(f"Invalid status '{status}'. Allowed: {allowed}")
 
         self._status = status
         if hasattr(self, "logger"):
-            self.logger.info(
-                f"[healthcheck] System status changed to: {status}")
+            self.logger.info(f"[healthcheck] System status changed to: {status}")
 
     def _update_aggregate_status(self):
         """Automatically update status based on component states."""
@@ -90,38 +95,44 @@ class HealthCheckPlugin(Plugin):
         # Core health endpoints
         @self.router.get(f"{base_path}")
         async def base_health():
-            return JSONResponse({
-                "status": self._status,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            })
+            return JSONResponse(
+                {
+                    "status": self._status,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
         @self.router.get(f"{base_path}/liveness")
         async def liveness_check():
-            return JSONResponse({
-                "alive": self._alive,
-                "status": self._status
-            }, status_code=200 if self._alive else 503)
+            return JSONResponse(
+                {"alive": self._alive, "status": self._status},
+                status_code=200 if self._alive else 503,
+            )
 
         @self.router.get(f"{base_path}/readiness")
         async def readiness_check():
-            return JSONResponse({
-                "ready": self._ready,
-                "status": self._status
-            }, status_code=200 if self._ready else 503)
+            return JSONResponse(
+                {"ready": self._ready, "status": self._status},
+                status_code=200 if self._ready else 503,
+            )
 
         @self.router.get(f"{base_path}/details")
         async def detailed_status():
-            return JSONResponse({
-                "status": self._status,
-                "alive": self._alive,
-                "ready": self._ready,
-                "started_at": self._start_time.isoformat(),
-                "uptime_seconds": (datetime.now(timezone.utc) - self._start_time).total_seconds(),
-                "probe_counts": {
-                    "critical": len(self._probes["critical"]),
-                    "optional": len(self._probes["optional"])
+            return JSONResponse(
+                {
+                    "status": self._status,
+                    "alive": self._alive,
+                    "ready": self._ready,
+                    "started_at": self._start_time.isoformat(),
+                    "uptime_seconds": (
+                        datetime.now(timezone.utc) - self._start_time
+                    ).total_seconds(),
+                    "probe_counts": {
+                        "critical": len(self._probes["critical"]),
+                        "optional": len(self._probes["optional"]),
+                    },
                 }
-            })
+            )
 
         @self.router.get(f"{base_path}/probes")
         async def probes_status():
@@ -130,7 +141,7 @@ class HealthCheckPlugin(Plugin):
                 "timestamp": time.time(),
                 "status": "OK",
                 "groups": {},
-                "critical_failures": 0
+                "critical_failures": 0,
             }
 
             for group, checks in self._probes.items():
@@ -152,14 +163,16 @@ class HealthCheckPlugin(Plugin):
                 self.set_status("OK")
                 result["status"] = "OK"
 
-            return JSONResponse(result, status_code=200 if result["status"] == "OK" else 503)
+            return JSONResponse(
+                result, status_code=200 if result["status"] == "OK" else 503
+            )
 
         @self.router.get(f"{base_path}/metrics", include_in_schema=False)
         async def metrics():
             metrics = [
-                f"health_status{{state=\"{self._status}\"}} 1",
-                f"probes_total{{group=\"critical\"}} {len(self._probes['critical'])}",
-                f"probes_total{{group=\"optional\"}} {len(self._probes['optional'])}"
+                f'health_status{{state="{self._status}"}} 1',
+                f'probes_total{{group="critical"}} {len(self._probes["critical"])}',
+                f'probes_total{{group="optional"}} {len(self._probes["optional"])}',
             ]
             return PlainTextResponse("\n".join(metrics), media_type="text/plain")
 
@@ -180,13 +193,12 @@ class HealthCheckPlugin(Plugin):
             if success:
                 self._last_success[name] = time.time()
             else:
-                self._last_failure[name] = (
-                    time.time(), "Probe returned False")
+                self._last_failure[name] = (time.time(), "Probe returned False")
 
             return {
                 "ok": success,
                 "last_success": self._last_success.get(name),
-                "last_failure": self._last_failure.get(name, [None, None])[0]
+                "last_failure": self._last_failure.get(name, [None, None])[0],
             }
         except Exception as e:
             self._last_failure[name] = (time.time(), str(e))
@@ -194,24 +206,25 @@ class HealthCheckPlugin(Plugin):
                 "ok": False,
                 "error": str(e),
                 "last_success": self._last_success.get(name),
-                "last_failure": time.time()
+                "last_failure": time.time(),
             }
 
     def _auto_register_probes(self):
         """Auto-register probes for common services from config."""
         # Redis integration
         if redis := self._config.get("redis_client"):
-            self.register_probe(
-                "redis_ping", lambda: redis.ping(), group="critical")
+            self.register_probe("redis_ping", lambda: redis.ping(), group="critical")
 
         # Database integration
         if db := self._config.get("db_client"):
+
             async def db_check():
                 try:
                     await db.execute("SELECT 1")
                     return True
                 except Exception:
                     return False
+
             self.register_probe("db_connect", db_check, group="critical")
 
     def register_fastapi(self, app):

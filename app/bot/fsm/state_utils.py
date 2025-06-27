@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import sys
 from typing import Type, Union, List, Generator, Optional, Set
 from pathlib import Path
 from aiogram.fsm.state import State, StatesGroup

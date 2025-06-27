@@ -62,7 +62,6 @@ class MiddlewareRegistry:
 
         self.middleware_priority = self._build_priority_order()
 
-
         # Явно регистрируемые middleware
         # ...
         self.custom_factories: Dict[str, Callable[[], BaseMiddleware]] = {
@@ -71,15 +70,16 @@ class MiddlewareRegistry:
                 max_spam=self.config.max_spam,
                 cooldown=timedelta(minutes=5),
                 exempt_user_ids=self.config.superusers,
-                logger=self.logger
+                logger=self.logger,
             ),
             "DatabaseMiddleware": lambda: DatabaseMiddleware(
-                sessionmaker=self.core_dependencies["db"],  # ✅ здесь нужный sessionmaker
+                sessionmaker=self.core_dependencies[
+                    "db"
+                ],  # ✅ здесь нужный sessionmaker
                 logger=self.logger,
-                auto_commit=True  # или False, по политике
-            )
+                auto_commit=True,  # или False, по политике
+            ),
         }
-
 
     def _build_priority_order(self) -> List[str]:
         """Построение списка middleware с учётом приоритета."""
@@ -88,13 +88,11 @@ class MiddlewareRegistry:
             "SmartRateLimitMiddleware": 10,
             "TFAMiddleware": 30,
             "ProfilerMiddleware": 70,
-            "DatabaseMiddleware":15,
-            
+            "DatabaseMiddleware": 15,
         }
 
         priorities = {**default, **self.config.priorities}
         return [k for k, _ in sorted(priorities.items(), key=lambda item: item[1])]
-
 
     async def register(self) -> None:
         """Регистрация всех middleware."""
@@ -127,18 +125,23 @@ class MiddlewareRegistry:
                 return None
         return self._auto_resolve(name)
 
-
-    def _safe_init(self, cls: Type[BaseMiddleware], **kwargs) -> Optional[BaseMiddleware]:
+    def _safe_init(
+        self, cls: Type[BaseMiddleware], **kwargs
+    ) -> Optional[BaseMiddleware]:
         """Безопасная инициализация middleware."""
         try:
-            return cls(
-                rate_limit=self.config.rate_limit,
-                max_spam=self.config.max_spam,
-                cooldown=timedelta(minutes=5),
-                exempt_user_ids=self.config.superusers,
-                logger=self.logger,
-                **kwargs
-            ) if cls is SmartRateLimitMiddleware else cls(logger=self.logger, **kwargs)
+            return (
+                cls(
+                    rate_limit=self.config.rate_limit,
+                    max_spam=self.config.max_spam,
+                    cooldown=timedelta(minutes=5),
+                    exempt_user_ids=self.config.superusers,
+                    logger=self.logger,
+                    **kwargs,
+                )
+                if cls is SmartRateLimitMiddleware
+                else cls(logger=self.logger, **kwargs)
+            )
         except Exception as e:
             self.logger.error(f"⚠️ Ошибка инициализации {cls.__name__}: {e}")
             return None
@@ -161,7 +164,9 @@ class MiddlewareRegistry:
         critical = {"SmartRateLimitMiddleware"}
         missing = critical - registered
         if missing:
-            self.logger.critical(f"❌ Отсутствуют критически важные middleware: {missing}")
+            self.logger.critical(
+                f"❌ Отсутствуют критически важные middleware: {missing}"
+            )
             raise RuntimeError(f"Не зарегистрированы middleware: {missing}")
 
 
@@ -184,8 +189,7 @@ async def setup_middleware(
             "SmartRateLimitMiddleware": 10,
             "TFAMiddleware": 50,
             "ProfilerMiddleware": 100,
-                        "DatabaseMiddleware":15,
-
+            "DatabaseMiddleware": 15,
         },
     )
 

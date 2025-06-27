@@ -1,6 +1,6 @@
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery, Contact
+from aiogram.types import Message, CallbackQuery, Contact
 from app.bot.fsm.states.reg import RegistrationForm
 from app.bot.constants.messages import REGISTER_MESSAGES
 from app.bot.constants.positions import POSITIONS_BY_DEPARTMENT
@@ -8,13 +8,13 @@ from app.bot.keyboards.base import (
     generate_confirm_keyboard,
     generate_department_keyboard,
     generate_position_keyboard,
-    send_confirm_keyboard,
     send_contact_keyboard,
 )
 from app.bot.fsm.state_manager import StateManager
 from app.core.config import logger, settings
 from app.services.registration_buffer import RegistrationBuffer
 from app.core.utils.decorators import send_and_set
+from app.bot.keyboards.base import on_enter_keyboard
 
 router = Router()
 
@@ -198,7 +198,6 @@ async def confirm_registration(callback: CallbackQuery, state: FSMContext):
         f"🔗 Имя: {full_name}"
     )
 
-    from app.core.config import settings
     from app.bot.keyboards.base import generate_confirm_keyboard
 
     keyboard = generate_confirm_keyboard(
@@ -220,9 +219,6 @@ async def confirm_registration(callback: CallbackQuery, state: FSMContext):
             logger.warning(f"Не удалось отправить заявку админу {admin_id}: {e}")
 
     await callback.answer()
-
-
-from app.bot.keyboards.base import on_enter_keyboard
 
 
 @router.callback_query(F.data.startswith("registration:cancel:"))

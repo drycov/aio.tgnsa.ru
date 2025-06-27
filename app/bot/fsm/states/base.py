@@ -7,4 +7,3 @@ class CMDState(StatesGroup):
     CMD_HELP = State()
     CMD_SETTINGS = State()
     CMD_PROFILE = State()
-    

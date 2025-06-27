@@ -34,23 +34,21 @@ class MiddlewareViewerPlugin(Plugin):
             methods=["GET"],
             response_class=HTMLResponse,
             include_in_schema=False,
-            name="middleware_viewer"
+            name="middleware_viewer",
         )
 
     def init(self, config: Dict[str, Any]) -> None:
         """Инициализация плагина с конфигурацией."""
         self._config = config or {}
-        templates_dir = Path(self._config.get(
-            "templates_dir",
-            Path(__file__).parent / "templates"
-        ))
+        templates_dir = Path(
+            self._config.get("templates_dir", Path(__file__).parent / "templates")
+        )
 
         try:
             self.templates = Jinja2Templates(directory=str(templates_dir))
         except Exception as e:
             logger.error(f"Failed to initialize templates: {e}")
-            raise RuntimeError(
-                "Could not initialize templates directory") from e
+            raise RuntimeError("Could not initialize templates directory") from e
 
     async def view_middlewares(self, request: Request) -> HTMLResponse:
         """Отображение списка зарегистрированных middleware."""
@@ -58,8 +56,7 @@ class MiddlewareViewerPlugin(Plugin):
 
         if not hasattr(app, "user_middleware"):
             raise HTTPException(
-                status_code=500,
-                detail="FastAPI middleware information not available"
+                status_code=500, detail="FastAPI middleware information not available"
             )
 
         middleware_list = self._analyze_middlewares(app)
@@ -73,8 +70,8 @@ class MiddlewareViewerPlugin(Plugin):
                 "static_url": self._config.get("static_url", "/static"),
                 "favicon_url": self._config.get("favicon_url", "/favicon.ico"),
                 "total_count": len(middleware_list),
-                "app_name": getattr(app, "title", "FastAPI Application")
-            }
+                "app_name": getattr(app, "title", "FastAPI Application"),
+            },
         )
 
     def _analyze_middlewares(self, app: ASGIApp) -> List[Dict[str, Any]]:
@@ -89,7 +86,7 @@ class MiddlewareViewerPlugin(Plugin):
                     "options": self._safe_get_options(mw),
                     "order": idx,
                     "is_coroutine": self._is_coroutine_middleware(mw.cls),
-                    "type": mw.type if hasattr(mw, "type") else "unknown"
+                    "type": mw.type if hasattr(mw, "type") else "unknown",
                 }
 
                 # Добавляем дополнительную информацию для строковых middleware
@@ -98,13 +95,11 @@ class MiddlewareViewerPlugin(Plugin):
 
                 middlewares.append(middleware_info)
             except Exception as ex:
-                self.logger.error(f"Error analyzing middleware {idx}: {ex!r}",
-                                  exc_info=logger.level <= logging.DEBUG)
-                middlewares.append({
-                    "id": idx,
-                    "error": str(ex),
-                    "raw_data": str(mw)
-                })
+                self.logger.error(
+                    f"Error analyzing middleware {idx}: {ex!r}",
+                    exc_info=logger.level <= logging.DEBUG,
+                )
+                middlewares.append({"id": idx, "error": str(ex), "raw_data": str(mw)})
 
         return middlewares
 
@@ -113,31 +108,26 @@ class MiddlewareViewerPlugin(Plugin):
         if isinstance(mw_cls, str):
             # Обработка строковых middleware (например, 'app.middleware.some_middleware')
             return {
-                "name": mw_cls.split('.')[-1],
-                "module": '.'.join(mw_cls.split('.')[:-1]),
+                "name": mw_cls.split(".")[-1],
+                "module": ".".join(mw_cls.split(".")[:-1]),
                 "doc": "String path to middleware",
-                "type": "string_reference"
+                "type": "string_reference",
             }
         elif isclass(mw_cls):
             return {
                 "name": mw_cls.__name__,
                 "module": mw_cls.__module__,
                 "doc": (mw_cls.__doc__ or "").strip(),
-                "type": "class"
+                "type": "class",
             }
         elif callable(mw_cls):
             return {
                 "name": getattr(mw_cls, "__name__", "anonymous_function"),
                 "module": getattr(mw_cls, "__module__", "unknown"),
                 "doc": (getattr(mw_cls, "__doc__", "") or "").strip(),
-                "type": "function"
+                "type": "function",
             }
-        return {
-            "name": str(mw_cls),
-            "module": "unknown",
-            "doc": "",
-            "type": "unknown"
-        }
+        return {"name": str(mw_cls), "module": "unknown", "doc": "", "type": "unknown"}
 
     def _safe_get_options(self, mw: Any) -> Dict[str, Any]:
         """Безопасное получение и сериализация опций middleware."""
@@ -163,9 +153,11 @@ class MiddlewareViewerPlugin(Plugin):
         try:
             if isclass(mw_cls):
                 for method in vars(mw_cls).values():
-                    if (method.__name__ == "__call__" and
-                        getattr(method, "__code__", None) and
-                            method.__code__.co_flags & 0x80):
+                    if (
+                        method.__name__ == "__call__"
+                        and getattr(method, "__code__", None)
+                        and method.__code__.co_flags & 0x80
+                    ):
                         return True
             elif hasattr(mw_cls, "__code__"):
                 return bool(mw_cls.__code__.co_flags & 0x80)
@@ -177,11 +169,7 @@ class MiddlewareViewerPlugin(Plugin):
     def register_fastapi(self, app: ASGIApp) -> None:
         """Регистрация маршрутов в FastAPI."""
         base_path = self._config.get("path", "/middleware")
-        app.include_router(
-            self.router,
-            prefix=base_path,
-            tags=["middleware_inspector"]
-        )
+        app.include_router(self.router, prefix=base_path, tags=["middleware_inspector"])
 
 
 plugin = MiddlewareViewerPlugin()

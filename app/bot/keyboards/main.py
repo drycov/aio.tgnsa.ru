@@ -5,9 +5,7 @@ from app.bot.constants.labels import MenuLabels
 from app.plugins.manager import PluginManager
 
 
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
-
-from app.core.utils.decorators import add_buttons_to_section, chunk_buttons
+from app.core.utils.decorators import add_buttons_to_section
 
 
 def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:

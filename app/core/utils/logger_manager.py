@@ -45,6 +45,18 @@ CUSTOM_LOG_LEVELS = {
 
 # === Расширение базового логгера методами success/notice ===
 def patch_logger_with_custom_levels():
+    """
+    Патчит класс `logging.Logger`, добавляя пользовательские уровни логирования:
+    - TRACE (21)
+    - NOTICE (23)
+    - SUCCESS (25)
+
+    После применения функции можно использовать:
+    - logger.trace("...")
+    - logger.notice("...")
+    - logger.success("...")
+    """
+
     def _make_custom_method(level_name: str, level_num: int):
         def log_method(self, message, *args, **kwargs):
             if self.isEnabledFor(level_num):
@@ -62,6 +74,24 @@ patch_logger_with_custom_levels()
 
 # === Основной логгер-менеджер ===
 class LoggerManager:
+    """
+    Менеджер логирования для централизованной настройки логгера с поддержкой:
+
+    - Пользовательских уровней логирования (TRACE, NOTICE, SUCCESS)
+    - Вывода в файл с ротацией
+    - Расширенного консольного вывода с Rich
+    - Безопасной иерархии fallback-директорий для логов
+
+    :param name: Имя логгера
+    :param debug: Включает DEBUG-режим и Rich traceback'и
+    :param log_dir: Каталог для логов. Если не указан — используется fallback-логика
+    :param log_level: Уровень логирования. По умолчанию зависит от debug-флага
+    :param enable_file_logging: Включает файловое логирование
+    :param enable_console_logging: Включает логирование в консоль
+    :param max_file_size: Максимальный размер лог-файла до ротации (в байтах)
+    :param backup_count: Кол-во резервных лог-файлов при ротации
+    """
+
     def __init__(
         self,
         name: str = "app",
@@ -85,6 +115,17 @@ class LoggerManager:
         self.logger = self._setup_logger()
 
     def _resolve_log_dir(self, log_dir: Optional[Union[str, Path]]) -> Path:
+        """
+        Разрешает и проверяет рабочий каталог логов.
+
+        Возвращает валидный путь:
+        - Указанный пользователем путь (если доступен)
+        - Стандартные fallback-директории
+        - Локальная fallback-директория ./logs в случае ошибок
+
+        :param log_dir: Кастомный путь к директории логов
+        :return: Валидный путь к директории логов
+        """
         if log_dir:
             path = Path(log_dir).expanduser()
             try:
@@ -123,6 +164,14 @@ class LoggerManager:
         return fallback
 
     def _setup_logger(self) -> logging.Logger:
+        """
+        Настраивает экземпляр логгера с учётом:
+        - Файлового логирования (с ротацией)
+        - Консольного вывода с RichHandler
+        - Пользовательского уровня логирования
+
+        :return: Настроенный логгер
+        """
         logger = logging.getLogger(self.name)
         logger.setLevel(getattr(logging, self.log_level, logging.INFO))
         logger.handlers.clear()
@@ -161,4 +210,9 @@ class LoggerManager:
         return logger
 
     def get_logger(self) -> logging.Logger:
+        """
+        Возвращает сконфигурированный экземпляр логгера.
+
+        :return: Логгер с заданными настройками
+        """
         return self.logger

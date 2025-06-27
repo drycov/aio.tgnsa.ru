@@ -44,7 +44,9 @@ class Plugin(ABC):
         """Регистрация aiogram-хендлеров."""
         pass
 
-    def register_scheduler(self, scheduler: Optional["AsyncIOScheduler"] = None) -> None:
+    def register_scheduler(
+        self, scheduler: Optional["AsyncIOScheduler"] = None
+    ) -> None:
         """Регистрация задач в APScheduler."""
         pass
 
@@ -70,7 +72,9 @@ class Plugin(ABC):
             with contextlib.suppress(Exception):
                 with pyproject_path.open("rb") as f:
                     toml_data = tomli.load(f)
-                    self._version = toml_data.get("tool", {}).get("poetry", {}).get("version")
+                    self._version = (
+                        toml_data.get("tool", {}).get("poetry", {}).get("version")
+                    )
                     if self._version:
                         return self._version
 

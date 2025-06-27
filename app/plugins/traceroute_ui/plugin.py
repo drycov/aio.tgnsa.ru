@@ -1,8 +1,6 @@
 import socket
 import logging
 import platform
-import ctypes
-import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -24,7 +22,8 @@ class TracerouteUIPlugin(Plugin):
         self.router = APIRouter()
         self._config: dict = {}
         self.templates = Jinja2Templates(
-            directory=str(Path(__file__).parent / "templates"))
+            directory=str(Path(__file__).parent / "templates")
+        )
 
     def init(self, config: dict):
         self._config = config or {}
@@ -39,7 +38,7 @@ class TracerouteUIPlugin(Plugin):
             result = self.perform_traceroute(
                 host,
                 max_hops=max_hops or self._config.get("max_hops", 30),
-                timeout=timeout or self._config.get("timeout", 2)
+                timeout=timeout or self._config.get("timeout", 2),
             )
             return JSONResponse(result)
 
@@ -54,10 +53,12 @@ class TracerouteUIPlugin(Plugin):
                     "favicon_url": self._config.get("favicon_url", "/favicon.ico"),
                     "timeout": self._config.get("timeout", 2),
                     "max_hops": self._config.get("max_hops", 30),
-                }
+                },
             )
 
-    def perform_traceroute(self, host: str, max_hops: int = 30, timeout: int = 2) -> Dict:
+    def perform_traceroute(
+        self, host: str, max_hops: int = 30, timeout: int = 2
+    ) -> Dict:
         # sourcery skip: low-code-quality
         try:
             from scapy.all import IP, UDP, sr1, conf
@@ -74,11 +75,15 @@ class TracerouteUIPlugin(Plugin):
                 # Принудительно использовать WinPcap-совместимый режим
                 conf.use_pcap = True
                 # Проверка установки Npcap через поиск winpcap.dll или npcap presence (опционально)
-                import subprocess
-                output = subprocess.check_output(
-                    "where npcap", shell=True, stderr=subprocess.DEVNULL)
+                # import subprocess
+
+                # output = subprocess.check_output(
+                #     "where npcap", shell=True, stderr=subprocess.DEVNULL)
             except Exception:
-                return {"host": host, "error": "Npcap не установлен или не найден в системном PATH. Установите с опцией 'WinPcap Compatible Mode'."}
+                return {
+                    "host": host,
+                    "error": "Npcap не установлен или не найден в системном PATH. Установите с опцией 'WinPcap Compatible Mode'.",
+                }
 
         try:
             destination_ip = socket.gethostbyname(host)
@@ -96,13 +101,15 @@ class TracerouteUIPlugin(Plugin):
                 reply = sr1(pkt, timeout=timeout, verbose=0)
             except Exception as e:
                 logger.exception(f"Error sending packet at ttl={ttl}: {e}")
-                hops.append({
-                    "hop": str(ttl),
-                    "address": "!",
-                    "delay": str(e),
-                    "mpls": "",
-                    "info": "send error"
-                })
+                hops.append(
+                    {
+                        "hop": str(ttl),
+                        "address": "!",
+                        "delay": str(e),
+                        "mpls": "",
+                        "info": "send error",
+                    }
+                )
                 break
 
             hop_info = {
@@ -110,15 +117,18 @@ class TracerouteUIPlugin(Plugin):
                 "address": "*",
                 "delay": "timeout",
                 "mpls": "",
-                "info": ""
+                "info": "",
             }
 
             if reply is None:
                 hop_info["info"] = "timeout"
             elif reply.haslayer(IP):
                 hop_info["address"] = reply.src
-                hop_info["delay"] = f"{(reply.time - pkt.sent_time)*1000:.1f} ms" if hasattr(
-                    pkt, "sent_time") else ""
+                hop_info["delay"] = (
+                    f"{(reply.time - pkt.sent_time) * 1000:.1f} ms"
+                    if hasattr(pkt, "sent_time")
+                    else ""
+                )
                 # MPLS parsing
                 if reply.haslayer("MPLS"):
                     hop_info["mpls"] = str(reply["MPLS"].label)
@@ -138,7 +148,7 @@ class TracerouteUIPlugin(Plugin):
             "host": host,
             "ip": destination_ip,
             "hops": hops,
-            "method": "scapy + npcap"
+            "method": "scapy + npcap",
         }
 
     def register_fastapi(self, app):

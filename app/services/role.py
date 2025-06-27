@@ -31,7 +31,7 @@ class RoleService:
 
     async def get_role(self, name: str, create_if_missing: bool = False) -> Role:
         """
-        Возвращает роль по имени. 
+        Возвращает роль по имени.
         Если create_if_missing=True, создаёт новую роль при отсутствии.
         """
         role = await self.session.scalar(select(Role).filter_by(name=name))
@@ -48,7 +48,9 @@ class RoleService:
         logger.warning(f"Роль не найдена: '{name}'")
         raise NoResultFound(f"Role '{name}' not found")
 
-    async def assign_role(self, user: User, role_name: str, commit: bool = False) -> None:
+    async def assign_role(
+        self, user: User, role_name: str, commit: bool = False
+    ) -> None:
         """
         Назначает роль пользователю. Создаёт роль, если её нет.
         Использует ассоциацию many-to-many через relationship.
@@ -65,7 +67,9 @@ class RoleService:
         if commit:
             await self.session.commit()
 
-    async def remove_role(self, user: User, role_name: str, commit: bool = False) -> None:
+    async def remove_role(
+        self, user: User, role_name: str, commit: bool = False
+    ) -> None:
         """
         Снимает роль с пользователя, если она есть.
         """

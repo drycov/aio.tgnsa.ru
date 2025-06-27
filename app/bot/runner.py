@@ -1,82 +1,83 @@
 import asyncio
-
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core import initialize_storage
-from app.core.config import logger, settings
+from app.core.applcm_manager import AppLifecycleManager
+from app.core.config import settings, logger
 from app.core.db import get_sessionmaker
 from app.plugins.manager import PluginManager
 
-# === Инициализация ===
-storage = initialize_storage()
-session = get_sessionmaker()
-bot = Bot(
-    token=settings.bot.TOKEN.get_secret_value(),
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-)
-dp = Dispatcher(storage=storage, session=session, bot=bot)
 
-# Подключение middlewares, filters, routers
+class BotManager:
+    def __init__(self, lifecycle_manager: AppLifecycleManager):
+        self.lifecycle_manager = lifecycle_manager
+
+        self.storage = initialize_storage()
+        self.session = get_sessionmaker()
+        self.bot = Bot(
+            token=settings.bot.TOKEN.get_secret_value(),
+            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+        )
+        self.dp = Dispatcher(storage=self.storage, session=self.session, bot=self.bot)
+
+        # Регистрация lifecycle hooks
+        lifecycle_manager.on_startup(name="bot_startup")(self.on_startup)
+        lifecycle_manager.on_shutdown(name="bot_shutdown")(self.on_shutdown)
+
+    async def setup(self):
+        # Регистрация middlewares, фильтров, хендлеров
+        from app.bot.handlers import register_handlers
+        from app.bot.middlewares.registry import setup_middleware
+
+        await setup_middleware(
+            self.dp, db_sessionmaker=self.session, settings=settings, logger=logger
+        )
+        register_handlers(
+            self.dp, db_sessionmaker=self.session, settings=settings, logger=logger
+        )
+
+        # Подключаем плагины
+        self.setup_plugins()
+
+    def setup_plugins(self):
+        manager = PluginManager.create_once()
+        manager.ensure_initialized(settings)
+        manager.register_aiogram(self.dp)
+
+    async def on_startup(self):
+        logger.info("🟢 Бот запускается...")
+        logger.info(f"📦 Версия приложения: {settings.VERSION}")
+
+    async def on_shutdown(self):
+        logger.info("🛑 Завершается работа бота...")
+        await self.bot.session.close()
+        await self.storage.close()
+
+    async def start_polling(self):
+        await self.setup()
+        await self.lifecycle_manager.startup()
+
+        try:
+            await self.dp.start_polling(self.bot)
+        except asyncio.CancelledError:
+            logger.warning("❗️ Polling отменён.")
+        except Exception as ex:
+            logger.exception(f"💥 Необработанная ошибка: {ex}")
+        finally:
+            await self.lifecycle_manager.shutdown()
+            logger.info("✅ Бот успешно остановлен.")
+
+    def run(self):
+        import asyncio
+
+        try:
+            asyncio.run(self.start_polling())
+        except (KeyboardInterrupt, SystemExit):
+            logger.info("⏹ Завершение по сигналу прерывания.")
 
 
-# def setup_plugins(dp: Dispatcher):
-#     manager = PluginManager.create_once()
-#     manager.load_all()
-#     manager.init_all(settings)
-#     manager.post_init_integration()
-
-#     for plugin in manager.sorted_plugins:
-#         if getattr(plugin, "enabled", False) and hasattr(plugin, "register_aiogram"):
-#             plugin.register_aiogram(dp)
-
-
-def setup_plugins(dp: Dispatcher):
-    manager = PluginManager.create_once()
-    manager.ensure_initialized(settings)
-    manager.register_aiogram(dp)
-
-
-async def setup_dispatcher():
-    from app.bot.handlers import register_handlers
-    from app.bot.middlewares.registry import setup_middleware
-
-    await setup_middleware(
-        dp, db_sessionmaker=session, settings=settings, logger=logger
-    )
-    register_handlers(dp, db_sessionmaker=session, settings=settings, logger=logger)
-    setup_plugins(dp)
-
-
-async def on_startup():
-    logger.info("🟢 Бот запускается...")
-
-
-async def on_shutdown():
-    logger.info("🛑 Завершается работа бота...")
-    await bot.session.close()
-    await storage.close()
-
-
-async def main():
-    await setup_dispatcher()
-    await on_startup()
-    try:
-        await dp.start_polling(bot)
-    except asyncio.CancelledError:
-        logger.warning("❗️ Polling отменён.")
-    except Exception as ex:
-        logger.exception(f"💥 Необработанная ошибка: {ex}")
-    finally:
-        await on_shutdown()
-        logger.info("✅ Бот успешно остановлен.")
-
-
-def run_bot():
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("⏹ Завершение по сигналу прерывания.")
+def run_bot(lifecycle: AppLifecycleManager):
+    bot_manager = BotManager(lifecycle)
+    bot_manager.run()

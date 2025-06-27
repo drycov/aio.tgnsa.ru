@@ -3,7 +3,6 @@ import ipaddress
 import logging
 from typing import Dict, Optional, Tuple, Union, List
 from ping3 import ping
-from netaddr import IPNetwork
 
 from app.core.utils.decorators import handle_network_error
 
@@ -11,7 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class NetworkUtils:
-    """Универсальные утилиты для IP-сетей и диагностики."""
+    """
+    Универсальный набор асинхронных и синхронных утилит для диагностики IP-сетей:
+    - Валидация подсетей
+    - Получение параметров сетей
+    - Проверка доступности хостов
+    - Расширенный ICMP-пинг
+    - Логирование результатов пинга
+    """
 
     @staticmethod
     @handle_network_error(
@@ -20,6 +26,12 @@ class NetworkUtils:
     async def validate_subnet(
         subnet: str,
     ) -> Tuple[Optional[ipaddress.IPv4Network], Optional[str]]:
+        """
+        Валидирует IPv4-подсеть и возвращает объект сети при допустимом префиксе и адресе.
+
+        :param subnet: Строка подсети (например, '192.168.1.0/24')
+        :return: Кортеж (объект сети, сообщение об ошибке при наличии)
+        """
         net = ipaddress.IPv4Network(subnet, strict=False)
 
         if net.prefixlen < 8:
@@ -36,6 +48,16 @@ class NetworkUtils:
     async def get_network_info(
         net: ipaddress.IPv4Network,
     ) -> Dict[str, Union[str, int, bool]]:
+        """
+        Извлекает ключевые параметры из заданной IPv4-сети:
+        - сетевой адрес
+        - маска
+        - количество хостов
+        - приватность и тип адреса
+
+        :param net: Объект ipaddress.IPv4Network
+        :return: Словарь с параметрами сети
+        """
         hosts = list(net.hosts())
         first_host, last_host = (hosts[0], hosts[-1]) if hosts else (None, None)
 
@@ -66,6 +88,15 @@ class NetworkUtils:
     async def is_alive(
         host: str, timeout: int = 2, count: int = 2, privileged: bool = True
     ) -> Tuple[bool, Optional[float]]:
+        """
+        Асинхронная проверка доступности IP-хоста через ICMP.
+
+        :param host: IP-адрес или имя хоста
+        :param timeout: Таймаут на одну попытку (секунды)
+        :param count: Количество попыток пинга
+        :param privileged: Использовать "сырые" привилегии
+        :return: Кортеж (True/False, среднее RTT в мс или None)
+        """
         try:
             ipaddress.ip_address(host)
         except ValueError:
@@ -107,6 +138,16 @@ class NetworkUtils:
     async def detailed_ping(
         host: str, timeout: int = 1, count: int = 4
     ) -> Dict[str, Union[str, bool, int, float, None, list]]:
+        """
+        Расширенный пинг с измерением:
+        - Минимального/максимального/среднего RTT
+        - Процент потерь пакетов
+
+        :param host: IP-адрес/домен
+        :param timeout: Таймаут одной попытки
+        :param count: Количество попыток
+        :return: Подробный отчет по результатам пинга
+        """
         results = {
             "host": host,
             "reachable": False,
@@ -141,6 +182,13 @@ class NetworkUtils:
     @staticmethod
     @handle_network_error(default_return=None)
     def ping_device_log(host: str, count: int = 4) -> Optional[str]:
+        """
+        Выполняет ping и формирует строку лога по результатам ICMP-ответов.
+
+        :param host: IP-адрес или DNS-имя
+        :param count: Кол-во попыток
+        :return: Готовый многострочный лог-отчет или None при ошибке
+        """
         results = []
         log_messages = []
 

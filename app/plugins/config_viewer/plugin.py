@@ -25,7 +25,6 @@ class ConfigViewerPlugin(Plugin):
 
         @self.router.get(path, response_class=HTMLResponse)
         async def view_config(request: Request):
-
             return self.templates.TemplateResponse(
                 "config_viewer.html",
                 {

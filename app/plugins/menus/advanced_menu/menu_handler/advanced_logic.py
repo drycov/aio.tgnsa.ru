@@ -1,10 +1,8 @@
-import ipaddress
 import asyncio
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from pythonping import ping
 
-from app.bot.constants.messages import Messages
 from app.core.utils.network_utils import NetworkUtils
 from ..constants.states import Advanced
 from app.bot.keyboards.base import in_back_keyboard
@@ -119,7 +117,7 @@ async def handle_ping_logic(message: Message, state: FSMContext):
         if response.success():
             successful = [r for r in response if r.success]
             details = [
-                f"{i+1}) Ответ: {r.time_elapsed * 1000:.2f} мс"
+                f"{i + 1}) Ответ: {r.time_elapsed * 1000:.2f} мс"
                 for i, r in enumerate(successful)
             ]
 

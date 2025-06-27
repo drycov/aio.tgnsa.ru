@@ -43,7 +43,7 @@ class MenusPlugin(Plugin):
                     ):
                         self.router.include_router(subplugin.router)
 
-                except Exception as e:
+                except Exception:
                     logger.exception(
                         f"[{self.name}] Ошибка загрузки подплагина {module_name}"
                     )

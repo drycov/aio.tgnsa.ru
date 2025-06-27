@@ -12,7 +12,6 @@ from app.bot.keyboards.main import generate_main_keyboard
 from app.core.config import logger
 from app.exceptions.exceptions import UserNotFoundError
 from app.services.user import UserSearchField, UserService
-from app.models.user import User
 from app.bot.handlers.register_handlers.registration_handler import start_registration
 from app.core.utils.decorators import safe_delete_message
 

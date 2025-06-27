@@ -41,7 +41,9 @@ class TfaMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         if dispatcher is None:
-            self.logger.error(f"[TFA] Dispatcher not found in context for tg_id={tg_id}")
+            self.logger.error(
+                f"[TFA] Dispatcher not found in context for tg_id={tg_id}"
+            )
             return await handler(event, data)
 
         await event.answer(TFA_MESSAGES["prompt"])
@@ -50,7 +52,9 @@ class TfaMiddleware(BaseMiddleware):
             response: Message = await dispatcher.wait_for(
                 "message",
                 timeout=self.timeout,
-                check=lambda m: m.from_user.id == event.from_user.id and m.text and m.text.isdigit()
+                check=lambda m: m.from_user.id == event.from_user.id
+                and m.text
+                and m.text.isdigit(),
             )
         except asyncio.TimeoutError:
             await event.answer(TFA_MESSAGES["timeout"])
@@ -70,7 +74,7 @@ class TfaMiddleware(BaseMiddleware):
     def _is_skip_tfa(self, user: Any, data: Dict[str, Any]) -> bool:
         """Проверка условий, при которых TFA можно пропустить."""
         if data.get("is_superuser"):
-            self.logger.debug(f"[TFA] Пропуск для суперпользователя")
+            self.logger.debug("[TFA] Пропуск для суперпользователя")
             return True
 
         if not settings.security.TFA_ENABLE:

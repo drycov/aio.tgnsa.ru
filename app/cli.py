@@ -1,6 +1,7 @@
 import os
 import subprocess
 from typing import Optional, List
+from enum import Enum
 
 import typer
 from rich.console import Console
@@ -8,14 +9,15 @@ from rich.table import Table
 from rich import print as rprint
 
 
+from app.core.applcm_manager import AppLifecycleManager
 from app.core.constants import ENV_VARS_TO_CLEAR
 from app.plugins.manager import PluginManager
+from app import __version__
 
 app = typer.Typer(help="TGNMS Entrypoint", rich_markup_mode="rich")
 console = Console()
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.tgnmsrc")
-from enum import Enum
 
 
 class RoleType(str, Enum):
@@ -29,6 +31,12 @@ plugin_manager = None
 
 # --- Load external environment config ---
 def _load_custom_env(path: Optional[str]):
+    """
+    Load environment variables from a file.
+
+    Args:
+        path (Optional[str]): Путь к env-файлу. Если не указан, ищется в $TGNMS_ENV_FILE или ~/.tgnmsrc.
+    """
     env_file = path or os.getenv("TGNMS_ENV_FILE") or DEFAULT_CONFIG_PATH
     if os.path.exists(env_file):
         with open(env_file) as f:
@@ -45,6 +53,18 @@ def clean_env_vars(
     log_changes: bool,
     env_vars: List[str] = ENV_VARS_TO_CLEAR,
 ) -> List[str]:
+    """
+    Очистка переменных окружения, потенциально мешающих конфигурации.
+
+    Args:
+        dry_run (bool): Если True — только логирование без удаления.
+        role (str): Имя роли (bot/api/scheduler).
+        log_changes (bool): Включить логирование изменений.
+        env_vars (List[str]): Список переменных, подлежащих очистке.
+
+    Returns:
+        List[str]: Список удалённых переменных.
+    """
     cleared_vars: List[str] = []
 
     show_table = os.getenv("DEBUG", "false").lower() in ("1", "true") or os.getenv(
@@ -81,6 +101,16 @@ def clean_env_vars(
 
 # --- Unified service runner ---
 def _run_service(role: str, debug: bool, dev: bool, dry_run: bool, log_changes: bool):
+    """
+    Запуск одного из компонентов системы (bot, api, scheduler) с параметрами окружения.
+
+    Args:
+        role (str): Название роли.
+        debug (bool): Включение режима отладки.
+        dev (bool): Включение development-режима.
+        dry_run (bool): Только показать, какие переменные будут очищены.
+        log_changes (bool): Выводить лог изменений переменных.
+    """
     clean_env_vars(dry_run, role, log_changes)
 
     os.environ["APP_ROLE"] = role
@@ -89,24 +119,32 @@ def _run_service(role: str, debug: bool, dev: bool, dry_run: bool, log_changes: 
     if dev:
         os.environ["DEV"] = "True"
 
-    from app.api.server import run_api
+    from app.api.server import start_api
     from app.bot.runner import run_bot
     from app.scheduler.jobs import run_scheduler
     from app.core.config import logger
 
+    lifecycle = AppLifecycleManager()
+
     if role == "bot":
         logger.success("\U0001f680 Starting Telegram Bot...")
-        run_bot()
+        run_bot(lifecycle)
     elif role == "api":
         logger.success("\U0001f680 Starting API Server...")
-        run_api()
+        start_api(lifecycle)
     elif role == "scheduler":
         logger.success("\U0001f680 Starting Task Scheduler...")
-        run_scheduler()
+        run_scheduler(lifecycle)
 
 
 # --- Plugin Autocompletion ---
 def _get_plugins():
+    """
+    Инициализация и возврат экземпляра PluginManager.
+
+    Returns:
+        PluginManager: Менеджер загруженных плагинов.
+    """
     global plugin_manager
 
     plugin_manager = PluginManager.get_instance()
@@ -120,6 +158,16 @@ def _get_plugins():
 
 
 def plugin_name_autocomplete(ctx: typer.Context, incomplete: str):
+    """
+    Автодополнение названий плагинов.
+
+    Args:
+        ctx (typer.Context): Контекст команды.
+        incomplete (str): Частично введённое имя плагина.
+
+    Returns:
+        List[str]: Список совпадающих имён.
+    """
     manager = _get_plugins()
     return [
         plugin.name
@@ -134,7 +182,9 @@ plugins_app = typer.Typer(help="Plugin management commands")
 
 @plugins_app.command("list")
 def list_plugins():
-    """\U0001f4e6 List available plugins"""
+    """
+    📦 Вывести список доступных плагинов.
+    """
     manager = _get_plugins()
 
     table = Table(title="Loaded Plugins")
@@ -149,18 +199,28 @@ def list_plugins():
 
 @plugins_app.command("enable")
 def enable_plugin(
-    name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete)
+    name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete),
 ):
-    """Enable a plugin by name"""
+    """
+    Включить указанный плагин.
+
+    Args:
+        name (str): Название плагина.
+    """
     os.environ[f"PLUGIN__{name.upper()}__ENABLED"] = "1"
     rprint(f"[green]\u2714 Enabled plugin:[/green] {name}")
 
 
 @plugins_app.command("disable")
 def disable_plugin(
-    name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete)
+    name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete),
 ):
-    """Disable a plugin by name"""
+    """
+    Отключить указанный плагин.
+
+    Args:
+        name (str): Название плагина.
+    """
     os.environ[f"PLUGIN__{name.upper()}__ENABLED"] = "0"
     rprint(f"[red]\u2716 Disabled plugin:[/red] {name}")
 
@@ -171,7 +231,9 @@ env_app = typer.Typer(help="Environment variable commands")
 
 @env_app.command("list")
 def list_env():
-    """List all managed environment variables and their current values"""
+    """
+    Вывести список управляемых переменных окружения и их текущие значения.
+    """
     table = Table(title="TGNMS Environment Variables", header_style="bold green")
     table.add_column("Variable")
     table.add_column("Set?", justify="center")
@@ -190,7 +252,9 @@ dev_app = typer.Typer(help="Development utilities")
 
 @dev_app.command("run")
 def dev_run():
-    """Run with hot-reload using watchdog"""
+    """
+    Запуск API с hot-reload в режиме разработки (watchdog).
+    """
     try:
         subprocess.run(
             [
@@ -230,7 +294,16 @@ def run(
     dry_run: bool = typer.Option(False, help="Dry run environment cleanup"),
     log_changes: bool = typer.Option(True, help="Log environment changes"),
 ):
-    """Run a specified service"""
+    """
+    Запустить выбранный сервис в рамках TGNMS (бот, API или планировщик).
+
+    Args:
+        role (RoleType): Выбранная роль сервиса.
+        debug (bool): Включить debug-режим.
+        dev (bool): Включить dev-режим.
+        dry_run (bool): Не выполнять очистку переменных (только показать).
+        log_changes (bool): Выводить информацию об очищенных переменных.
+    """
     _run_service(role, debug, dev, dry_run, log_changes)
 
 
@@ -243,8 +316,21 @@ app.add_typer(dev_app, name="dev")
 
 @app.command()
 def completion(shell: Optional[str] = typer.Argument(None)):
-    """Generate shell completion (bash/zsh/fish/powershell)"""
+    """
+    Сгенерировать автодополнение для shell (bash/zsh/fish/powershell).
+
+    Args:
+        shell (Optional[str]): Название shell (по умолчанию bash).
+    """
     typer.echo(app.get_completion(shell or "bash"))
+
+
+@app.command()
+def version():
+    """
+    Показать текущую версию приложения.
+    """
+    console.print(f"[bold]TGNMS version:[/bold] [green]{__version__}[/green]")
 
 
 @app.callback()
@@ -256,6 +342,13 @@ def main(
         None, "--config", help="Path to env override file"
     ),
 ):
+    """
+    Основной обработчик флагов CLI.
+
+    Args:
+        version (Optional[bool]): Флаг отображения версии и выхода.
+        config (Optional[str]): Путь к кастомному конфиг-файлу окружения.
+    """
     if config:
         _load_custom_env(config)
     elif os.path.exists(DEFAULT_CONFIG_PATH):

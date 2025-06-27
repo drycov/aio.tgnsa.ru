@@ -4,14 +4,13 @@ import yaml
 import msgpack
 import tomli_w
 import tomllib
-import hashlib
 
 from typing import Optional, Dict, Any, Callable, Literal
 
 import aiofiles
 from aiogram.fsm.state import State
 from aiogram.fsm.storage.base import BaseStorage, StorageKey
-
+from app.core.config import logger
 from app.core.utils.logger_manager import LoggerManager
 
 # --- Поддержка сериализации ---

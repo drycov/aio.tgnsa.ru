@@ -8,7 +8,7 @@ def generate_password(
     use_lowercase: bool = True,
     use_digits: bool = True,
     use_special: bool = True,
-    special_chars: str = "!@#$%^&*()-_=+[]{}|;:,.<>?/"
+    special_chars: str = "!@#$%^&*()-_=+[]{}|;:,.<>?/",
 ) -> str:
     """
     Генерация криптографически стойкого пароля с возможностью настройки символов.
@@ -26,7 +26,8 @@ def generate_password(
     """
     if length < 4:
         raise ValueError(
-            "Длина пароля должна быть не менее 4 символов для безопасности")
+            "Длина пароля должна быть не менее 4 символов для безопасности"
+        )
 
     charset = ""
     if use_uppercase:
@@ -39,8 +40,7 @@ def generate_password(
         charset += special_chars
 
     if not charset:
-        raise ValueError(
-            "Должен быть хотя бы один тип символов для генерации пароля")
+        raise ValueError("Должен быть хотя бы один тип символов для генерации пароля")
 
     # Гарантируем, что пароль содержит хотя бы один символ каждого выбранного типа
     password_chars = []
@@ -56,8 +56,7 @@ def generate_password(
 
     # Остальную часть пароля добираем случайными символами из всего набора
     remaining_length = length - len(password_chars)
-    password_chars.extend(secrets.choice(charset)
-                          for _ in range(remaining_length))
+    password_chars.extend(secrets.choice(charset) for _ in range(remaining_length))
 
     # Перемешиваем символы, чтобы не было шаблонов
     secrets.SystemRandom().shuffle(password_chars)

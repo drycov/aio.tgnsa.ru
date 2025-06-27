@@ -1,5 +1,4 @@
-import contextlib
-from typing import Optional, Dict, Any, Union
+from typing import Dict, Any, Union
 
 from aiogram import F, Router
 from aiogram.filters import CommandStart, Command
@@ -23,7 +22,6 @@ from app.exceptions.exceptions import UserNotFoundError
 from app.services.user import UserSearchField, UserService
 from app.core.utils.decorators import safe_delete_message
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.bot.keyboards.base import in_back_keyboard
 
 router = Router()
 

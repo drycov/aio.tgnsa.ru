@@ -48,7 +48,7 @@ class UserService:
 
     async def create_user(self, user_data: UserCreate, role_name: str = "user") -> User:
         payload = user_data.model_dump()
-        password = payload.pop("password", None)
+        # password = payload.pop("password", None)
 
         new_user = User(**payload)
         # Внутри UserService.create_user()

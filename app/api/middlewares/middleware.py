@@ -1,4 +1,3 @@
-import re
 import time
 from typing import Any, Dict, List, Pattern
 
@@ -14,7 +13,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware для логирования запросов с поддержкой исключений."""
 
     def __init__(
-        self, app, exclude_paths: List[str] = None, exclude_patterns: List[Pattern] = None
+        self,
+        app,
+        exclude_paths: List[str] = None,
+        exclude_patterns: List[Pattern] = None,
     ):
         super().__init__(app)
         self.exclude_paths = set(exclude_paths or [])
@@ -39,7 +41,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             "user_agent": request.headers.get("User-Agent", ""),
             "query_params": str(request.query_params),
             "client": request.client.host if request.client else None,
-            "timestamp": isotime()
+            "timestamp": isotime(),
         }
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -67,8 +69,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             extra={
                 **request_data,
                 "status_code": response.status_code,
-                "process_time": round(process_time, 3)
-            }
+                "process_time": round(process_time, 3),
+            },
         )
 
         return response

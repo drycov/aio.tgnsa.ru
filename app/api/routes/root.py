@@ -1,4 +1,3 @@
-import os
 import platform
 from datetime import datetime
 
@@ -56,7 +55,7 @@ async def root(request: Request):
     # Получаем системную информацию
     cpu_percent = psutil.cpu_percent(interval=1)
     memory = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
+    disk = psutil.disk_usage("/")
 
     return templates.TemplateResponse(
         "index.html",
@@ -77,9 +76,9 @@ async def root(request: Request):
                 "memory_usage": f"{memory.percent}%",
                 "disk_usage": f"{disk.percent}%",
                 "processors": psutil.cpu_count(),
-                "hostname": platform.node()
+                "hostname": platform.node(),
             },
-        }
+        },
     )
 
 
@@ -89,10 +88,9 @@ async def get_system_info():
     try:
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
         tz = pytz.timezone(settings.misc.TIMEZONE)
-        current_time = datetime.now(tz).strftime(
-            "%H:%M:%S")  # Форматируем время
+        current_time = datetime.now(tz).strftime("%H:%M:%S")  # Форматируем время
         logger.debug(f"current_time: {current_time}")
         return {
             "status": "success",
@@ -100,11 +98,8 @@ async def get_system_info():
                 "cpu_usage": f"{cpu_percent}%",
                 "memory_usage": f"{memory.percent}%",
                 "disk_usage": f"{disk.percent}%",
-                "current_time": current_time
-            }
+                "current_time": current_time,
+            },
         }
     except Exception as e:
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+        return {"status": "error", "message": str(e)}

@@ -2,25 +2,28 @@ from datetime import datetime, timezone
 from typing import Optional
 
 # Форматы временных меток
-DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'  # С миллисекундами
-DATE_FORMAT = '%Y-%m-%d'  # Только дата
-TIME_FORMAT = '%H:%M:%S'  # Только время
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"  # С миллисекундами
+DATE_FORMAT = "%Y-%m-%d"  # Только дата
+TIME_FORMAT = "%H:%M:%S"  # Только время
 
-def isotime(dt: Optional[datetime] = None,
-            microseconds: bool = True,
-            include_timezone: bool = True) -> str:
+
+def isotime(
+    dt: Optional[datetime] = None,
+    microseconds: bool = True,
+    include_timezone: bool = True,
+) -> str:
     if dt is None:
         dt = datetime.now(timezone.utc)  # timezone — импорт из datetime
 
     if microseconds:
-        fmt = '%Y-%m-%dT%H:%M:%S.%f'
+        fmt = "%Y-%m-%dT%H:%M:%S.%f"
         timestamp = dt.strftime(fmt)[:-3]  # Обрезаем до миллисекунд
     else:
-        fmt = '%Y-%m-%dT%H:%M:%S'
+        fmt = "%Y-%m-%dT%H:%M:%S"
         timestamp = dt.strftime(fmt)
 
     if include_timezone:
-        timestamp += 'Z'
+        timestamp += "Z"
 
     return timestamp
 

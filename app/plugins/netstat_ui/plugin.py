@@ -1,7 +1,7 @@
 import socket
 import psutil
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from app.plugins.base import Plugin
@@ -17,7 +17,8 @@ class NetstatUIPlugin(Plugin):
         self._config = {}
 
         self.templates = Jinja2Templates(
-            directory=str(Path(__file__).parent / "templates"))
+            directory=str(Path(__file__).parent / "templates")
+        )
 
     def init(self, config: dict):
         self._config = config or {}
@@ -34,7 +35,9 @@ class NetstatUIPlugin(Plugin):
                         "local_address": f"{conn.laddr.ip}:{conn.laddr.port}",
                         "status": conn.status,
                         "pid": conn.pid,
-                        "process": psutil.Process(conn.pid).name() if conn.pid else None
+                        "process": psutil.Process(conn.pid).name()
+                        if conn.pid
+                        else None,
                     }
                     data.append(info)
                 except Exception:
@@ -43,10 +46,14 @@ class NetstatUIPlugin(Plugin):
 
         @self.router.get(f"{base_path}/ui")
         async def netstat_ui(request: Request):
-            return self.templates.TemplateResponse("netstat_ui.html",
-                                                   {"request": request,
-                                                    "static_url": self._config.get("static_url", "/static"),
-                                                    "favicon_url": self._config.get("favicon_url", "/favicon.ico"), })
+            return self.templates.TemplateResponse(
+                "netstat_ui.html",
+                {
+                    "request": request,
+                    "static_url": self._config.get("static_url", "/static"),
+                    "favicon_url": self._config.get("favicon_url", "/favicon.ico"),
+                },
+            )
 
     def register_fastapi(self, app):
         app.include_router(self.router)

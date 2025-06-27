@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, computed_field, field_serializer
+from pydantic import BaseModel, EmailStr, Field, computed_field
 
 
 class UserBase(BaseModel):
@@ -28,7 +28,6 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
 
     class Config:
-
         exclude = ["created_at", "updated_at"]  # Exclude these from input
 
 

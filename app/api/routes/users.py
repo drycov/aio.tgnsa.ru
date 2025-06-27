@@ -45,8 +45,7 @@ async def get_user_by_tg_id(
 @router.post("/", response_model=UserResponse)
 async def create_user(
     user_data: UserCreate,  # схема создания пользователя
-        session: AsyncSession = Depends(get_session),
-
+    session: AsyncSession = Depends(get_session),
 ):
     user_service = UserService(session)
     return await user_service.create_user(user_data)

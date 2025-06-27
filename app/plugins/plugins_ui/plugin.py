@@ -6,7 +6,7 @@ from typing import Dict, Any, List
 import tomllib
 
 from app.plugins.base import Plugin
-from app.core.config import settings, logger
+from app.core.config import logger
 from app.plugins.manager import PluginManager
 
 
@@ -35,22 +35,21 @@ class PluginsUIPlugin(Plugin):
             path=f"{base_path}/enable/{{plugin_name}}",
             endpoint=self._enable_plugin,
             methods=["POST"],
-            response_class=JSONResponse
+            response_class=JSONResponse,
         )
         self.router.add_api_route(
             path=f"{base_path}/disable/{{plugin_name}}",
             endpoint=self._disable_plugin,
             methods=["POST"],
-            response_class=JSONResponse
+            response_class=JSONResponse,
         )
 
     def init(self, config: Dict[str, Any]) -> None:
         """Инициализация плагина с конфигурацией."""
         self._config = config or {}
-        templates_dir = Path(self._config.get(
-            "templates_dir", 
-            Path(__file__).parent / "templates"
-        ))
+        templates_dir = Path(
+            self._config.get("templates_dir", Path(__file__).parent / "templates")
+        )
 
         try:
             self.templates = Jinja2Templates(directory=str(templates_dir))
@@ -64,7 +63,7 @@ class PluginsUIPlugin(Plugin):
         if not plugin_manager:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="PluginManager not initialized"
+                detail="PluginManager not initialized",
             )
 
         plugins_data = self._get_plugins_data(plugin_manager)
@@ -78,8 +77,8 @@ class PluginsUIPlugin(Plugin):
                 "static_url": self._config.get("static_url", "/static"),
                 "favicon_url": self._config.get("favicon_url", "/favicon.ico"),
                 "base_path": base_path,
-                "title": "Управление плагинами"
-            }
+                "title": "Управление плагинами",
+            },
         )
 
     def _get_plugins_data(self, plugin_manager: PluginManager) -> List[Dict[str, Any]]:
@@ -105,23 +104,20 @@ class PluginsUIPlugin(Plugin):
         return await self._toggle_plugin(plugin_name, False, request)
 
     async def _toggle_plugin(
-        self, 
-        plugin_name: str, 
-        enabled: bool, 
-        request: Request
+        self, plugin_name: str, enabled: bool, request: Request
     ) -> JSONResponse:
         """Общая логика включения/отключения плагина."""
         plugin_manager = PluginManager.get_instance()
         if not plugin_manager:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Plugin manager not initialized"
+                detail="Plugin manager not initialized",
             )
 
         if plugin_name not in plugin_manager.plugins:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Plugin '{plugin_name}' not found"
+                detail=f"Plugin '{plugin_name}' not found",
             )
 
         try:
@@ -134,16 +130,18 @@ class PluginsUIPlugin(Plugin):
                 plugin_name,
                 app=app,
                 dp=getattr(app.state, "dp", None),
-                scheduler=getattr(app.state, "scheduler", None)
+                scheduler=getattr(app.state, "scheduler", None),
             )
 
-            return JSONResponse({
-                "status": "success",
-                "plugin": plugin_name,
-                "enabled": enabled,
-                "reloaded": success,
-                "message": f"Plugin '{plugin_name}' {'enabled' if enabled else 'disabled'}"
-            })
+            return JSONResponse(
+                {
+                    "status": "success",
+                    "plugin": plugin_name,
+                    "enabled": enabled,
+                    "reloaded": success,
+                    "message": f"Plugin '{plugin_name}' {'enabled' if enabled else 'disabled'}",
+                }
+            )
 
         except HTTPException:
             raise
@@ -167,10 +165,7 @@ class PluginsUIPlugin(Plugin):
             raise RuntimeError("Could not load plugin configuration") from e
 
     def _update_plugin_config(
-        self, 
-        plugin_name: str, 
-        enabled: bool, 
-        config: Dict[str, Any]
+        self, plugin_name: str, enabled: bool, config: Dict[str, Any]
     ) -> None:
         """Обновление конфигурации плагина."""
         plugin_config = config.get(plugin_name, {})
@@ -179,8 +174,7 @@ class PluginsUIPlugin(Plugin):
 
         try:
             PluginManager.get_instance().atomic_write(
-                PluginManager.get_instance().plugin_config_file,
-                config
+                PluginManager.get_instance().plugin_config_file, config
             )
         except Exception as e:
             logger.error(f"Failed to write plugin config: {e}")
@@ -188,9 +182,7 @@ class PluginsUIPlugin(Plugin):
 
     def register_fastapi(self, app) -> None:
         """Регистрация маршрутов в FastAPI."""
-        app.include_router(
-            self.router
-        )
+        app.include_router(self.router)
 
 
 plugin = PluginsUIPlugin()

@@ -1,14 +1,13 @@
 import os
 import tempfile
 import importlib
-import logging
 import sys
 import subprocess
 from pathlib import Path
 import traceback
-from typing import Any, Dict, List, Optional, Set, Type
-from collections import defaultdict
-from functools import lru_cache
+from typing import Any, Dict, List, Optional, Set
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from aiogram import Dispatcher
 import tomli_w
@@ -140,7 +139,7 @@ class PluginManager:
         for module_path in self.core_plugin_modules:
             try:
                 self._load_plugin_from_module(module_path, source_prefix="core")
-            except Exception as e:
+            except Exception:
                 logger.exception(f"❌ Failed to load core plugin '{module_path}'")
 
     def _load_local_plugins(self) -> None:
@@ -157,7 +156,7 @@ class PluginManager:
 
             try:
                 self._load_plugin_from_module(module_path, source_prefix="local")
-            except Exception as e:
+            except Exception:
                 logger.exception(f"❌ Failed to load plugin '{plugin_module}'")
 
     def _load_entrypoint_plugins(self) -> None:
@@ -546,6 +545,13 @@ class PluginManager:
                 plugin, "register_aiogram"
             ):
                 plugin.register_aiogram(dp)
+
+    def register_scheduler(self, scheduler: AsyncIOScheduler) -> None:
+        for plugin in self.sorted_plugins:
+            if getattr(plugin, "enabled", False) and hasattr(
+                plugin, "register_scheduler"
+            ):
+                plugin.register_scheduler(scheduler)
 
     # --- Singleton Access ---
 

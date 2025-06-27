@@ -21,30 +21,35 @@ class VersionCheckerPlugin(Plugin):
         @self.router.get(path)
         async def version_summary():
             manager = PluginManager.get_instance()
-            plugin_versions = [
-                {
-                    "name": plugin.name,
-                    "description": plugin.description,
-                    "version": plugin.get_version(),
-                    "enabled": getattr(plugin, "enabled", True),
-                    "priority": getattr(plugin, "priority", 100),
-                }
-                for plugin in manager.sorted_plugins
-            ] if manager else []
+            plugin_versions = (
+                [
+                    {
+                        "name": plugin.name,
+                        "description": plugin.description,
+                        "version": plugin.get_version(),
+                        "enabled": getattr(plugin, "enabled", True),
+                        "priority": getattr(plugin, "priority", 100),
+                    }
+                    for plugin in manager.sorted_plugins
+                ]
+                if manager
+                else []
+            )
 
-            return JSONResponse({
-                "project": {
-                    "name": settings.app.APP_NAME,
-                    "description": settings.app.DESCRIPTION,
-                    "version": settings.VERSION,
-                    "debug": debug_mode,
-                },
-                "plugins": plugin_versions
-            })
+            return JSONResponse(
+                {
+                    "project": {
+                        "name": settings.app.APP_NAME,
+                        "description": settings.app.DESCRIPTION,
+                        "version": settings.VERSION,
+                        "debug": debug_mode,
+                    },
+                    "plugins": plugin_versions,
+                }
+            )
 
     def register_fastapi(self, app):
         app.include_router(self.router)
-
 
 
 plugin = VersionCheckerPlugin()

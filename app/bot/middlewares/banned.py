@@ -1,4 +1,3 @@
-import time
 from logging import Logger
 from typing import Any, Awaitable, Callable, Dict
 
@@ -20,7 +19,7 @@ class BannedCheckMiddleware(BaseMiddleware):
         self,
         handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ) -> Any:
         user = data.get("user")
         tg_id = getattr(user, "tg_id", None)
@@ -37,7 +36,9 @@ class BannedCheckMiddleware(BaseMiddleware):
             if isinstance(event, Message):
                 await event.answer(Messages.YOU_ARE_BANNED.value)
             else:
-                self.logger.debug("⚠️ Event не поддерживает .answer(), пропуск уведомления")
+                self.logger.debug(
+                    "⚠️ Event не поддерживает .answer(), пропуск уведомления"
+                )
 
             return  # Прекращаем обработку
 

@@ -34,11 +34,9 @@ class SmartRateLimitMiddleware(BaseMiddleware):
         )
         self.exempt_users = exempt_user_ids or set()
 
-        self.user_data = defaultdict(lambda: {
-            "last_time": 0.0,
-            "spam_count": 0,
-            "last_warning": 0.0
-        })
+        self.user_data = defaultdict(
+            lambda: {"last_time": 0.0, "spam_count": 0, "last_warning": 0.0}
+        )
 
     async def __call__(
         self,
@@ -65,7 +63,9 @@ class SmartRateLimitMiddleware(BaseMiddleware):
 
             if user["spam_count"] >= self.max_spam:
                 if now - user["last_warning"] > 10:
-                    self.logger.warning(f"🚫 Пользователь {user_id} превысил лимит запросов")
+                    self.logger.warning(
+                        f"🚫 Пользователь {user_id} превысил лимит запросов"
+                    )
                     await self._answer_too_many_requests(event)
                     user["last_warning"] = now
                 return None

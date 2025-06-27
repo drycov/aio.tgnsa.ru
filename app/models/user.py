@@ -1,9 +1,7 @@
 from __future__ import annotations
-from datetime import timedelta
 
 from datetime import datetime
 from typing import List, Optional
-from app.core.config import settings
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -16,10 +14,8 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from jose import jwt
 from app.core.jwt_manager import JWTManager
 from app.core.base import Base
-from app.models.role import Role  # ← Убедись, что импорт есть
 
 
 # Ассоциативная таблица User ↔ Role (many-to-many)
@@ -33,6 +29,7 @@ user_roles = Table(
 
 class User(Base):
     __tablename__ = "users"
+    # from app.models.role import Role  # ← Убедись, что импорт есть
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     tg_id: Mapped[int] = mapped_column(
@@ -82,7 +79,7 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    roles: Mapped[List[Role]] = relationship(
+    roles: Mapped[List["Role"]] = relationship(
         back_populates="users",
         secondary=user_roles,
         lazy="joined",

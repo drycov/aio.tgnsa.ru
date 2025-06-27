@@ -2,10 +2,8 @@ from typing import List
 from aiogram.types import KeyboardButton
 from aiogram import Router
 from app.plugins.base import Plugin
-from .menu_inline.inline import register_inline_query
 from .constants.menu import get_menu_buttons
 from .menu_handler.handlers import register_handlers
-from app.core.config import logger
 
 
 class DeviceCheckMenuPlugin(Plugin):

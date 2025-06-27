@@ -10,16 +10,18 @@ from app.core.base import Base
 
 class Role(Base):
     __tablename__ = "roles"
+    from .user import User
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(
-        String(50), unique=True, nullable=False, index=True)
+        String(50), unique=True, nullable=False, index=True
+    )
 
     @staticmethod
     def default_roles():
-        return ["admin", "user","candidat"]
-    
-    users: Mapped[List["User"]] = relationship( # type: ignore
+        return ["admin", "user", "candidat"]
+
+    users: Mapped[List["User"]] = relationship(  # type: ignore
         "User",
         back_populates="roles",
         # Название таблицы many-to-many (указано явно, допустимо)
