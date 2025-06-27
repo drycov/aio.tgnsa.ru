@@ -17,11 +17,15 @@ console = Console()
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.tgnmsrc")
 from enum import Enum
 
+
 class RoleType(str, Enum):
     bot = "bot"
     api = "api"
     scheduler = "scheduler"
+
+
 plugin_manager = None
+
 
 # --- Load external environment config ---
 def _load_custom_env(path: Optional[str]):
@@ -33,6 +37,7 @@ def _load_custom_env(path: Optional[str]):
                     k, v = line.strip().split("=", 1)
                     os.environ.setdefault(k, v)
 
+
 # --- Clean environment variables ---
 def clean_env_vars(
     dry_run: bool,
@@ -42,15 +47,16 @@ def clean_env_vars(
 ) -> List[str]:
     cleared_vars: List[str] = []
 
-    show_table = os.getenv("DEBUG", "false").lower() in ("1", "true") or \
-                 os.getenv("DEV", "false").lower() in ("1", "true")
+    show_table = os.getenv("DEBUG", "false").lower() in ("1", "true") or os.getenv(
+        "DEV", "false"
+    ).lower() in ("1", "true")
 
     table = None
     if show_table:
         table = Table(
             title=f"Environment Cleanup for [bold]{role}[/bold]",
             show_header=True,
-            header_style="bold magenta"
+            header_style="bold magenta",
         )
         table.add_column("Variable", style="cyan")
         table.add_column("Action", style="green")
@@ -66,9 +72,12 @@ def clean_env_vars(
 
     if log_changes and cleared_vars and show_table:
         console.print(table)
-        rprint(f"\n[bold]{'Would clear' if dry_run else 'Cleared'}:[/bold] {len(cleared_vars)} variables")
+        rprint(
+            f"\n[bold]{'Would clear' if dry_run else 'Cleared'}:[/bold] {len(cleared_vars)} variables"
+        )
 
     return cleared_vars
+
 
 # --- Unified service runner ---
 def _run_service(role: str, debug: bool, dev: bool, dry_run: bool, log_changes: bool):
@@ -86,33 +95,46 @@ def _run_service(role: str, debug: bool, dev: bool, dry_run: bool, log_changes: 
     from app.core.config import logger
 
     if role == "bot":
-        logger.success("\U0001F680 Starting Telegram Bot...")
+        logger.success("\U0001f680 Starting Telegram Bot...")
         run_bot()
     elif role == "api":
-        logger.success("\U0001F680 Starting API Server...")
+        logger.success("\U0001f680 Starting API Server...")
         run_api()
     elif role == "scheduler":
-        logger.success("\U0001F680 Starting Task Scheduler...")
+        logger.success("\U0001f680 Starting Task Scheduler...")
         run_scheduler()
+
 
 # --- Plugin Autocompletion ---
 def _get_plugins():
     global plugin_manager
+
+    plugin_manager = PluginManager.get_instance()
     if plugin_manager is None:
-        plugin_manager = PluginManager()
+        plugin_manager = PluginManager.create_once()
         plugin_manager.load_all()
+    elif not plugin_manager._initialized:
+        plugin_manager.load_all()
+
     return plugin_manager
+
 
 def plugin_name_autocomplete(ctx: typer.Context, incomplete: str):
     manager = _get_plugins()
-    return [plugin.name for plugin in manager.sorted_plugins if plugin.name.startswith(incomplete)]
+    return [
+        plugin.name
+        for plugin in manager.sorted_plugins
+        if plugin.name.startswith(incomplete)
+    ]
+
 
 # --- Plugin SubApp ---
 plugins_app = typer.Typer(help="Plugin management commands")
 
+
 @plugins_app.command("list")
 def list_plugins():
-    """\U0001F4E6 List available plugins"""
+    """\U0001f4e6 List available plugins"""
     manager = _get_plugins()
 
     table = Table(title="Loaded Plugins")
@@ -124,20 +146,28 @@ def list_plugins():
 
     console.print(table)
 
+
 @plugins_app.command("enable")
-def enable_plugin(name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete)):
+def enable_plugin(
+    name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete)
+):
     """Enable a plugin by name"""
     os.environ[f"PLUGIN__{name.upper()}__ENABLED"] = "1"
     rprint(f"[green]\u2714 Enabled plugin:[/green] {name}")
 
+
 @plugins_app.command("disable")
-def disable_plugin(name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete)):
+def disable_plugin(
+    name: str = typer.Argument(..., autocompletion=plugin_name_autocomplete)
+):
     """Disable a plugin by name"""
     os.environ[f"PLUGIN__{name.upper()}__ENABLED"] = "0"
     rprint(f"[red]\u2716 Disabled plugin:[/red] {name}")
 
+
 # --- Env SubApp ---
 env_app = typer.Typer(help="Environment variable commands")
+
 
 @env_app.command("list")
 def list_env():
@@ -153,37 +183,56 @@ def list_env():
 
     console.print(table)
 
+
 # --- Dev SubApp ---
 dev_app = typer.Typer(help="Development utilities")
+
 
 @dev_app.command("run")
 def dev_run():
     """Run with hot-reload using watchdog"""
     try:
-        subprocess.run([
-            "watchmedo", "auto-restart",
-            "--patterns=*.py",
-            "--recursive",
-            "--directory=app",
-            "--", "python", "-m", "app.cli", "service", "run", "api",
-            "--debug", "--dev"
-        ])
+        subprocess.run(
+            [
+                "watchmedo",
+                "auto-restart",
+                "--patterns=*.py",
+                "--recursive",
+                "--directory=app",
+                "--",
+                "python",
+                "-m",
+                "app.cli",
+                "service",
+                "run",
+                "api",
+                "--debug",
+                "--dev",
+            ]
+        )
     except FileNotFoundError:
-        console.print("[bold red]watchdog/watchmedo is not installed. Use: pip install watchdog[/bold red]")
+        console.print(
+            "[bold red]watchdog/watchmedo is not installed. Use: pip install watchdog[/bold red]"
+        )
+
 
 # --- Service SubApp ---
 service_app = typer.Typer(help="Service runner commands")
 
+
 @service_app.command("run")
 def run(
-    role: RoleType = typer.Argument(..., help="Service role: [bold]bot[/], [bold]api[/], or [bold]scheduler[/]"),
+    role: RoleType = typer.Argument(
+        ..., help="Service role: [bold]bot[/], [bold]api[/], or [bold]scheduler[/]"
+    ),
     debug: bool = typer.Option(False, help="Enable debug mode"),
     dev: bool = typer.Option(False, help="Enable development mode"),
     dry_run: bool = typer.Option(False, help="Dry run environment cleanup"),
-    log_changes: bool = typer.Option(True, help="Log environment changes")
+    log_changes: bool = typer.Option(True, help="Log environment changes"),
 ):
     """Run a specified service"""
     _run_service(role, debug, dev, dry_run, log_changes)
+
 
 # Register SubApps
 app.add_typer(service_app, name="service")
@@ -191,15 +240,21 @@ app.add_typer(plugins_app, name="plugins")
 app.add_typer(env_app, name="env")
 app.add_typer(dev_app, name="dev")
 
+
 @app.command()
 def completion(shell: Optional[str] = typer.Argument(None)):
     """Generate shell completion (bash/zsh/fish/powershell)"""
     typer.echo(app.get_completion(shell or "bash"))
 
+
 @app.callback()
 def main(
-    version: Optional[bool] = typer.Option(None, "--version", help="Show version and exit", is_eager=True),
-    config: Optional[str] = typer.Option(None, "--config", help="Path to env override file")
+    version: Optional[bool] = typer.Option(
+        None, "--version", help="Show version and exit", is_eager=True
+    ),
+    config: Optional[str] = typer.Option(
+        None, "--config", help="Path to env override file"
+    ),
 ):
     if config:
         _load_custom_env(config)
@@ -208,5 +263,8 @@ def main(
 
     if version:
         from app.core.config import settings
-        console.print(f"[bold]{settings.app.APP_NAME}[/bold] version [green]{settings.VERSION}[/green]")
+
+        console.print(
+            f"[bold]{settings.app.APP_NAME}[/bold] version [green]{settings.VERSION}[/green]"
+        )
         raise typer.Exit()

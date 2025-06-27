@@ -2,8 +2,6 @@ from enum import Enum
 
 
 class MenuLabels(Enum):
-    DEVICE_CHECK = "🧪 Проверка устройства"
-    ADVANCED = "🛠 Дополнительно"
     ERTM_MENU = "📡 Подсистема ЭРТМ"
     TASK_MANAGER = "📋 Задачи"
     USER_PROFILE = "👤 Профиль"
@@ -21,3 +19,6 @@ class MenuLabels(Enum):
     GET_LOGS = "📜 Получить логи"
 
     BACK = "⬅️ Назад"
+
+
+# app/bot/constants/positions.py

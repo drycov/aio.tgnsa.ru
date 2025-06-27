@@ -6,12 +6,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Set
 
 from dotenv import load_dotenv, set_key
-from pydantic import (Field, SecretStr, ValidationError, computed_field, field_validator,
-                      model_validator)
+from pydantic import (
+    Field,
+    SecretStr,
+    ValidationError,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core import LoggerManager
-from app.utils.version import __version__
+from app.core.utils.version import __version__
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -43,6 +49,7 @@ class AppSettings(BaseSettings):
         DEFAULT_EMAIL (str): Email по умолчанию
         DEFAULT_USER_FULLNAME (str): Полное имя пользователя по умолчанию
     """
+
     APP_NAME: str = "TG NMS"
     DESCRIPTION: str = (
         "**TG NMS** — модульная система управления сетевой инфраструктурой для малых и средних ISP. "
@@ -154,7 +161,8 @@ class MySQLConfig(BaseSettings):
 
 class DBSettings(BaseSettings):
     engine: Literal["sqlite", "postgres", "mysql"] = Field(
-        default="sqlite", env="DB_ENGINE")
+        default="sqlite", env="DB_ENGINE"
+    )
     postgres: Optional[PostgresConfig] = None
     mysql: Optional[MySQLConfig] = None
     sqlite: Optional[SqliteConfig] = None
@@ -183,36 +191,38 @@ class DBSettings(BaseSettings):
             return config.dsn()
         else:
             raise ValueError(
-                f"❌ DB_ENGINE={self.engine} не поддерживается или не сконфигурирован")
+                f"❌ DB_ENGINE={self.engine} не поддерживается или не сконфигурирован"
+            )
 
     def get_sync_dsn(self) -> str:
         if config := self.get_db_config():
             return config.sync_dsn() if hasattr(config, "sync_dsn") else config.dsn()
         else:
             raise ValueError(
-                f"❌ DB_ENGINE={self.engine} не поддерживается или не сконфигурирован")
+                f"❌ DB_ENGINE={self.engine} не поддерживается или не сконфигурирован"
+            )
 
 
 class BotConfig(BaseSettings):
     TOKEN: SecretStr
     # .env: ADMINS=123456789,987654321
     ADMINS: Set[int] = Field(
-        default_factory=set,
-        description="Список ID администраторов",
-        env="ADMINS"
+        default_factory=set, description="Список ID администраторов", env="ADMINS"
     )
 
     SUPERUSERS: Set[int] = Field(
         default_factory=set,
         description="Список ID суперпользователей (имеют полный доступ)",
-        env="SUPERUSERS"
+        env="SUPERUSERS",
     )
     RATE_LIMIT: float = Field(
-        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT")
+        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT"
+    )
 
     ROLE_ACCESS: Dict[str, List[str]] = Field(
         default_factory=dict,
-        description="Словарь прав доступа для ролей", env="ROLE_ACCESS"
+        description="Словарь прав доступа для ролей",
+        env="ROLE_ACCESS",
     )
 
     @field_validator("ADMINS", "SUPERUSERS", mode="before")
@@ -236,6 +246,7 @@ class BotConfig(BaseSettings):
     @classmethod
     def parse_role_access(cls, v):
         import json
+
         if isinstance(v, dict):
             return v
         if isinstance(v, str):
@@ -249,11 +260,14 @@ class BotConfig(BaseSettings):
                     return {"default": parsed}
             except json.JSONDecodeError:
                 # CSV fallback: admin,user → {"default": [...]}
-                return {"default": [item.strip() for item in v.split(",") if item.strip()]}
+                return {
+                    "default": [item.strip() for item in v.split(",") if item.strip()]
+                }
         elif isinstance(v, list):
             return {"default": v}
         raise ValueError(
-            "Неверный формат ROLE_ACCESS — должен быть словарём или списком")
+            "Неверный формат ROLE_ACCESS — должен быть словарём или списком"
+        )
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -297,7 +311,7 @@ class MongoDBConfig(BaseSettings):
         env_file_encoding="utf-8",
         env_prefix="MONGO_",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
     )
 
 
@@ -339,7 +353,7 @@ class CacheRedisConfig(BaseSettings):
         env_file_encoding="utf-8",
         env_prefix="CACHE_REDIS_",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
     )
 
 
@@ -348,26 +362,26 @@ class TFAConfig(BaseSettings):
     MANDATORY: list[int] = Field(default_factory=list, env="TFA_MANDATORY")
 
     model_config = SettingsConfigDict(
-        env_file=ENV_PATH,
-        env_prefix="TFA_",
-        case_sensitive=True,
-        extra="ignore"
+        env_file=ENV_PATH, env_prefix="TFA_", case_sensitive=True, extra="ignore"
     )
 
 
 class Security(BaseSettings):
     TFA_ENABLE: bool = Field(default=False, env="TFA_ENABLE")
 
-    JWT_SECRET: SecretStr | None = Field(
-        default=None, env="SECURITY_JWT_SECRET")
+    JWT_SECRET: SecretStr | None = Field(default=None, env="SECURITY_JWT_SECRET")
     JWT_ALGORITHM: str = Field("HS256", env="SECURITY_JWT_ALGORITHM")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
         60, env="SECURITY_ACCESS_TOKEN_EXPIRE_MINUTES"
     )
+    ACCESS_TOKEN_EXPIRE_SECONDS: int = Field(
+        3600, env="SECURITY_ACCESS_TOKEN_EXPIRE_SECONDS"
+    )
+
     ADMIN_PASSWORD: SecretStr | None = Field(
-        default=None, env="SECURITY_ADMIN_PASSWORD")
-    USE_SPECIAL_CHAR: bool = Field(
-        default=False, env="SECURITY_USE_SPECIAL_CHAR")
+        default=None, env="SECURITY_ADMIN_PASSWORD"
+    )
+    USE_SPECIAL_CHAR: bool = Field(default=False, env="SECURITY_USE_SPECIAL_CHAR")
     MIN_LENGTH: int = Field(default=8, env="SECURITY_MIN_LENGTH")
     tfa: Optional[TFAConfig] = None
 
@@ -394,13 +408,17 @@ class Security(BaseSettings):
             # Записываем ключ в .env
             set_key(str(ENV_PATH), key, secret_value)
 
-        if values.JWT_SECRET is None or (isinstance(values.JWT_SECRET, str) and not values.JWT_SECRET):
+        if values.JWT_SECRET is None or (
+            isinstance(values.JWT_SECRET, str) and not values.JWT_SECRET
+        ):
             new_secret = secrets.token_urlsafe(32)
             values.JWT_SECRET = SecretStr(new_secret)
             save_secret_to_env("SECURITY_JWT_SECRET", new_secret)
             updated = True
 
-        if values.ADMIN_PASSWORD is None or (isinstance(values.ADMIN_PASSWORD, str) and not values.ADMIN_PASSWORD):
+        if values.ADMIN_PASSWORD is None or (
+            isinstance(values.ADMIN_PASSWORD, str) and not values.ADMIN_PASSWORD
+        ):
             password = generate_password(length=8, use_special=False)
             values.ADMIN_PASSWORD = SecretStr(password)
             save_secret_to_env("SECURITY_ADMIN_PASSWORD", password)
@@ -423,6 +441,7 @@ class MiddlewareConfig(BaseSettings):
         enable_profiler: Включить профилирование
         enable_tfa: Включить двухфакторную аутентификацию
     """
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -433,24 +452,27 @@ class MiddlewareConfig(BaseSettings):
 
     # Настройки ограничений
     rate_limit: float = Field(
-        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT")
+        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT"
+    )
 
     # Настройки доступа
 
     # Настройки ограничений
     rate_limit: float = Field(
-        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT")
+        default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT"
+    )
 
     role_access: Dict[str, List[str]] = Field(
         default_factory=dict,
-        description="Словарь прав доступа для ролей", env="ROLE_ACCESS"
+        description="Словарь прав доступа для ролей",
+        env="ROLE_ACCESS",
     )
 
     # Флаги функциональности
     enable_profiler: bool = Field(
         default=False,
         description="Включить профилирование производительности",
-        env="ENABLE_PROFILER"
+        env="ENABLE_PROFILER",
     )
 
     def is_superuser(self, user_id: str) -> bool:
@@ -470,10 +492,7 @@ class NetworkConfig(BaseSettings):
     SNMP_RW: list[str] = Field(default_factory=list, env="NETWORK_SNMP_RW")
 
     model_config = SettingsConfigDict(
-        env_file=ENV_PATH,
-        env_prefix="NETWORK_",
-        case_sensitive=True,
-        extra="ignore"
+        env_file=ENV_PATH, env_prefix="NETWORK_", case_sensitive=True, extra="ignore"
     )
 
 
@@ -493,20 +512,17 @@ class CacheConfig(BaseSettings):
         env_file=ENV_PATH,
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
     )
 
 
 class MiscConfig(BaseSettings):
     TIMEZONE: str = Field(default="UTC", env="TIMEZONE")
     MAX_PAYLOAD_SIZE_MB: int = Field(default=10, env="MAX_PAYLOAD_SIZE_MB")
-    EXCLUDED_SUBSTRINGS: Optional[str] = Field(
-        default="", env="EXCLUDED_SUBSTRINGS")
+    EXCLUDED_SUBSTRINGS: Optional[str] = Field(default="", env="EXCLUDED_SUBSTRINGS")
 
     model_config = SettingsConfigDict(
-        env_file=ENV_PATH,
-        case_sensitive=True,
-        extra="ignore"
+        env_file=ENV_PATH, case_sensitive=True, extra="ignore"
     )
 
 
@@ -517,17 +533,15 @@ class EmailConfig(BaseSettings):
     SMTP_PASSWORD: SecretStr = Field(..., env="EMAIL_SMTP_PASSWORD")
     FROM_EMAIL: Optional[str] = Field(default=None, env="EMAIL_FROM")
     ENABLE_TLS: bool = Field(default=True, env="EMAIL_ENABLE_TLS")
-    SUPPORT_EMAIL: Optional[str] = Field(
-        default=None, env="EMAIL_SUPPORT_EMAIL")
+    SUPPORT_EMAIL: Optional[str] = Field(default=None, env="EMAIL_SUPPORT_EMAIL")
     ADMIN_EMAIL: Optional[str] = Field(default=None, env="EMAIL_ADMIN_EMAIL")
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
         env_file_encoding="utf-8",
-
         env_prefix="EMAIL_",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
     )
 
 
@@ -538,15 +552,15 @@ class ApiServerConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
         env_file_encoding="utf-8",
-
         env_prefix=" API_",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
     )
 
 
 class Settings(BaseSettings):
     USE_REDIS: bool = Field(default=False, env="USE_REDIS")
+    USE_FS: bool = Field(default=False, env="USE_FS")
     USE_MONGODB: bool = Field(default=False, env="USE_MONGODB")
     USE_FIREBASE: bool = Field(default=False, env="USE_FIREBASE")
     USE_CACHE: bool = Field(default=False, env="USE_CACHE")
@@ -563,7 +577,6 @@ class Settings(BaseSettings):
     email: EmailConfig = Field(default_factory=EmailConfig)
     api: ApiServerConfig = Field(default_factory=ApiServerConfig)
     app: AppSettings = Field(default_factory=AppSettings)
-
 
     model_config = SettingsConfigDict(
         env_file=ENV_PATH,
@@ -599,6 +612,7 @@ class Settings(BaseSettings):
         if engine not in SUPPORTED_ENGINES:
             raise ValueError(f"❌ DB_ENGINE={engine} не поддерживается.")
         return values
+
     @computed_field
     @property
     def VERSION(self) -> str:
@@ -622,14 +636,3 @@ debug_mode = resolve_debug_mode()
 
 # --- Logger Initialization ---
 logger = LoggerManager(name=APP_ROLE, debug=debug_mode).get_logger()
-
-logger.debug("Отладка (DEBUG)")
-logger.info("Инфо (INFO)")
-logger.trace("Детальная трассировка (TRACE)")
-logger.notice("Обратите внимание (NOTICE)")
-logger.success("Операция завершена (SUCCESS)")
-logger.warning("Предупреждение (WARNING)")
-logger.error("Ошибка (ERROR)")
-logger.critical("Критическая ошибка (CRITICAL)")
-
-

@@ -10,18 +10,20 @@ from rich.logging import RichHandler
 from rich.theme import Theme
 
 # === Цветовая тема для Rich ===
-RICH_THEME = Theme({
+RICH_THEME = Theme(
+    {
         "logging.level.trace": "dim white",
-    "logging.level.notice": "bold magenta",
-    "logging.level.success": "bold green",
-    "logging.level.debug": "dim blue",
-    "logging.level.info": "bold cyan",
-    "logging.level.warning": "bold yellow",
-    "logging.level.error": "bold red",
-    "logging.level.critical": "bold white on red",
-    "logging.time": "dim",
-    "logging.name": "cyan",
-})
+        "logging.level.notice": "bold magenta",
+        "logging.level.success": "bold green",
+        "logging.level.debug": "dim blue",
+        "logging.level.info": "bold cyan",
+        "logging.level.warning": "bold yellow",
+        "logging.level.error": "bold red",
+        "logging.level.critical": "bold white on red",
+        "logging.time": "dim",
+        "logging.name": "cyan",
+    }
+)
 
 # === Кастомные уровни ===
 # NOTICE_LEVEL_NUM = 21
@@ -30,22 +32,15 @@ RICH_THEME = Theme({
 
 # Определяем кастомные уровни
 CUSTOM_LOG_LEVELS = {
-    'TRACE': 21,
-    'NOTICE': 23,
-    'SUCCESS': 25,
+    "TRACE": 21,
+    "NOTICE": 23,
+    "SUCCESS": 25,
 }
 
 # logging.addLevelName(TRACE_LEVEL_NUM, "TRACE")
 
 # logging.addLevelName(NOTICE_LEVEL_NUM, "NOTICE")
 # logging.addLevelName(SUCCESS_LEVEL_NUM, "SUCCESS")
-
-# === Путь по умолчанию для логов ===
-DEFAULT_LOG_DIRS = [
-    Path(__file__).resolve().parent.parent.parent / "logs",
-    Path("/var/log/tgnms"),
-    Path("/tmp/tgnms_logs"),
-]
 
 
 # === Расширение базового логгера методами success/notice ===
@@ -54,6 +49,7 @@ def patch_logger_with_custom_levels():
         def log_method(self, message, *args, **kwargs):
             if self.isEnabledFor(level_num):
                 self._log(level_num, message, args, **kwargs)
+
         return log_method
 
     for name, num in CUSTOM_LOG_LEVELS.items():
@@ -98,7 +94,19 @@ class LoggerManager:
             except Exception as e:
                 print(f"⚠️ Невозможно создать каталог логов: {e}", file=sys.stderr)
 
-        for dir_path in DEFAULT_LOG_DIRS:
+        # Локальный импорт внутри метода — предотвращает ImportError при циклическом импорте
+        try:
+            from app.core.patchs import BASE_DIR
+        except ImportError:
+            BASE_DIR = Path.cwd()
+
+        default_log_dirs = [
+            BASE_DIR / "logs",
+            Path("/var/log/tgnms"),
+            Path("/tmp/tgnms_logs"),
+        ]
+
+        for dir_path in default_log_dirs:
             try:
                 dir_path.mkdir(parents=True, exist_ok=True)
                 if os.access(dir_path, os.W_OK):
@@ -108,7 +116,10 @@ class LoggerManager:
 
         fallback = Path.cwd() / "logs"
         fallback.mkdir(parents=True, exist_ok=True)
-        print(f"⚠️ Все варианты директорий недоступны, логи будут в {fallback}", file=sys.stderr)
+        print(
+            f"⚠️ Все варианты директорий недоступны, логи будут в {fallback}",
+            file=sys.stderr,
+        )
         return fallback
 
     def _setup_logger(self) -> logging.Logger:
@@ -118,7 +129,7 @@ class LoggerManager:
 
         formatter = logging.Formatter(
             fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
 
         # === Файловое логирование ===
@@ -127,7 +138,7 @@ class LoggerManager:
                 self.log_dir / f"{self.name}.log",
                 maxBytes=self.max_file_size,
                 backupCount=self.backup_count,
-                encoding="utf-8"
+                encoding="utf-8",
             )
             file_handler.setFormatter(formatter)
             file_handler.setLevel(getattr(logging, self.log_level))

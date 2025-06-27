@@ -5,27 +5,38 @@ import logging
 import sys
 import subprocess
 from pathlib import Path
+import traceback
 from typing import Any, Dict, List, Optional, Set, Type
 from collections import defaultdict
 from functools import lru_cache
 
+from aiogram import Dispatcher
 import tomli_w
 import tomllib
 from fastapi import APIRouter, FastAPI
 
-from app.core.config import BASE_DIR, PLUGIN_CONGIG_DIR, APP_DIR,logger
+from app.core.config import BASE_DIR, PLUGIN_CONGIG_DIR, APP_DIR, logger
 from app.plugins.base import Plugin
+
 
 class PluginManager:
     _instance: Optional["PluginManager"] = None
     _initialized = False
 
-    def __init__(self, plugin_dir: Optional[Path] = None, plugin_config_file: Optional[Path] = None):
+    def __init__(
+        self,
+        plugin_dir: Optional[Path] = None,
+        plugin_config_file: Optional[Path] = None,
+    ):
         if PluginManager._instance is not None:
-            raise RuntimeError("PluginManager is a singleton. Use PluginManager.get_instance()")
+            raise RuntimeError(
+                "PluginManager is a singleton. Use PluginManager.get_instance()"
+            )
 
         self.plugin_dir = plugin_dir or APP_DIR / "plugins"
-        self.plugin_config_file = plugin_config_file or (PLUGIN_CONGIG_DIR / "plugins.toml")
+        self.plugin_config_file = plugin_config_file or (
+            PLUGIN_CONGIG_DIR / "plugins.toml"
+        )
 
         # Plugin storage
         self.plugins: Dict[str, Plugin] = {}
@@ -37,7 +48,7 @@ class PluginManager:
         self.core_plugin_modules = [
             "app.plugins.plugins_ui",
             "app.plugins.healthcheck",
-            "app.plugins.config_viewer"
+            "app.plugins.config_viewer",
         ]
 
         # Cache for performance
@@ -62,14 +73,26 @@ class PluginManager:
             if hasattr(plugin, "register_healthcheck"):
                 try:
                     plugin.register_healthcheck(health_plugin)
-                    logger.debug(f"🔗 {plugin.name} зарегистрировал проверки в healthcheck")
+                    logger.debug(
+                        f"🔗 {plugin.name} зарегистрировал проверки в healthcheck"
+                    )
                 except Exception as e:
-                    logger.warning(f"⚠️ {plugin.name} не смог зарегистрировать healthcheck: {e}")
+                    logger.warning(
+                        f"⚠️ {plugin.name} не смог зарегистрировать healthcheck: {e}"
+                    )
 
     def load_all(self) -> None:
-        """Load all plugins from all sources and resolve dependencies."""
+        if not self._initialized:
+            logger.debug(
+                "🟢 PluginManager initializing from:\n"
+                + "".join(traceback.format_stack(limit=5))
+            )
         if self._initialized:
             logger.warning("⚠️ PluginManager already initialized")
+            logger.debug(
+                "🔁 Stacktrace for repeated initialization:\n"
+                + "".join(traceback.format_stack(limit=10))
+            )
             return
 
         logger.debug(f"🔍 Scanning plugin directory: {self.plugin_dir}")
@@ -82,6 +105,10 @@ class PluginManager:
 
         logger.success(f"✅ Loaded {len(self.sorted_plugins)} plugins")
         self._initialized = True
+
+    def safe_load_all(self):
+        if not self._initialized:
+            self.load_all()
 
     def init_all(self, settings: Any) -> None:
         """Initialize all loaded plugins with their configurations."""
@@ -97,12 +124,15 @@ class PluginManager:
         metrics_plugin = self.plugins.get("metrics")
         if metrics_plugin and getattr(metrics_plugin, "enabled", False):
             try:
-                subprocess.Popen([
-                    sys.executable, "-m", "app.plugins.metrics.aggregator"
-                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.Popen(
+                    [sys.executable, "-m", "app.plugins.metrics.aggregator"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
                 logger.success("🚀 Started metrics aggregator subprocess")
             except Exception as e:
                 logger.warning(f"❌ Failed to start metrics aggregator subprocess: {e}")
+
     # --- Plugin Loading ---
 
     def _load_core_plugins(self) -> None:
@@ -111,22 +141,24 @@ class PluginManager:
             try:
                 self._load_plugin_from_module(module_path, source_prefix="core")
             except Exception as e:
-                logger.error(f"❌ Failed to load core plugin '{module_path}': {e}")
+                logger.exception(f"❌ Failed to load core plugin '{module_path}'")
 
     def _load_local_plugins(self) -> None:
         """Load plugins from the local plugins directory."""
         for path in self.plugin_dir.glob("*/__init__.py"):
             plugin_module = path.parent.name
             module_path = f"app.plugins.{plugin_module}"
-            
+
             if plugin_module in self.core_plugins:
-                logger.debug(f"🔁 Skipping local plugin '{plugin_module}' (core plugin exists)")
+                logger.debug(
+                    f"🔁 Skipping local plugin '{plugin_module}' (core plugin exists)"
+                )
                 continue
-                
+
             try:
                 self._load_plugin_from_module(module_path, source_prefix="local")
             except Exception as e:
-                logger.error(f"❌ Failed to load plugin '{plugin_module}': {e}")
+                logger.exception(f"❌ Failed to load plugin '{plugin_module}'")
 
     def _load_entrypoint_plugins(self) -> None:
         """Load plugins registered via package entry points."""
@@ -139,19 +171,23 @@ class PluginManager:
 
         for ep in plugin_eps:
             if ep.name in self.core_plugins:
-                logger.debug(f"🔁 Skipping entrypoint plugin '{ep.name}' (core plugin exists)")
+                logger.debug(
+                    f"🔁 Skipping entrypoint plugin '{ep.name}' (core plugin exists)"
+                )
                 continue
-                
+
             try:
                 self._load_plugin_from_entrypoint(ep)
             except Exception as e:
-                logger.warning(f"❌ Failed to load plugin from entrypoint '{ep.name}': {e}")
+                logger.warning(
+                    f"❌ Failed to load plugin from entrypoint '{ep.name}': {e}"
+                )
 
     def _load_plugin_from_module(self, module_path: str, source_prefix: str) -> None:
         """Load a single plugin from a Python module."""
         if module_path in self._module_cache:
             return
-            
+
         spec = importlib.util.find_spec(module_path)
         if not spec:
             logger.warning(f"⛔ No spec found for: {module_path}")
@@ -169,7 +205,7 @@ class PluginManager:
 
         self._configure_plugin(plugin, module)
         self._add_plugin(plugin, source=f"{source_prefix}:{module_path}")
-        
+
         if source_prefix == "core":
             self.core_plugins[plugin.name] = plugin
 
@@ -185,12 +221,16 @@ class PluginManager:
 
     def _configure_plugin(self, plugin: Plugin, module=None) -> None:
         """Set default plugin attributes."""
-        plugin.name = getattr(plugin, "name", 
-                            getattr(plugin, "__module__", "").split(".")[-1])
+        plugin.name = getattr(
+            plugin, "name", getattr(plugin, "__module__", "").split(".")[-1]
+        )
+        if not getattr(plugin, "name", "").strip():
+            raise ValueError(f"Plugin {plugin} has no valid name")
+
         plugin.priority = getattr(plugin, "priority", 100)
         plugin.depends_on = getattr(plugin, "depends_on", [])
         plugin.description = getattr(plugin, "description", "")
-        
+
         if module:
             plugin.config_class = getattr(module, "PluginConfig", None)
 
@@ -201,22 +241,28 @@ class PluginManager:
         if not self.plugin_config_file.exists():
             logger.warning(f"⚠️ Plugin config file not found: {self.plugin_config_file}")
             return
-            
+
         try:
             with self.plugin_config_file.open("rb") as f:
                 self.plugin_configs = tomllib.load(f)
             logger.info(f"📦 Loaded plugin configs from: {self.plugin_config_file}")
         except Exception as e:
-            content = self.plugin_config_file.read_text(encoding="utf-8", errors="ignore")[:500]
-            logger.error(f"❌ Failed to load plugin config: {e}\nFile preview:\n{content}")
+            content = self.plugin_config_file.read_text(
+                encoding="utf-8", errors="ignore"
+            )[:500]
+            logger.error(
+                f"❌ Failed to load plugin config: {e}\nFile preview:\n{content}"
+            )
 
     def atomic_write(self, path: Path, data: dict) -> None:
         """Atomically write a TOML file."""
         try:
-            with tempfile.NamedTemporaryFile("wb", delete=False, dir=path.parent) as tmp:
+            with tempfile.NamedTemporaryFile(
+                "wb", delete=False, dir=path.parent
+            ) as tmp:
                 tomli_w.dump(data, tmp)
                 tmp_path = Path(tmp.name)
-            
+
             os.replace(tmp_path, path)
             logger.debug(f"📝 Atomic write succeeded for {path}")
         except Exception as e:
@@ -228,7 +274,7 @@ class PluginManager:
     def generate_global_plugin_config(self) -> None:
         """Generate global config from all local plugin configs."""
         aggregated = {}
-        
+
         for path in self.plugin_dir.glob("*/config.toml"):
             plugin_name = path.parent.name
             try:
@@ -248,17 +294,17 @@ class PluginManager:
         """Initialize a single plugin with merged configuration."""
         try:
             config = self._get_plugin_config(plugin, settings)
-            
+
             enabled = config.get("enabled", True)
             setattr(plugin, "enabled", enabled)
-            
+
             if not enabled:
                 logger.info(f"⏸️ Plugin '{plugin.name}' disabled via config")
                 return
 
             plugin.init(config)
             logger.debug(f"🛠️ Initialized plugin: {plugin.name}")
-            
+
         except Exception as e:
             logger.error(f"⚠️ Plugin '{plugin.name}' init failed: {e}")
             setattr(plugin, "enabled", False)
@@ -280,7 +326,7 @@ class PluginManager:
             "priority": getattr(plugin, "priority", 100),
             "depends_on": getattr(plugin, "depends_on", []),
         }
-        
+
         # Local config
         local_config = {}
         if config["config_file"].exists():
@@ -289,10 +335,10 @@ class PluginManager:
                     local_config = tomllib.load(f)
             except Exception as e:
                 logger.error(f"❌ Failed to load local config for {plugin.name}: {e}")
-        
+
         # Global config
         global_config = self.plugin_configs.get(plugin.name, {})
-        
+
         # Settings config
         settings_config = {}
         settings_attr = getattr(settings, plugin.name, None)
@@ -303,7 +349,7 @@ class PluginManager:
                 settings_config = settings_attr
             elif hasattr(settings_attr, "__dict__"):
                 settings_config = vars(settings_attr)
-        
+
         return {**config, **local_config, **global_config, **settings_config}
 
     # --- Dependency Resolution ---
@@ -316,18 +362,20 @@ class PluginManager:
 
         def visit(name: str) -> None:
             if name in stack:
-                raise RuntimeError(f"❌ Cyclic dependency: {' -> '.join(stack)} -> {name}")
+                raise RuntimeError(
+                    f"❌ Cyclic dependency: {' -> '.join(stack)} -> {name}"
+                )
             if name in visited:
                 return
-                
+
             stack.add(name)
             plugin = self.plugins.get(name)
             if not plugin:
                 raise RuntimeError(f"❌ Plugin '{name}' not found")
-                
+
             for dep in plugin.depends_on:
                 visit(dep)
-                
+
             stack.remove(name)
             visited.add(name)
             result.append(name)
@@ -345,11 +393,17 @@ class PluginManager:
         if plugin.name in self.plugins:
             logger.warning(f"⚠️ Duplicate plugin '{plugin.name}' from {source}")
             return
-            
+        if plugin.name.lower() in (k.lower() for k in self.plugins):
+            logger.warning(
+                f"⚠️ Duplicate plugin name '{plugin.name}' (case-insensitive clash)"
+            )
+            return
         self.plugins[plugin.name] = plugin
         # logger.success(f"✅ Registered plugin: {plugin.name} ({source})")
 
-    def reload_plugin(self, plugin_name: str, app: Any = None, dp: Any = None, scheduler: Any = None) -> bool:
+    def reload_plugin(
+        self, plugin_name: str, app: Any = None, dp: Any = None, scheduler: Any = None
+    ) -> bool:
         """Reload a plugin and its routes/handlers."""
         plugin = self.plugins.get(plugin_name)
         if not plugin:
@@ -359,11 +413,11 @@ class PluginManager:
         try:
             # Remove existing routes/handlers
             self._unregister_plugin(plugin_name, app, dp, scheduler)
-            
+
             # Reload the module
             if not self._reload_plugin_module(plugin):
                 return False
-                
+
             # Reinitialize
             plugin_config = self.plugin_configs.get(plugin_name, {})
             if plugin.config_class:
@@ -371,13 +425,13 @@ class PluginManager:
                 plugin.init(config)
             else:
                 plugin.init(None)
-                
+
             # Reregister
             self._register_plugin(plugin, app, dp, scheduler)
-            
+
             logger.success(f"🔁 Successfully reloaded plugin: {plugin_name}")
             return True
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to reload plugin '{plugin_name}': {e}")
             return False
@@ -418,13 +472,13 @@ class PluginManager:
         for plugin in self.sorted_plugins:
             if not getattr(plugin, "enabled", True):
                 continue
-                
+
             try:
                 if hasattr(plugin, "router") and isinstance(plugin.router, APIRouter):
                     self._register_fastapi_router(app, plugin)
                 elif hasattr(plugin, "register_fastapi"):
                     plugin.register_fastapi(app)
-                    
+
                 logger.debug(f"🌐 Registered FastAPI routes: {plugin.name}")
             except Exception as e:
                 logger.warning(f"⚠️ FastAPI registration failed for {plugin.name}: {e}")
@@ -437,29 +491,33 @@ class PluginManager:
                 route.tags = []
             if plugin.name not in route.tags:
                 route.tags.append(plugin.name)
-                
+
         app.include_router(plugin.router)
 
-    def _unregister_plugin(self, plugin_name: str, app: Any, dp: Any, scheduler: Any) -> None:
+    def _unregister_plugin(
+        self, plugin_name: str, app: Any, dp: Any, scheduler: Any
+    ) -> None:
         """Unregister a plugin from all frameworks."""
         if app:
             removed = self._remove_fastapi_routes(app, plugin_name)
             logger.debug(f"🧹 Removed {removed} FastAPI routes for {plugin_name}")
-            
+
         if dp and hasattr(dp, "unregister_plugin_handlers"):
             dp.unregister_plugin_handlers(plugin_name)
-            
+
         if scheduler and hasattr(scheduler, "unregister_plugin_jobs"):
             scheduler.unregister_plugin_jobs(plugin_name)
 
-    def _register_plugin(self, plugin: Plugin, app: Any, dp: Any, scheduler: Any) -> None:
+    def _register_plugin(
+        self, plugin: Plugin, app: Any, dp: Any, scheduler: Any
+    ) -> None:
         """Register a plugin with all frameworks."""
         if app and hasattr(plugin, "register_fastapi"):
             plugin.register_fastapi(app)
-            
+
         if dp and hasattr(plugin, "register_aiogram"):
             plugin.register_aiogram(dp)
-            
+
         if scheduler and hasattr(plugin, "register_scheduler"):
             plugin.register_scheduler(scheduler)
 
@@ -467,10 +525,27 @@ class PluginManager:
         """Remove all routes for a plugin from FastAPI."""
         original_count = len(app.router.routes)
         app.router.routes = [
-            route for route in app.router.routes
+            route
+            for route in app.router.routes
             if plugin_name not in getattr(route, "tags", [])
         ]
         return original_count - len(app.router.routes)
+
+    # --- Aiogramm Integration ---
+
+    def ensure_initialized(self, settings: Any):
+        """Гарантированно загружает и инициализирует плагины."""
+        self.safe_load_all()
+        if not self._initialized:
+            self.init_all(settings)
+            self.post_init_integration()
+
+    def register_aiogram(self, dp: Dispatcher) -> None:
+        for plugin in self.sorted_plugins:
+            if getattr(plugin, "enabled", False) and hasattr(
+                plugin, "register_aiogram"
+            ):
+                plugin.register_aiogram(dp)
 
     # --- Singleton Access ---
 
@@ -480,8 +555,9 @@ class PluginManager:
         return PluginManager._instance
 
     @staticmethod
-    def create_once(plugin_dir: Optional[Path] = None, 
-                   plugin_config_file: Optional[Path] = None) -> "PluginManager":
+    def create_once(
+        plugin_dir: Optional[Path] = None, plugin_config_file: Optional[Path] = None
+    ) -> "PluginManager":
         """Create or get the singleton instance."""
         if PluginManager._instance is None:
             PluginManager._instance = PluginManager(plugin_dir, plugin_config_file)

@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import (BaseModel, EmailStr, Field, computed_field,
-                      field_serializer)
+from pydantic import BaseModel, EmailStr, Field, computed_field, field_serializer
 
 
 class UserBase(BaseModel):
@@ -11,6 +10,8 @@ class UserBase(BaseModel):
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    department: Optional[str] = None
+    company_post: Optional[str] = None
 
     @property
     def full_name(self) -> str:

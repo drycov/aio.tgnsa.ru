@@ -25,7 +25,7 @@ class ConfigViewerPlugin(Plugin):
 
         @self.router.get(path, response_class=HTMLResponse)
         async def view_config(request: Request):
-            
+
             return self.templates.TemplateResponse(
                 "config_viewer.html",
                 {
@@ -33,7 +33,7 @@ class ConfigViewerPlugin(Plugin):
                     "config": settings.model_dump(mode="json"),
                     "static_url": self._config.get("static_url", "/static"),
                     "favicon_url": self._config.get("favicon_url", "/favicon.ico"),
-                }
+                },
             )
 
     def register_fastapi(self, app):

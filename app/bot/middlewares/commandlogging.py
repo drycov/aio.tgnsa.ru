@@ -12,7 +12,7 @@ from app.core.utils.logger_manager import LoggerManager
 
 
 class CommandLoggingMiddleware(BaseMiddleware):
-    """Middleware для логирования команд, callback-кнопок и inline-запросов."""
+    """Middleware для логирования команд, callback-кнопок, inline-запросов и действий меню."""
 
     def __init__(self, logger: LoggerManager):
         self.logger = logger
@@ -23,61 +23,71 @@ class CommandLoggingMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        self.logger.debug(f"[CommandLogging] Получен event: {type(event).__name__}")
+        self.logger.debug(f"[CommandLogging] ▶️ Event: {type(event).__name__}")
 
-        # Обработка команд / текстовых сообщений
         if isinstance(event, Message):
             await self._log_message(event)
-
-        # Обработка callback-кнопок
         elif isinstance(event, CallbackQuery):
             await self._log_callback(event)
-
-        # Обработка inline-запросов
         elif isinstance(event, InlineQuery):
             await self._log_inline(event)
 
         result = await handler(event, data)
-        self.logger.debug("[CommandLogging] Обработка завершена")
+        self.logger.debug("[CommandLogging] ✅ Обработка завершена")
         return result
 
     async def _log_message(self, message: Message) -> None:
-        """Логирование команд в текстовых сообщениях."""
-        chat_id = getattr(message.chat, "id", None)
+        chat = message.chat
         user = message.from_user
 
-        if not user or not chat_id:
-            self.logger.warning("[CommandLogging] Нет информации о пользователе или чате")
+        if not user or not chat:
+            self.logger.warning("[CommandLogging] ⚠️ Отсутствует chat или user")
             return
 
-        is_command = (message.text and message.text.startswith("/")) or \
-                     (message.caption and message.caption.startswith("/"))
+        text = message.text or message.caption or ""
+        is_command = text.startswith("/")
+        is_menu = text.lower() in ("menu", "меню", "главное меню")
 
-        self.logger.debug(f"[CommandLogging] Chat ID: {chat_id}, User ID: {user.id}")
-
-        if is_command:
-            self.logger.info(
-                f"📥 Команда: {message.text or message.caption} "
-                f"от {user.id} ({user.full_name} | @{user.username or '—'})"
-            )
-
-    async def _log_callback(self, cb: CallbackQuery) -> None:
-        """Логирование callback-кнопок."""
-        user = cb.from_user
-        data = cb.data or "<пусто>"
-        message_id = getattr(cb.message, "message_id", "—") if cb.message else "—"
+        log_prefix = (
+            "📥 Команда" if is_command else "📩 Меню" if is_menu else "✉️ Сообщение"
+        )
+        chat_type = chat.type
+        lang = user.language_code or "—"
 
         self.logger.info(
-            f"🔘 Callback от {user.id} ({user.full_name} | @{user.username or '—'}) | "
-            f"Message ID: {message_id} | Data: {data}"
+            f"[CommandLogging] "
+            f"{log_prefix} | Chat[{chat_type}] {chat.id} | User {user.id} "
+            f"({user.full_name} | @{user.username or '—'}) | "
+            f"Lang: {lang} | Text: {text}"
+        )
+
+    async def _log_callback(self, cb: CallbackQuery) -> None:
+        user = cb.from_user
+        message = cb.message
+        data = cb.data or "<пусто>"
+
+        is_menu = data.lower() in ("menu", "меню", "main_menu", "open_menu")
+
+        msg_info = (
+            f"{message.chat.id}:{message.message_id}"
+            if message and message.chat
+            else "—"
+        )
+        log_prefix = "🔘 Callback-Меню" if is_menu else "🔘 Callback"
+
+        self.logger.info(
+            f"{log_prefix} | Msg: {msg_info} | User {user.id} "
+            f"({user.full_name} | @{user.username or '—'}) | Data: {data}"
         )
 
     async def _log_inline(self, iq: InlineQuery) -> None:
-        """Логирование inline-запросов."""
         user = iq.from_user
         query = iq.query or "<пусто>"
+        is_menu = query.lower() in ("menu", "меню")
+
+        log_prefix = "🔍 Inline-Меню" if is_menu else "🔍 Inline"
 
         self.logger.info(
-            f"🔍 Inline-запрос от {user.id} ({user.full_name} | @{user.username or '—'}) | "
-            f"Запрос: {query}"
+            f"{log_prefix} | User {user.id} ({user.full_name} | @{user.username or '—'}) | "
+            f"Query: {query}"
         )

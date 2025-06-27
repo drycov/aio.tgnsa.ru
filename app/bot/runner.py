@@ -14,33 +14,40 @@ from app.plugins.manager import PluginManager
 # === Инициализация ===
 storage = initialize_storage()
 session = get_sessionmaker()
-bot = Bot(token=settings.bot.TOKEN.get_secret_value(),
-          default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(
+    token=settings.bot.TOKEN.get_secret_value(),
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+)
 dp = Dispatcher(storage=storage, session=session, bot=bot)
 
 # Подключение middlewares, filters, routers
 
 
+# def setup_plugins(dp: Dispatcher):
+#     manager = PluginManager.create_once()
+#     manager.load_all()
+#     manager.init_all(settings)
+#     manager.post_init_integration()
+
+#     for plugin in manager.sorted_plugins:
+#         if getattr(plugin, "enabled", False) and hasattr(plugin, "register_aiogram"):
+#             plugin.register_aiogram(dp)
+
 
 def setup_plugins(dp: Dispatcher):
     manager = PluginManager.create_once()
-    manager.load_all()
-    manager.init_all(settings)
-    manager.post_init_integration()
-
-    for plugin in manager.sorted_plugins:
-        if getattr(plugin, "enabled", False) and hasattr(plugin, "register_aiogram"):
-            plugin.register_aiogram(dp)
+    manager.ensure_initialized(settings)
+    manager.register_aiogram(dp)
 
 
 async def setup_dispatcher():
     from app.bot.handlers import register_handlers
     from app.bot.middlewares.registry import setup_middleware
 
-    await setup_middleware(dp, db_sessionmaker=session,
-                           settings=settings, logger=logger)
-    register_handlers(dp, db_sessionmaker=session,
-                      settings=settings, logger=logger)
+    await setup_middleware(
+        dp, db_sessionmaker=session, settings=settings, logger=logger
+    )
+    register_handlers(dp, db_sessionmaker=session, settings=settings, logger=logger)
     setup_plugins(dp)
 
 

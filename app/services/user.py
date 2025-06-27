@@ -2,11 +2,11 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Union
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import logger
+from app.core.config import logger, settings
 from app.core.services.paswword import hash_password
 from app.exceptions.exceptions import UserBannedError, UserNotFoundError
 from app.models import Role, User
@@ -16,7 +16,7 @@ from app.schemas.user import UserCreate
 class UserSearchField(str, Enum):
     ID = "id"
     TG_ID = "tg_id"
-    ROLE="role"
+    ROLE = "role"
 
 
 class UserService:
@@ -48,11 +48,19 @@ class UserService:
 
     async def create_user(self, user_data: UserCreate, role_name: str = "user") -> User:
         payload = user_data.model_dump()
-        payload['hashed_password'] = hash_password(payload.pop('password'))
+        password = payload.pop("password", None)
+
         new_user = User(**payload)
+        # Внутри UserService.create_user()
+        if "password" in payload:
+            payload["hashed_password"] = hash_password(payload.pop("password"))
+        else:
+            payload["hashed_password"] = None
 
         # Attach role, create if needed
-        role = (await self.session.execute(select(Role).filter_by(name=role_name))).scalar_one_or_none()
+        role = (
+            await self.session.execute(select(Role).filter_by(name=role_name))
+        ).scalar_one_or_none()
         if not role:
             role = Role(name=role_name)
             self.session.add(role)
@@ -69,3 +77,11 @@ class UserService:
         user.banned_at = datetime.now(timezone.utc)
         await self.session.commit()
         logger.info(f"User banned: {user.id}")
+
+    async def set_authorized(self, tg_id: int, value: bool) -> None:
+        stmt = update(User).where(User.tg_id == tg_id).values(is_authorized=value)
+        await self.session.execute(stmt)
+        await self.session.commit()
+
+    async def is_admin(self, tgid: int) -> bool:
+        return tgid in settings.bot.ADMINS

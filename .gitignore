@@ -6,6 +6,7 @@
 *.sqlite
 *.db
 *pid.*
+.fsm_states/*
 
 # Виртуальные окружения
 .idea/
@@ -40,6 +41,7 @@ dump.rdb
 
 # Миграции базы данных
 migrations/
+alembic/
 instance/
 data/
 
