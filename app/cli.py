@@ -157,7 +157,7 @@ def _get_plugins():
     return plugin_manager
 
 
-def plugin_name_autocomplete(ctx: typer.Context, incomplete: str):
+def plugin_name_autocomplete(ctx: typer.Context, incomplete: str) -> List[str]:
     """
     Автодополнение названий плагинов.
 

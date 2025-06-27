@@ -7,7 +7,7 @@ from datetime import datetime
 from app.core.config import logger
 
 
-def safe_delete_message(func):
+def safe_delete_message(func) -> Callable:
     """
     Декоратор для безопасного удаления сообщения Telegram перед выполнением хендлера.
 
@@ -39,7 +39,7 @@ def safe_delete_message(func):
 
 async def send_and_set(
     message: Message, state: FSMContext, text: str, next_state, keyboard=None
-):
+) -> Callable:
     """
     Отправляет сообщение пользователю и устанавливает новое состояние FSM, сохраняя UI.
 
@@ -143,7 +143,7 @@ def add_buttons_to_section(
         sections[section_name].extend(chunked_buttons)
 
 
-def handle_network_error(default_return: Any = None):
+def handle_network_error(default_return: Any = None) -> Callable:
     """
     Декоратор для защиты асинхронных сетевых операций от сбоев.
 
