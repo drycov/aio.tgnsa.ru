@@ -1,6 +1,6 @@
 import os
 import tempfile
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Optional
 import redis.asyncio as redis
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage
@@ -84,3 +84,31 @@ def atomic_write(
         if tmp_path and tmp_path.exists():
             tmp_path.unlink(missing_ok=True)
         raise
+
+
+def detect_project_namespace(plugin_dir: Path) -> Optional[str]:
+    """
+    Автоматически определяет базовый namespace (например: 'tgnms.plugins.core')
+    на основе структуры проекта и расположения plugin_dir.
+    """
+    try:
+        root = Path.cwd().resolve()
+        plugin_dir = plugin_dir.resolve()
+
+        # Пример: /app/src/tgnms/plugins/core → tgnms.plugins.core
+        common = os.path.commonpath([str(root), str(plugin_dir)])
+        relative_parts = plugin_dir.relative_to(common).parts
+
+        # Ищем часть, с которой начинается valid package (где есть __init__.py)
+        candidate = []
+        for part in reversed(relative_parts):
+            candidate.insert(0, part)
+            probe_path = root.joinpath(*candidate)
+            if not probe_path.joinpath("__init__.py").exists():
+                break
+
+        namespace_parts = plugin_dir.relative_to(root).parts
+        return ".".join(namespace_parts)
+    except Exception as e:
+        print(f"[NamespaceDetect] ⚠️ Не удалось определить namespace: {e}")
+        return None

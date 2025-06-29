@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import yaml
@@ -11,10 +12,10 @@ import aiofiles
 from aiogram.fsm.state import State
 from aiogram.fsm.storage.base import BaseStorage, StorageKey
 from app.core.config import logger
-from app.core.utils.logger_manager import LoggerManager
 
 # --- Поддержка сериализации ---
 SerialFormat = Literal["json", "toml", "yaml", "msgpack"]
+logger = logging.getLogger(__name__)
 
 
 def strip_unsupported(obj):
@@ -49,7 +50,6 @@ class FileStorage(BaseStorage):
         *,
         base_path: Optional[str] = None,
         format: SerialFormat = "json",
-        logger: Optional[LoggerManager] = None,
     ):
         """
         Создаёт экземпляр файлового хранилища FSM.
@@ -60,7 +60,7 @@ class FileStorage(BaseStorage):
         """
         self.directory = os.path.abspath(base_path or "./fsm_storage")
         self.format = format.lower()
-        self.logger = logger or LoggerManager("FileStorage").get_logger()
+        self.logger = logger
         self.file_ext = self._resolve_file_extension()
         self.serializer, self.deserializer = self._resolve_serializers()
 

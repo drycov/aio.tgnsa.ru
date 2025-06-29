@@ -1,0 +1,3 @@
+[plugin]
+name = "CustomPlugin"
+enabled = true

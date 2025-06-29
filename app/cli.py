@@ -1,3 +1,4 @@
+import asyncio
 import os
 import subprocess
 from typing import Optional, List
@@ -15,6 +16,7 @@ from app import __version__
 
 app = typer.Typer(help="TGNMS Entrypoint", rich_markup_mode="rich")
 console = Console()
+plugin_manager = None  # глобальная переменная
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.tgnmsrc")
 
@@ -141,40 +143,35 @@ def _run_service(role: str, debug: bool, dev: bool, dry_run: bool, log_changes: 
 
 
 # --- Plugin Autocompletion ---
-def _get_plugins():
+def _get_plugins() -> "PluginManager":
     """
-    Initialize and return an instance of PluginManager.
+    Синхронно получить инстанс PluginManager с гарантией инициализации.
 
-    Returns:
-        PluginManager: Manager of loaded plugins.
+    Если менеджер не инициализирован, вызывается async-инициализация
+    через asyncio.run.
     """
     global plugin_manager
 
     if plugin_manager is None:
-        plugin_manager = PluginManager.create_once()
-        plugin_manager.load_all()
+        # Запускаем асинхронную инициализацию
+        asyncio.run(PluginManager.ensure_initialized())
+        plugin_manager = PluginManager.get_instance()
     elif not plugin_manager._initialized:
-        plugin_manager.load_all()
+        asyncio.run(plugin_manager.load_plugins())
 
     return plugin_manager
 
 
 def plugin_name_autocomplete(ctx: typer.Context, incomplete: str) -> List[str]:
     """
-    Autocomplete plugin names.
-
-    Args:
-        ctx (typer.Context): Command context.
-        incomplete (str): Partially entered plugin name.
-
-    Returns:
-        List[str]: List of matching names.
+    Автодополнение имён плагинов для CLI.
     """
     manager = _get_plugins()
+    # Используем PluginBase.meta.name для безопасного доступа к имени
     return [
-        plugin.name
-        for plugin in manager.sorted_plugins
-        if plugin.name.startswith(incomplete)
+        plugin.meta.name
+        for plugin in getattr(manager, "sorted_plugins", [])
+        if plugin.meta.name.startswith(incomplete)
     ]
 
 
@@ -192,9 +189,16 @@ def list_plugins():
     table = Table(title="Loaded Plugins")
     table.add_column("Name", style="cyan", no_wrap=True)
     table.add_column("Description", style="magenta")
+    table.add_column("Version", style="green", no_wrap=True)
+    table.add_column("Author", style="magenta", no_wrap=True)
 
     for plugin in manager.sorted_plugins:
-        table.add_row(plugin.name, getattr(plugin, "description", "-"))
+        table.add_row(
+            plugin.name,
+            plugin.description or "-",
+            plugin.version or "-",
+            getattr(plugin, "author", "-") or "-",
+        )
 
     console.print(table)
 

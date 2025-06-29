@@ -5,7 +5,7 @@ from aiogram.enums import ParseMode
 
 from app.core import initialize_storage
 from app.core.applcm_manager import AppLifecycleManager
-from app.core.config import settings, logger
+from app.core.config import APP_DIR, BASE_DIR, settings, logger
 from app.core.db import get_sessionmaker
 from app.core.plugin_manager import PluginManager
 
@@ -42,9 +42,9 @@ class BotManager:
         await self.setup_plugins()
 
     async def setup_plugins(self):
-        manager = PluginManager.create_once()
-        manager = await PluginManager.ensure_initialized(settings)
-        # manager.register_aiogram(self.dp)
+        await PluginManager.ensure_initialized(settings)
+        manager = PluginManager.get_instance()
+        # await PluginManager.reload_all()
 
     async def on_startup(self):
         logger.info("🟢 Бот запускается...")
