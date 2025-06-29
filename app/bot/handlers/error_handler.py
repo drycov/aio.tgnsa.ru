@@ -21,10 +21,10 @@ router = Router()
 @router.errors()
 async def error_handler(event: Update, *args, **kwargs):
     """
-    Улучшенный обработчик ошибок Telegram API с:
-    - Отловом ошибки "Invalid message argument"
-    - Подробным логированием
-    - Корректной обработкой ValidationError
+    Enhanced error handler for Telegram API errors with:
+    - Catching "Invalid message argument" error
+    - Detailed logging
+    - Proper handling of ValidationError
     """
     exception = kwargs.get("exception")
 
@@ -34,33 +34,33 @@ async def error_handler(event: Update, *args, **kwargs):
             status_code=500, detail=ErrorMessages.UNKNOWN_ERROR_USER.value
         )
 
-    # Обработка ошибки валидации сообщения
+    # Handling message validation error
     if isinstance(exception, (ValidationError, TelegramBadRequest)):
         error_message = str(exception)
 
-        # Специфическая обработка "Invalid message argument"
+        # Specific handling for "Invalid message argument"
         if "Invalid message argument" in error_message:
             app_logger.warning(
-                "Обнаружена ошибка валидации сообщения: %s",
+                "Message validation error detected: %s",
                 error_message,
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=400,
-                detail="Ошибка форматирования сообщения. Пожалуйста, попробуйте другой запрос.",
+                detail="Message formatting error. Please try a different request.",
             )
 
-        # Остальные случаи BadRequest
+        # Other BadRequest cases
         if isinstance(exception, TelegramBadRequest):
             if "blocked" in error_message.lower():
-                app_logger.warning("Бот заблокирован пользователем.")
+                app_logger.warning("Bot is blocked by the user.")
                 raise HTTPException(
-                    status_code=403, detail="Бот заблокирован пользователем"
+                    status_code=403, detail="Bot is blocked by the user"
                 )
             elif "chat not found" in error_message.lower():
-                app_logger.info("Чат с пользователем не найден.")
+                app_logger.info("Chat with the user not found.")
                 raise HTTPException(
-                    status_code=404, detail="Чат с пользователем не найден"
+                    status_code=404, detail="Chat with the user not found"
                 )
             else:
                 app_logger.warning(
@@ -73,7 +73,7 @@ async def error_handler(event: Update, *args, **kwargs):
                     ),
                 )
 
-    # Стандартная обработка других ошибок Telegram API
+    # Standard handling for other Telegram API errors
     elif isinstance(exception, TelegramRetryAfter):
         retry_after = exception.retry_after
         app_logger.warning(
@@ -114,7 +114,7 @@ async def error_handler(event: Update, *args, **kwargs):
         )
 
     else:
-        # Обработка неизвестных ошибок
+        # Handling unknown errors
         app_logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)
         raise HTTPException(
             status_code=500, detail=ErrorMessages.UNKNOWN_ERROR_USER.value

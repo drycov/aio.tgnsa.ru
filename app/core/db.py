@@ -19,7 +19,11 @@ __all__ = (
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Создание движка и фабрики асинхронных сессий
 # ─────────────────────────────────────────────────────────────────────────────
-engine = create_async_engine(settings.db.get_dsn(), echo=False, future=True)
+engine = create_async_engine(
+    settings.db.get_dsn(),
+    echo=settings.db.echo,  # Allow echo to be configurable
+    future=True,
+)
 SessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
     engine, expire_on_commit=False, class_=AsyncSession
 )
@@ -34,9 +38,26 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
     Используется как Depends(get_session).
     При завершении запроса сессия автоматически закрывается.
+
+    Example:
+        from fastapi import APIRouter, Depends
+
+        router = APIRouter()
+
+        @router.get("/items/")
+        async def read_items(session: AsyncSession = Depends(get_session)):
+            result = await session.execute(...)
+            return result
     """
     async with SessionLocal() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -49,16 +70,19 @@ async def session_from_generator(
     """
     Позволяет вручную получить сессию из генератора (например, get_session) вне FastAPI.
 
-    Пример:
+    Сессия закрывается автоматически.
+
+    Example:
         async with session_from_generator(get_session) as session:
             result = await session.execute(...)
             ...
-
-    Сессия закрывается автоматически.
     """
     session = await session_gen().__anext__()
     try:
         yield session
+    except Exception as e:
+        await session.rollback()
+        raise e
     finally:
         await session.close()
 
@@ -69,7 +93,8 @@ async def session_from_generator(
 def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
     """
     Возвращает объект async_sessionmaker для создания сессий вручную.
-    Например:
+
+    Example:
         session = get_sessionmaker()()
         await session.begin()
         ...

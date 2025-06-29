@@ -7,7 +7,7 @@ from app.core import initialize_storage
 from app.core.applcm_manager import AppLifecycleManager
 from app.core.config import settings, logger
 from app.core.db import get_sessionmaker
-from app.plugins.manager import PluginManager
+from app.core.plugin_manager import PluginManager
 
 
 class BotManager:
@@ -39,12 +39,12 @@ class BotManager:
         )
 
         # Подключаем плагины
-        self.setup_plugins()
+        await self.setup_plugins()
 
-    def setup_plugins(self):
+    async def setup_plugins(self):
         manager = PluginManager.create_once()
-        manager.ensure_initialized(settings)
-        manager.register_aiogram(self.dp)
+        manager = await PluginManager.ensure_initialized(settings)
+        # manager.register_aiogram(self.dp)
 
     async def on_startup(self):
         logger.info("🟢 Бот запускается...")

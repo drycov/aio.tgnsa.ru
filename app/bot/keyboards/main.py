@@ -2,7 +2,7 @@ from venv import logger
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 from app.bot.constants.labels import MenuLabels
-from app.plugins.manager import PluginManager
+from app.core.plugin_manager import PluginManager
 
 
 from app.core.utils.decorators import add_buttons_to_section

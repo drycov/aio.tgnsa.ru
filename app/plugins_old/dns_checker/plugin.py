@@ -6,7 +6,7 @@ import psutil
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
-from app.plugins.base import Plugin
+from app.plugins_old.base import Plugin
 
 
 class DNSCheckerPlugin(Plugin):

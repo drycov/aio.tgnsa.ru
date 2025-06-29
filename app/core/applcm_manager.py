@@ -1,4 +1,5 @@
 import asyncio
+import platform
 from typing import Callable, List, Awaitable, Optional, Union, Dict, Any
 import aiomonitor
 import logging
@@ -37,7 +38,7 @@ class AppLifecycleManager:
         self._patch_aiohttp_for_windows()
 
     def _patch_aiohttp_for_windows(self) -> None:
-        """Патчим aiohttp для корректной работы на Windows"""
+        """Patch aiohttp for correct operation on Windows."""
         if sys.platform.startswith("win"):
             original_init = aiohttp.web_runner.TCPSite.__init__
 
@@ -77,7 +78,7 @@ class AppLifecycleManager:
         Callable[[Callable[[], Awaitable[None]]], Callable[[], Awaitable[None]]],
         Callable[[], Awaitable[None]],
     ]:
-        """Декоратор для регистрации startup-хуков."""
+        """Decorator to register startup hooks."""
 
         def decorator(
             func: Callable[[], Awaitable[None]],
@@ -117,7 +118,7 @@ class AppLifecycleManager:
         Callable[[Callable[[], Awaitable[None]]], Callable[[], Awaitable[None]]],
         Callable[[], Awaitable[None]],
     ]:
-        """Декоратор для регистрации shutdown-хуков."""
+        """Decorator to register shutdown hooks."""
 
         def decorator(
             func: Callable[[], Awaitable[None]],
@@ -149,15 +150,17 @@ class AppLifecycleManager:
 
     @asynccontextmanager
     async def lifespan(self):
-        """Контекстный менеджер для управления жизненным циклом."""
+        """Context manager to manage the application lifecycle."""
         try:
             await self.startup()
             yield
+        except Exception as e:
+            logger.error(f"❌ Lifespan failed: {str(e)}")
         finally:
             await self.shutdown()
 
     async def startup(self) -> None:
-        """Запуск всех startup-хуков."""
+        """Run all startup hooks."""
         if self._is_running:
             raise RuntimeError("Application is already running")
 
@@ -175,16 +178,16 @@ class AppLifecycleManager:
         logger.info("🟢 Application started successfully")
 
     async def shutdown(self) -> None:
-        """Запуск всех shutdown-хуков и очистка ресурсов."""
+        """Run all shutdown hooks and clean up resources."""
         if not self._is_running:
             return
 
         logger.info("🛑 Shutting down application lifecycle")
 
-        # Отменяем все startup задачи
+        # Cancel all startup tasks
         await self._cancel_tasks(self._startup_tasks, "startup")
 
-        # Запускаем shutdown хуки
+        # Run shutdown hooks
         for hook in self._shutdown_hooks:
             task = asyncio.create_task(hook.func(), name=f"shutdown:{hook.name}")
             self._shutdown_tasks[hook.name] = task
@@ -197,33 +200,45 @@ class AppLifecycleManager:
         except asyncio.TimeoutError:
             logger.warning("⚠️ Timeout waiting for shutdown hooks to complete")
 
-        # Отменяем оставшиеся задачи
+        # Cancel remaining tasks
         await self._cancel_all_tasks()
 
         if self._monitor:
-            await self._monitor.close()
+            self._monitor.close()
             self._monitor = None
 
         self._is_running = False
         logger.info("🛑 Application shutdown completed")
 
     def _start_monitor(self) -> None:
-        """Запуск aiomonitor в debug режиме."""
+        """
+        Безопасно запускает aiomonitor, адаптируясь к платформе.
+        На Windows отключает telnet-сервер, т.к. ProactorEventLoop не поддерживает add_reader.
+        """
         try:
+            is_windows = (
+                sys.platform.startswith("win") or platform.system() == "Windows"
+            )
             self._monitor = aiomonitor.start_monitor(
                 loop=self._loop,
                 console_port=50101,
-                console_enabled=True,
-                monitor_enabled=True,
+                console_enabled=not is_windows,
             )
-            logger.info("🔧 Started aiomonitor on port 50101")
+            logger.info(
+                "🔧 aiomonitor started (telnet enabled: %s)",
+                not is_windows,
+            )
+        except NotImplementedError as nie:
+            logger.warning(
+                "⚠️ aiomonitor telnet disabled (platform limitation): %s", nie
+            )
         except Exception as e:
-            logger.warning(f"⚠️ Failed to start aiomonitor: {str(e)}")
+            logger.exception("❌ Failed to start aiomonitor: %s", e)
 
     async def _cancel_tasks(
         self, tasks: Dict[str, asyncio.Task], task_type: str
     ) -> None:
-        """Отменяет задачи определенного типа."""
+        """Cancel tasks of a specific type."""
         tasks_to_cancel = [t for t in tasks.values() if not t.done()]
         if not tasks_to_cancel:
             return
@@ -240,7 +255,7 @@ class AppLifecycleManager:
             logger.warning(f"⚠️ Timeout waiting for {task_type} tasks to cancel")
 
     async def _cancel_all_tasks(self) -> None:
-        """Отменяет все активные задачи, кроме текущей."""
+        """Cancel all active tasks except the current one."""
         current_task = asyncio.current_task()
         tasks = [
             t
@@ -263,7 +278,7 @@ class AppLifecycleManager:
             logger.warning("⚠️ Timeout waiting for tasks to cancel")
 
     def log_active_tasks(self) -> None:
-        """Логирует информацию о текущих задачах."""
+        """Log information about current tasks."""
         tasks = asyncio.all_tasks(self._loop)
         logger.info(f"🔍 Active tasks: {len(tasks)}")
         for task in tasks:

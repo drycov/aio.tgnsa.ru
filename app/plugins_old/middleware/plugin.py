@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.types import ASGIApp
 
 from app.core.config import logger
-from app.plugins.base import Plugin
+from app.plugins_old.base import Plugin
 
 
 class MiddlewareViewerPlugin(Plugin):

@@ -12,23 +12,25 @@ async def validation_error_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """
-    Обработчик ошибок валидации запроса.
+    Handles request validation errors.
 
-    Переопределяет стандартный кейс 422:
-      - Возвращает структурированную JSON-ответ с полем `detail`
-      - Формат сообщения:
+    Overrides the default 422 case:
+      - Returns a structured JSON response with a `detail` field
+      - Message format:
         {
           "status": "error",
           "timestamp": "...",
-          "path": "/... ",
+          "path": "/...",
           "method": "POST",
           "detail": [...],
           "type": "validation_error"
         }
 
-    Подключается через FastAPI: app.exception_handler(RequestValidationError)
-    :contentReference[oaicite:1]{index=1}
+    Connected via FastAPI: app.exception_handler(RequestValidationError)
     """
+    logger.error(
+        f"Validation error for {request.method} {request.url.path}: {exc.errors()}"
+    )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
@@ -44,13 +46,15 @@ async def validation_error_handler(
 
 async def http_error_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """
-    Обработчик HTTP-исключений.
+    Handles HTTP exceptions.
 
-    Перехватывает Starlette HTTPException (включая FastAPI HTTPException),
-    возвращает JSON с деталями.
-    Подключается: app.exception_handler(HTTPException)
-    :contentReference[oaicite:2]{index=2}
+    Catches Starlette HTTPException (including FastAPI HTTPException),
+    and returns a JSON response with details.
+    Connected via: app.exception_handler(HTTPException)
     """
+    logger.error(
+        f"HTTP error for {request.method} {request.url.path}: {exc.status_code} {exc.detail}"
+    )
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -66,18 +70,15 @@ async def http_error_handler(request: Request, exc: HTTPException) -> JSONRespon
 
 async def general_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """
-    Обработчик необработанных исключений.
+    Handles unhandled exceptions.
 
-    Логирует стек и исключение, возвращает 500 Internal Server Error
-    с обобщённым сообщением, без утечки деталей.
-    Подключается: app.exception_handler(Exception)
-    :contentReference[oaicite:3]{index=3}
+    Logs the stack trace and exception, returns a 500 Internal Server Error
+    with a generic message, without leaking details.
+    Connected via: app.exception_handler(Exception)
     """
-    # Логируем ошибку и стек
-    logger.error(f"Необработанное исключение: {exc}")
+    logger.error(f"Unhandled exception for {request.method} {request.url.path}: {exc}")
     logger.error(traceback.format_exc())
 
-    # Возвращаем обобщённый ответ
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -85,7 +86,7 @@ async def general_error_handler(request: Request, exc: Exception) -> JSONRespons
             "timestamp": isotime(),
             "path": request.url.path,
             "method": request.method,
-            "detail": "Внутренняя ошибка сервера",
+            "detail": "Internal Server Error",
             "type": "internal_error",
         },
     )

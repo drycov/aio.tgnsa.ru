@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
-from app.plugins.base import Plugin
+from app.plugins_old.base import Plugin
 
 
 class NetstatUIPlugin(Plugin):
@@ -35,9 +35,9 @@ class NetstatUIPlugin(Plugin):
                         "local_address": f"{conn.laddr.ip}:{conn.laddr.port}",
                         "status": conn.status,
                         "pid": conn.pid,
-                        "process": psutil.Process(conn.pid).name()
-                        if conn.pid
-                        else None,
+                        "process": (
+                            psutil.Process(conn.pid).name() if conn.pid else None
+                        ),
                     }
                     data.append(info)
                 except Exception:

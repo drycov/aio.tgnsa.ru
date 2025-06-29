@@ -1,23 +1,34 @@
 from functools import wraps
-from typing import Any, Callable, Coroutine, List
-from aiogram.types import Message, ReplyKeyboardRemove, KeyboardButton
+from typing import Any, Callable, Coroutine, List, Optional, Union
+from aiogram.types import (
+    Message,
+    ReplyKeyboardRemove,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    InlineKeyboardMarkup,
+)
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
 
 from app.core.config import logger
 
 
-def safe_delete_message(func) -> Callable:
-    """
-    Декоратор для безопасного удаления сообщения Telegram перед выполнением хендлера.
+# ──────────────────────────────────────────────────────────────
+# 1. Decorator for Safe Message Deletion
+# ──────────────────────────────────────────────────────────────
 
-    При ошибке логирует её через `logger.debug`, не прерывая основное выполнение.
+
+def safe_delete_message(func: Callable[..., Coroutine]) -> Callable[..., Coroutine]:
+    """
+    Decorator to safely delete a Telegram message before executing the handler.
+
+    Logs any errors through `logger.debug` without interrupting the main execution.
 
     Args:
-        func (Callable): Асинхронная функция-хендлер, принимающая объект `Message`.
+        func (Callable): Asynchronous handler function accepting a `Message` object.
 
     Returns:
-        Callable: Обёрнутая асинхронная функция с защитой удаления сообщения.
+        Callable: Wrapped asynchronous function with safe message deletion.
     """
 
     @wraps(func)
@@ -37,30 +48,36 @@ def safe_delete_message(func) -> Callable:
     return wrapper
 
 
-async def send_and_set(
-    message: Message, state: FSMContext, text: str, next_state, keyboard=None
-) -> Callable:
-    """
-    Отправляет сообщение пользователю и устанавливает новое состояние FSM, сохраняя UI.
+# ──────────────────────────────────────────────────────────────
+# 2. Function to Send Message and Set FSM State
+# ──────────────────────────────────────────────────────────────
 
-    Добавляет временную метку, скрывает клавиатуру (если не указана) и вызывает
-    `StateManager.set_state_with_previous` с display-контекстом.
+
+async def send_and_set(
+    message: Message,
+    state: FSMContext,
+    text: str,
+    next_state: Any,
+    keyboard: Optional[Union[ReplyKeyboardMarkup, InlineKeyboardMarkup]] = None,
+) -> None:
+    """
+    Sends a message to the user and sets a new FSM state, preserving the UI.
+
+    Adds a timestamp, hides the keyboard (if not specified), and calls
+    `StateManager.set_state_with_previous` with display context.
 
     Args:
-        message (Message): Исходное сообщение от пользователя.
-        state (FSMContext): Контекст текущего FSM.
-        text (str): Основной текст для отображения пользователю.
-        next_state (State): Следующее состояние FSM (любая совместимая структура).
+        message (Message): The original message from the user.
+        state (FSMContext): The current FSM context.
+        text (str): The main text to display to the user.
+        next_state (State): The next FSM state (any compatible structure).
         keyboard (ReplyKeyboardMarkup | InlineKeyboardMarkup | None, optional):
-            Клавиатура для сообщения. По умолчанию удаляется клавиатура (`ReplyKeyboardRemove`).
-
-    Returns:
-        None
+            Keyboard for the message. Defaults to removing the keyboard (`ReplyKeyboardRemove`).
     """
-    from app.bot.fsm.state_manager import StateManager  # ← локально
+    from app.bot.fsm.state_manager import StateManager  # Local import
 
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-    footer = f"\n<pre><i>Выполнено:  <code>{current_date}</code></i></pre>"
+    footer = f"\n<pre><i>Completed: <code>{current_date}</code></i></pre>"
     formatted_text = text.strip() + footer
 
     await message.answer(
@@ -79,50 +96,57 @@ async def send_and_set(
     )
 
 
+# ──────────────────────────────────────────────────────────────
+# 3. Function to Chunk Buttons
+# ──────────────────────────────────────────────────────────────
+
+
 def chunk_buttons(
     buttons: List[KeyboardButton], chunk_size: int = 2
 ) -> List[List[KeyboardButton]]:
     """
-    Делит список Telegram-кнопок на строки фиксированной длины.
+    Splits a list of Telegram buttons into rows of a fixed length.
 
     Args:
-        buttons (List[KeyboardButton]): Список плоских кнопок.
-        chunk_size (int, optional): Максимум кнопок в строке. По умолчанию 2.
+        buttons (List[KeyboardButton]): List of flat buttons.
+        chunk_size (int, optional): Maximum buttons per row. Defaults to 2.
 
     Returns:
-        List[List[KeyboardButton]]: Вложенный список строк с кнопками.
+        List[List[KeyboardButton]]: Nested list of button rows.
     """
     return [buttons[i : i + chunk_size] for i in range(0, len(buttons), chunk_size)]
 
 
+# ──────────────────────────────────────────────────────────────
+# 4. Function to Add Buttons to Section
+# ──────────────────────────────────────────────────────────────
+
+
 def add_buttons_to_section(
-    sections: dict[str, list[list[KeyboardButton]]],
+    sections: dict[str, List[List[KeyboardButton]]],
     section_name: str,
-    buttons: list[KeyboardButton],
+    buttons: List[KeyboardButton],
     max_per_row: int = 2,
 ) -> None:
     """
-    Добавляет кнопки в определённую секцию с разбиением по строкам.
+    Adds buttons to a specific section, splitting them into rows.
 
-    Если в секции уже есть одна строка с местом — добавляет туда.
-    Остальные кнопки переходят в новые строки.
+    If the section already has one row with space, it fills that row.
+    Remaining buttons go into new rows.
 
     Args:
-        sections (dict[str, list[list[KeyboardButton]]]):
-            Словарь секций, содержащих строки кнопок.
-        section_name (str): Название секции.
-        buttons (list[KeyboardButton]): Список кнопок для добавления.
-        max_per_row (int, optional): Максимум кнопок в одной строке. По умолчанию 2.
-
-    Returns:
-        None
+        sections (dict[str, List[List[KeyboardButton]]]):
+            Dictionary of sections containing button rows.
+        section_name (str): Name of the section.
+        buttons (List[KeyboardButton]): List of buttons to add.
+        max_per_row (int, optional): Maximum buttons per row. Defaults to 2.
     """
     if section_name not in sections:
         sections[section_name] = []
 
     chunked_buttons = chunk_buttons(buttons, max_per_row)
 
-    # Если в секции ровно одна строка и в ней меньше max_per_row кнопок — дополним её
+    # If the section has exactly one row and it has space, fill it
     if (
         len(sections[section_name]) == 1
         and len(sections[section_name][0]) < max_per_row
@@ -130,30 +154,35 @@ def add_buttons_to_section(
         first_row = sections[section_name][0]
         space_left = max_per_row - len(first_row)
 
-        # Сколько кнопок можно добавить в первую строку
+        # How many buttons can be added to the first row
         to_add_first_row = chunked_buttons[0][:space_left]
         first_row.extend(to_add_first_row)
 
-        # Оставшиеся кнопки идут в новые строки
+        # Remaining buttons go into new rows
         rest_buttons = chunked_buttons[0][space_left:] + sum(chunked_buttons[1:], [])
         if rest_buttons:
             sections[section_name].extend(chunk_buttons(rest_buttons, max_per_row))
     else:
-        # Просто добавляем все кнопки как новые строки
+        # Simply add all buttons as new rows
         sections[section_name].extend(chunked_buttons)
 
 
-def handle_network_error(default_return: Any = None) -> Callable:
-    """
-    Декоратор для защиты асинхронных сетевых операций от сбоев.
+# ──────────────────────────────────────────────────────────────
+# 5. Decorator to Handle Network Errors
+# ──────────────────────────────────────────────────────────────
 
-    Логирует исключения как `logger.exception(...)` и возвращает fallback-значение.
+
+def handle_network_error(default_return: Any = None) -> Callable[..., Coroutine]:
+    """
+    Decorator to protect asynchronous network operations from failures.
+
+    Logs exceptions as `logger.exception(...)` and returns a fallback value.
 
     Args:
-        default_return (Any, optional): Значение по умолчанию при возникновении исключения.
+        default_return (Any, optional): Default value to return on exception.
 
     Returns:
-        Callable: Обёртка вокруг асинхронной функции.
+        Callable: Wrapper around the asynchronous function.
     """
 
     def decorator(func: Callable[..., Coroutine]) -> Callable[..., Coroutine]:

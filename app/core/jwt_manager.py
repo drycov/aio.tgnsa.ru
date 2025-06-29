@@ -1,31 +1,34 @@
-from jose import jwt
+from jose import jwt, JWTError, ExpiredSignatureError
 from datetime import datetime, timedelta
 from app.core.config import settings
+from typing import List, Optional, Dict, Any
 
 
 class JWTManager:
     """
-    Утилита для работы с JWT-токенами (генерация, валидация).
+    Utility for working with JWT tokens (generation, validation).
 
-    Использует библиотеку python‑jose для подписи HS256/RS256 токенов.
+    Uses the python-jose library for signing HS256/RS256 tokens.
     """
 
     @staticmethod
     def generate_token(
-        subject: str, roles: list[str] | None = None, expires_sec: int | None = None
+        subject: str,
+        roles: Optional[List[str]] = None,
+        expires_sec: Optional[int] = None,
     ) -> str:
         """
-        Генерирует подписанный JWT‑токен.
+        Generates a signed JWT token.
 
-        :param subject: Идентификатор субъекта (обычно user_id)
-        :param roles: Список ролей или прав доступа
-        :param expires_sec: Время жизни токена в секундах.
-                             По умолчанию – из настроек безопасности.
-        :return: Строка JWT
+        :param subject: Identifier of the subject (usually user_id)
+        :param roles: List of roles or access rights
+        :param expires_sec: Token lifetime in seconds.
+                            Default is from security settings.
+        :return: JWT string
 
-        :raises ValueError: если секрет не настроен
+        :raises ValueError: if the secret key is not configured
 
-        Пример:
+        Example:
         ```python
         token = JWTManager.generate_token(
             subject="user123",
@@ -50,23 +53,33 @@ class JWTManager:
         }
 
         return jwt.encode(
-            payload=payload,
-            key=secret.get_secret_value(),
+            payload,
+            secret.get_secret_value(),
             algorithm=settings.security.JWT_ALGORITHM,
         )
 
     @staticmethod
-    def decode_token(token: str) -> dict:
+    def decode_token(token: str) -> Dict[str, Any]:
         """
-        Декодирует и валидирует JWT, возвращает полезную нагрузку.
+        Decodes and validates a JWT, returning the payload.
 
-        :param token: строка JWT
-        :return: словарь payload
-        :raises jwt.ExpiredSignatureError: если срок истёк
-        :raises jwt.JWTError: при других ошибках валидации
+        :param token: JWT string
+        :return: Payload dictionary
+        :raises ExpiredSignatureError: if the token has expired
+        :raises JWTError: for other validation errors
         """
-        return jwt.decode(
-            token,
-            settings.security.JWT_SECRET.get_secret_value(),
-            algorithms=[settings.security.JWT_ALGORITHM],
-        )
+        try:
+            secret = settings.security.JWT_SECRET
+            if secret is None:
+                raise ValueError("JWT secret key is not configured")
+
+            payload = jwt.decode(
+                token,
+                secret.get_secret_value(),
+                algorithms=[settings.security.JWT_ALGORITHM],
+            )
+            return payload
+        except ExpiredSignatureError:
+            raise ExpiredSignatureError("Token has expired")
+        except JWTError as e:
+            raise JWTError(f"Token validation failed: {str(e)}")

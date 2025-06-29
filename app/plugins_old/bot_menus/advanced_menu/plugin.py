@@ -1,14 +1,14 @@
 from typing import List
 from aiogram.types import KeyboardButton
 from aiogram import Router
-from app.plugins.base import Plugin
-from .menu import get_menu_buttons
-from .handlers import register_handlers
+from app.plugins_old.base import Plugin
+from .constants.menu import get_menu_buttons
+from .menu_handler.handlers import register_handlers
 
 
-class AdvancedMenuPlugin(Plugin):
-    name = "advanced_menu"
-    description = "Расширенное меню"
+class DeviceCheckMenuPlugin(Plugin):
+    name = "device_check_menu"
+    description = "Меню проверки устройства"
     menu_section = "main"
 
     def __init__(self):
@@ -32,5 +32,5 @@ class AdvancedMenuPlugin(Plugin):
     #     register_callbacks(dp_or_router)
 
 
-def get_plugin() -> AdvancedMenuPlugin:
-    return AdvancedMenuPlugin()
+def get_plugin() -> DeviceCheckMenuPlugin:
+    return DeviceCheckMenuPlugin()

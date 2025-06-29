@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
-from app.plugins.base import Plugin
+from app.plugins_old.base import Plugin
 from app.core.config import settings
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from app.plugins.base import Plugin
+from app.plugins_old.base import Plugin
 
 logger = logging.getLogger(__name__)
 

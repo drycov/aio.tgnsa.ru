@@ -4,7 +4,7 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.triggers.interval import IntervalTrigger
 from app.core.applcm_manager import AppLifecycleManager
 from app.core.config import logger, settings
-from app.plugins.manager import PluginManager
+from app.core.plugin_manager import PluginManager
 
 
 class SchedulerManager:

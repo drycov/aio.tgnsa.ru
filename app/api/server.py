@@ -19,7 +19,7 @@ from app.core.errors import (
     validation_error_handler,
 )
 from app.core.patchs import ProjectPaths
-from app.plugins.manager import PluginManager
+from app.core.plugin_manager import PluginManager
 
 EXCLUDE_PATHS: List[str] = [
     "/",

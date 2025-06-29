@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Dict, Any, List
 import tomllib
 
-from app.plugins.base import Plugin
+from app.plugins_old.base import Plugin
 from app.core.config import logger
-from app.plugins.manager import PluginManager
+from app.core.plugin_manager import PluginManager
 
 
 class PluginsUIPlugin(Plugin):

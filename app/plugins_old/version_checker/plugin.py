@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from app.plugins.base import Plugin
-from app.plugins.manager import PluginManager
+from app.plugins_old.base import Plugin
+from app.core.plugin_manager import PluginManager
 from app.core.config import settings, debug_mode
 
 

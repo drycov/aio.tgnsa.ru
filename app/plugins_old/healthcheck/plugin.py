@@ -6,7 +6,7 @@ from typing import Awaitable, Callable, Dict, List, Literal, Tuple, Union
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from app.plugins.base import Plugin
+from app.plugins_old.base import Plugin
 
 ProbeFn = Callable[[], Union[bool, Awaitable[bool]]]
 ProbeGroup = Literal["critical", "optional"]
