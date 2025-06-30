@@ -11,7 +11,7 @@ from rich import print as rprint
 
 from app.core.applcm_manager import AppLifecycleManager
 from app.core.constants import ENV_VARS_TO_CLEAR
-from app.core.plugin_manager import PluginManager
+from app.core.plugin_manager.manager import PluginManager
 from app import __version__
 
 app = typer.Typer(help="TGNMS Entrypoint", rich_markup_mode="rich")
@@ -146,18 +146,14 @@ def _run_service(role: str, debug: bool, dev: bool, dry_run: bool, log_changes: 
 def _get_plugins() -> "PluginManager":
     """
     Синхронно получить инстанс PluginManager с гарантией инициализации.
-
-    Если менеджер не инициализирован, вызывается async-инициализация
-    через asyncio.run.
     """
     global plugin_manager
 
     if plugin_manager is None:
-        # Запускаем асинхронную инициализацию
-        asyncio.run(PluginManager.ensure_initialized())
         plugin_manager = PluginManager.get_instance()
-    elif not plugin_manager._initialized:
-        asyncio.run(plugin_manager.load_plugins())
+        plugin_manager.ensure_ready()
+    elif not plugin_manager.is_initialized:
+        plugin_manager.ensure_ready()
 
     return plugin_manager
 

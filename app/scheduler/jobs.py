@@ -4,7 +4,7 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.triggers.interval import IntervalTrigger
 from app.core.applcm_manager import AppLifecycleManager
 from app.core.config import logger, settings
-from app.core.plugin_manager import PluginManager
+from app.core.plugin_manager.manager import PluginManager
 
 
 class SchedulerManager:
@@ -33,7 +33,7 @@ class SchedulerManager:
 
     def setup_plugins(self):
         manager = PluginManager.create_once()
-        manager.ensure_initialized(settings)
+        manager.ensure_ready(settings)
         manager.register_scheduler(self.scheduler)
 
     async def start(self):

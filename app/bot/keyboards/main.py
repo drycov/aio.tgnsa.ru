@@ -2,7 +2,7 @@ from venv import logger
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 from app.bot.constants.labels import MenuLabels
-from app.core.plugin_manager import PluginManager
+from app.core.plugin_manager.manager import PluginManager
 
 
 from app.core.utils.decorators import add_buttons_to_section
@@ -26,8 +26,9 @@ def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
     }
 
     pm = PluginManager.get_instance()
+    pm.ensure_ready()  # или pm.full_load_cycle()
     if pm:
-        for plugin in pm.plugins.values():
+        for plugin in pm.all_plugins().values():
             if hasattr(plugin, "extend_main_menu"):
                 try:
                     buttons = plugin.extend_main_menu(is_admin=is_admin)
@@ -39,7 +40,11 @@ def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
                             sections, section, buttons, max_per_row=2
                         )
                 except Exception as e:
-                    logger.warning(f"[{plugin.name}] Ошибка при добавлении кнопок: {e}")
+                    plugin_name = getattr(plugin, "meta", None)
+                    plugin_name = (
+                        plugin_name.name if plugin_name else plugin.__class__.__name__
+                    )
+                    logger.warning(f"[{plugin_name}] Ошибка при добавлении кнопок: {e}")
     else:
         logger.warning("PluginManager instance is not initialized")
 

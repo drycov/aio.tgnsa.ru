@@ -19,7 +19,7 @@ from app.core.errors import (
     validation_error_handler,
 )
 from app.core.patchs import ProjectPaths
-from app.core.plugin_manager import PluginManager
+from app.core.plugin_manager.manager import PluginManager
 
 EXCLUDE_PATHS: List[str] = [
     "/",
@@ -90,11 +90,11 @@ class ApiManager:
         self.app.include_router(api_router)
 
     def _setup_plugins(self):
-        manager = PluginManager.create_once()
-        manager.load_all()
-        manager.init_all(settings)
-        manager.post_init_integration()
-        manager.register_fastapi(self.app)
+        manager = PluginManager()
+        manager.ensure_ready(settings)
+        if not manager.is_initialized:
+            logger.warning("🔌 Плагины не инициализированы. Инициализация...")
+            manager.ensure_ready(settings)
 
     def get_app(self) -> FastAPI:
         return self.app
@@ -105,6 +105,8 @@ class ApiManager:
         logger.info("🟢 Запуск API... Инициализация ресурсов.")
         # Здесь может быть инициализация БД, кешей и прочего
         # await some_async_init()
+        # await self._setup_plugins()
+        logger.info(f"📦 Версия приложения: {__version__}")
 
     async def on_shutdown(self):
         logger.info("🛑 Завершение работы API... Освобождение ресурсов.")

@@ -1,0 +1,5 @@
+name = "advanced_menu"
+description = "Расширенное меню"
+
+enabled = true
+menu_section = "main"  # или "admin", "profile"

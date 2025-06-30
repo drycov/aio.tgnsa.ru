@@ -7,7 +7,7 @@ from app.core import initialize_storage
 from app.core.applcm_manager import AppLifecycleManager
 from app.core.config import APP_DIR, BASE_DIR, settings, logger
 from app.core.db import get_sessionmaker
-from app.core.plugin_manager import PluginManager
+from app.core.plugin_manager.manager import PluginManager
 
 
 class BotManager:
@@ -39,12 +39,16 @@ class BotManager:
         )
 
         # Подключаем плагины
-        await self.setup_plugins()
+        self.setup_plugins()
 
-    async def setup_plugins(self):
-        await PluginManager.ensure_initialized(settings)
-        manager = PluginManager.get_instance()
-        # await PluginManager.reload_all()
+    def setup_plugins(self):
+        pm = PluginManager()
+        pm.ensure_ready(settings)
+        if not pm.is_initialized:
+            logger.warning("🔌 Плагины не инициализированы. Инициализация...")
+            pm.ensure_ready(settings)
+        for plugin in pm.all_plugins().values():
+            plugin.register_aiogram(self.dp)  # регистрация своих роутеров
 
     async def on_startup(self):
         logger.info("🟢 Бот запускается...")

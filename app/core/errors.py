@@ -90,3 +90,14 @@ async def general_error_handler(request: Request, exc: Exception) -> JSONRespons
             "type": "internal_error",
         },
     )
+
+
+class PluginError(Exception):
+    """
+    Исключение для ошибок, связанных с плагинами.
+    Используется для явного обозначения ошибок в жизненном цикле плагинов.
+    """
+
+    def __init__(self, message: str, *, plugin: str = None):
+        self.plugin = plugin
+        super().__init__(f"[Plugin: {plugin}] {message}" if plugin else message)

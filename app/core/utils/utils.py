@@ -1,3 +1,5 @@
+import datetime
+import inspect
 import os
 import tempfile
 from typing import Any, Callable, Literal, Optional
@@ -10,6 +12,10 @@ import tomli_w
 from app.bot.fsm.file_storage import FileStorage
 from app.core.config import logger, settings
 from app.core.config import DATA_DIR
+from puresnmp.types import TimeTicks
+
+from pyasn1.type.univ import OctetString
+from pyasn1_modules.rfc1902 import Counter32
 
 from pathlib import Path
 
@@ -112,3 +118,117 @@ def detect_project_namespace(plugin_dir: Path) -> Optional[str]:
     except Exception as e:
         print(f"[NamespaceDetect] ⚠️ Не удалось определить namespace: {e}")
         return None
+
+
+def to_string(value, encoding="utf-8"):
+    """
+    Преобразует значение типа OctetString, bytes или hex-строку в обычную строку.
+    Если значение уже является строкой, возвращает его без изменений.
+    """
+    if isinstance(value, (Counter32, OctetString)):
+        return value.prettyPrint()  # возвращает строковое значение
+    # Преобразуем значение из OctetString в строку
+    if isinstance(value, OctetString):
+        # Получаем строковое представление из OctetString
+        value = value.prettyPrint().encode("latin1").decode(encoding)
+    # Преобразуем значение из bytes в строку
+    elif isinstance(value, bytes):
+        value = value.decode(encoding)
+    # Проверяем, является ли строка шестнадцатеричной после преобразования
+    if isinstance(value, str):
+        if is_hex_string(value):
+            try:
+                # Если строка в hex-формате, преобразуем её в текст
+                if value.startswith("0x"):
+                    value = value[2:]
+                value = bytes.fromhex(value).decode(encoding)
+            except (ValueError, UnicodeDecodeError) as e:
+                logger.error(
+                    f"[{inspect.currentframe().f_code.co_name}] Ошибка при декодировании hex: {e}"
+                )
+                # Оставляем исходное значение и логируем ошибку, если декодировать не удалось
+                pass
+
+    return value  # Возвращаем преобразованное значение или исходное, если оно не требует изменений
+
+
+def is_hex_string(s: str) -> bool:
+    """
+    Проверяет, является ли строка шестнадцатеричным значением.
+    """
+    # Убираем префикс "0x" в начале, если он есть
+    if s.startswith("0x"):
+        s = s[2:]
+
+    # Проверяем, что строка состоит только из hex-символов и имеет чётную длину
+    if len(s) % 2 == 0 and all(c in "0123456789abcdefABCDEF" for c in s):
+        try:
+            # Пробуем декодировать строку как hex
+            bytes.fromhex(s)
+            return True
+        except ValueError:
+            return False
+    return False
+
+
+def seconds_to_str(uptime) -> str:
+    """
+    Преобразует значение TimeTicks или timedelta в строку в формате 'годы месяцы недели дни часы минуты секунды'.
+    """
+    # Проверка типа uptime и преобразование в секунды
+    if isinstance(uptime, TimeTicks):
+        total_seconds = int(uptime) / 100  # Преобразование TimeTicks в секунды
+    elif isinstance(uptime, datetime.timedelta):
+        total_seconds = int(
+            uptime.total_seconds()
+        )  # Преобразование timedelta в секунды
+    else:
+        total_seconds = int(uptime)  # Если uptime уже в секундах
+
+    # Определяем величины времени
+    seconds_in_year = 31536000  # 365 дней
+    seconds_in_month = 2592000  # 30 дней
+    seconds_in_week = 604800  # 7 дней
+    seconds_in_day = 86400
+    seconds_in_hour = 3600
+    seconds_in_minute = 60
+
+    # Вычисляем годы, месяцы, недели, дни, часы, минуты, секунды
+    years = int(total_seconds // seconds_in_year)
+    total_seconds %= seconds_in_year
+    months = int(total_seconds // seconds_in_month)
+    total_seconds %= seconds_in_month
+    weeks = int(total_seconds // seconds_in_week)
+    total_seconds %= seconds_in_week
+    days = int(total_seconds // seconds_in_day)
+    total_seconds %= seconds_in_day
+    hours = int(total_seconds // seconds_in_hour)
+    total_seconds %= seconds_in_hour
+    minutes = int(total_seconds // seconds_in_minute)
+    seconds = int(total_seconds % seconds_in_minute)
+
+    # Формируем строку с результатом, добавляя только непустые значения
+    result = []
+    if years > 0:
+        result.append(
+            f"{years} {'год' if years == 1 else 'лет' if years >= 5 else 'года'}"
+        )
+    if months > 0:
+        result.append(
+            f"{months} {'месяц' if months == 1 else 'месяцев' if months >= 5 else 'месяца'}"
+        )
+    if weeks > 0:
+        result.append(
+            f"{weeks} {'неделя' if weeks == 1 else 'недель' if weeks >= 5 else 'недели'}"
+        )
+    if days > 0:
+        result.append(
+            f"{days} {'день' if days == 1 else 'дней' if days >= 5 else 'дня'}"
+        )
+    if hours > 0:
+        result.append(f"{hours:02} часов")
+    if minutes > 0:
+        result.append(f"{minutes:02} минут")
+    result.append(f"{seconds:02} секунд")  # Секунды всегда отображаются
+
+    return " ".join(result)

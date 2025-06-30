@@ -113,6 +113,15 @@ async def error_handler(event: Update, *args, **kwargs):
             detail=ErrorMessages.TELEGRAM_API_ERROR.value.format(exception=exception),
         )
 
+    elif "TelegramNetworkError" in str(exception) or "ClientConnectorDNSError" in str(
+        exception
+    ):
+        app_logger.error(f"Network error: {exception}")
+        raise HTTPException(
+            status_code=503,
+            detail="Сетевая ошибка Telegram API. Проверьте соединение с api.telegram.org.",
+        )
+
     else:
         # Handling unknown errors
         app_logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)

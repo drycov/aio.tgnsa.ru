@@ -44,6 +44,22 @@ class NetworkUtils:
         return net, None
 
     @staticmethod
+    async def validate_ip(
+        ip: str,
+    ) -> Tuple[Optional[ipaddress.IPv4Address], Optional[str]]:
+        """
+        Валидирует IPv4-адрес и возвращает объект адреса при корректном формате.
+
+        :param ip: Строка IP-адреса (например, '192.168.1.1')
+        :return: Кортеж (объект адреса, сообщение об ошибке при наличии)
+        """
+        try:
+            addr = ipaddress.IPv4Address(ip)
+            return addr, None
+        except ipaddress.AddressValueError:
+            return None, "❌ Неверный формат IP-адреса"
+
+    @staticmethod
     @handle_network_error(default_return={"error": "⚠️ Ошибка анализа сети"})
     async def get_network_info(
         net: ipaddress.IPv4Network,
@@ -210,3 +226,15 @@ class NetworkUtils:
             log_messages.append(f"Устройство {host} недоступно.")
 
         return "\n".join(log_messages)
+
+    @staticmethod
+    @handle_network_error(default_return=False)
+    async def is_alive(host: str) -> bool:
+        """
+        Проверяет доступность устройства по IP-адресу.
+
+        :param host: IP-адрес или доменное имя устройства.
+        :return: True, если устройство доступно, иначе False.
+        """
+        response = await asyncio.to_thread(ping, str(host), timeout=1)
+        return response is not None

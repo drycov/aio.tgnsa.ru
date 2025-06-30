@@ -131,7 +131,7 @@ async def cancel_registration(message: Message, state: FSMContext) -> None:
 @router.callback_query(F.data == "back")
 @safe_delete_message
 async def handle_back_command(
-    event: Union[Message, CallbackQuery], state: FSMContext
+    event: Union[Message, CallbackQuery], state: FSMContext, db: AsyncSession
 ) -> None:
     """
     Обработчик команды "Назад" с:
@@ -149,6 +149,7 @@ async def handle_back_command(
     try:
         # Получаем объект сообщения для работы
         message = event.message if is_callback else event
+        service = UserService(db)
 
         # Обрабатываем действие "Назад"
         result = await StateManager.handle_back_action(state, message)
@@ -158,8 +159,11 @@ async def handle_back_command(
             await message.answer(**result)
         else:
             # Возврат в главное меню
-            data = await state.get_data()
-            keyboard = generate_main_keyboard(is_admin=data.get("is_admin", False))
+            # logger.info(f"[BACK] Showing main menu for user {user_id}")
+            is_admin = await service.is_admin(user_id)
+            logger.debug(f"[BACK] User {user_id} is_admin: {is_admin}")
+
+            keyboard = generate_main_keyboard(is_admin=is_admin)
             await state.clear()
             await message.answer(text=Messages.WELCOME.value, reply_markup=keyboard)
 

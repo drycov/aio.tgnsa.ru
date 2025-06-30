@@ -33,15 +33,36 @@ def safe_delete_message(func: Callable[..., Coroutine]) -> Callable[..., Corouti
 
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        message: Message = kwargs.get("message") or (args[0] if args else None)
+        from aiogram.types import Message
 
+        message = None
+        # Сначала ищем в kwargs
+        for v in kwargs.values():
+            if isinstance(v, Message):
+                message = v
+                break
+            # Проверяем наличие атрибута message
+            if hasattr(v, "message") and isinstance(getattr(v, "message"), Message):
+                message = getattr(v, "message")
+                break
+        # Если не нашли, ищем в args
+        if message is None:
+            for v in args:
+                if isinstance(v, Message):
+                    message = v
+                    break
+                if hasattr(v, "message") and isinstance(getattr(v, "message"), Message):
+                    message = getattr(v, "message")
+                    break
         if isinstance(message, Message):
             try:
                 await message.delete()
             except Exception as e:
                 logger.debug(f"[safe_delete_message] ⚠️ Failed to delete message: {e}")
         else:
-            logger.warning(f"[safe_delete_message] Invalid message argument: {message}")
+            logger.warning(
+                f"[safe_delete_message] Не найден объект Message среди аргументов: {args}, {kwargs}"
+            )
 
         return await func(*args, **kwargs)
 

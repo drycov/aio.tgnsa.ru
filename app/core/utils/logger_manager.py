@@ -1,15 +1,20 @@
 import logging
-import os
-import sys
-from pathlib import Path
 from typing import Optional, Union
 from logging.handlers import RotatingFileHandler
-
+from pathlib import Path
+import os
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.theme import Theme
 
-# === Цветовая тема для Rich ===
+# Кастомные уровни логирования
+CUSTOM_LOG_LEVELS = {
+    "TRACE": 5,
+    "NOTICE": 21,
+    "SUCCESS": 25,
+}
+
+# Тема для Rich
 RICH_THEME = Theme(
     {
         "logging.level.trace": "dim white",
@@ -20,199 +25,119 @@ RICH_THEME = Theme(
         "logging.level.warning": "bold yellow",
         "logging.level.error": "bold red",
         "logging.level.critical": "bold white on red",
-        "logging.time": "dim",
-        "logging.name": "cyan",
     }
 )
 
-# === Кастомные уровни ===
-# NOTICE_LEVEL_NUM = 21
-# SUCCESS_LEVEL_NUM = 25
-# TRACE_LEVEL_NUM = 5
 
-# Определяем кастомные уровни
-CUSTOM_LOG_LEVELS = {
-    "TRACE": 21,
-    "NOTICE": 23,
-    "SUCCESS": 25,
-}
+class BoundLogger(logging.Logger):
+    """Логгер с поддержкой метода bind()"""
 
-# logging.addLevelName(TRACE_LEVEL_NUM, "TRACE")
-
-# logging.addLevelName(NOTICE_LEVEL_NUM, "NOTICE")
-# logging.addLevelName(SUCCESS_LEVEL_NUM, "SUCCESS")
+    def bind(self, **kwargs) -> "ContextLogger":
+        return ContextLogger(self, kwargs)
 
 
-# === Расширение базового логгера методами success/notice ===
-def patch_logger_with_custom_levels():
-    """
-    Патчит класс `logging.Logger`, добавляя пользовательские уровни логирования:
-    - TRACE (21)
-    - NOTICE (23)
-    - SUCCESS (25)
+class ContextLogger(logging.LoggerAdapter):
+    """Адаптер логгера с контекстом и поддержкой bind()"""
 
-    После применения функции можно использовать:
-    - logger.trace("...")
-    - logger.notice("...")
-    - logger.success("...")
-    """
+    def bind(self, **kwargs) -> "ContextLogger":
+        merged = {**self.extra, **kwargs}
+        return ContextLogger(self.logger, merged)
 
-    def _make_custom_method(level_name: str, level_num: int):
-        def log_method(self, message, *args, **kwargs):
-            if self.isEnabledFor(level_num):
-                self._log(level_num, message, args, **kwargs)
-
-        return log_method
-
-    for name, num in CUSTOM_LOG_LEVELS.items():
-        logging.addLevelName(num, name)
-        setattr(logging.Logger, name.lower(), _make_custom_method(name, num))
+    def process(self, msg, kwargs):
+        if self.extra:
+            kwargs["extra"] = {**kwargs.get("extra", {}), **self.extra}
+        return msg, kwargs
 
 
-patch_logger_with_custom_levels()
+def _patch_logger_class():
+    """Добавляет кастомные уровни и метод bind к классу Logger"""
+    for name, level in CUSTOM_LOG_LEVELS.items():
+        logging.addLevelName(level, name)
+
+        def make_log_method(level_name, level_num):
+            def log_method(self, message, *args, **kwargs):
+                if self.isEnabledFor(level_num):
+                    self._log(level_num, message, args, **kwargs)
+
+            return log_method
+
+        setattr(logging.Logger, name.lower(), make_log_method(name, level))
+    logging.Logger.bind = lambda self, **kwargs: ContextLogger(self, kwargs)
 
 
-# === Основной логгер-менеджер ===
+_patch_logger_class()
+
+
 class LoggerManager:
-    """
-    Менеджер логирования для централизованной настройки логгера с поддержкой:
-
-    - Пользовательских уровней логирования (TRACE, NOTICE, SUCCESS)
-    - Вывода в файл с ротацией
-    - Расширенного консольного вывода с Rich
-    - Безопасной иерархии fallback-директорий для логов
-
-    :param name: Имя логгера
-    :param debug: Включает DEBUG-режим и Rich traceback'и
-    :param log_dir: Каталог для логов. Если не указан — используется fallback-логика
-    :param log_level: Уровень логирования. По умолчанию зависит от debug-флага
-    :param enable_file_logging: Включает файловое логирование
-    :param enable_console_logging: Включает логирование в консоль
-    :param max_file_size: Максимальный размер лог-файла до ротации (в байтах)
-    :param backup_count: Кол-во резервных лог-файлов при ротации
-    """
+    """Менеджер логгеров с поддержкой Rich и файлового логирования"""
 
     def __init__(
         self,
         name: str = "app",
         debug: bool = False,
         log_dir: Optional[Union[str, Path]] = None,
-        log_level: Optional[str] = None,
-        enable_file_logging: bool = True,
-        enable_console_logging: bool = True,
-        max_file_size: int = 10 * 1024 * 1024,
-        backup_count: int = 5,
+        log_level: Optional[Union[str, int]] = None,
+        enable_file: bool = True,
+        enable_console: bool = True,
+        file_size: int = 10 * 1024 * 1024,
+        backups: int = 5,
     ):
         self.name = name
         self.debug = debug
-        self.log_level = (log_level or "DEBUG" if debug else "INFO").upper()
-        self.enable_file_logging = enable_file_logging
-        self.enable_console_logging = enable_console_logging
-        self.max_file_size = max_file_size
-        self.backup_count = backup_count
+        self.log_level = log_level or ("DEBUG" if debug else "INFO")
+        self.enable_file = enable_file
+        self.enable_console = enable_console
+        self.file_size = file_size
+        self.backups = backups
+        self.log_dir = log_dir or "logs"
+        self._logger = self._configure_logger()
 
-        self.log_dir = self._resolve_log_dir(log_dir)
-        self.logger = self._setup_logger()
-
-    def _resolve_log_dir(self, log_dir: Optional[Union[str, Path]]) -> Path:
-        """
-        Разрешает и проверяет рабочий каталог логов.
-
-        Возвращает валидный путь:
-        - Указанный пользователем путь (если доступен)
-        - Стандартные fallback-директории
-        - Локальная fallback-директория ./logs в случае ошибок
-
-        :param log_dir: Кастомный путь к директории логов
-        :return: Валидный путь к директории логов
-        """
-        if log_dir:
-            path = Path(log_dir).expanduser()
-            try:
-                path.mkdir(parents=True, exist_ok=True)
-                if os.access(path, os.W_OK):
-                    return path
-            except Exception as e:
-                print(f"⚠️ Невозможно создать каталог логов: {e}", file=sys.stderr)
-
-        # Локальный импорт внутри метода — предотвращает ImportError при циклическом импорте
-        try:
-            from app.core.patchs import BASE_DIR
-        except ImportError:
-            BASE_DIR = Path.cwd()
-
-        default_log_dirs = [
-            BASE_DIR / "logs",
-            Path("/var/log/tgnms"),
-            Path("/tmp/tgnms_logs"),
-        ]
-
-        for dir_path in default_log_dirs:
-            try:
-                dir_path.mkdir(parents=True, exist_ok=True)
-                if os.access(dir_path, os.W_OK):
-                    return dir_path
-            except Exception:
-                continue
-
-        fallback = Path.cwd() / "logs"
-        fallback.mkdir(parents=True, exist_ok=True)
-        print(
-            f"⚠️ Все варианты директорий недоступны, логи будут в {fallback}",
-            file=sys.stderr,
-        )
-        return fallback
-
-    def _setup_logger(self) -> logging.Logger:
-        """
-        Настраивает экземпляр логгера с учётом:
-        - Файлового логирования (с ротацией)
-        - Консольного вывода с RichHandler
-        - Пользовательского уровня логирования
-
-        :return: Настроенный логгер
-        """
+    def _configure_logger(self) -> BoundLogger:
         logger = logging.getLogger(self.name)
-        logger.setLevel(getattr(logging, self.log_level, logging.INFO))
+        logger.setLevel(self.log_level)
         logger.handlers.clear()
-
         formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-
-        # === Файловое логирование ===
-        if self.enable_file_logging:
+        # Файловый обработчик
+        if self.enable_file:
+            log_dir = self._ensure_log_dir()
             file_handler = RotatingFileHandler(
-                self.log_dir / f"{self.name}.log",
-                maxBytes=self.max_file_size,
-                backupCount=self.backup_count,
+                log_dir / f"{self.name}.log",
+                maxBytes=self.file_size,
+                backupCount=self.backups,
                 encoding="utf-8",
             )
             file_handler.setFormatter(formatter)
-            file_handler.setLevel(getattr(logging, self.log_level))
             logger.addHandler(file_handler)
-
-        # === Консольное логирование с Rich ===
-        if self.enable_console_logging:
-            rich_console = Console(theme=RICH_THEME)
+        # Консольный обработчик с Rich
+        if self.enable_console:
+            console = Console(theme=RICH_THEME)
             console_handler = RichHandler(
-                console=rich_console,
-                markup=True,
-                rich_tracebacks=self.debug,
-                show_path=self.debug,
+                console=console,
+                show_time=False,
+                rich_tracebacks=False,
                 tracebacks_show_locals=self.debug,
             )
-            console_handler.setFormatter(logging.Formatter(fmt="%(message)s"))
-            console_handler.setLevel(getattr(logging, self.log_level))
             logger.addHandler(console_handler)
-
+        logger.__class__ = BoundLogger
         return logger
 
-    def get_logger(self) -> logging.Logger:
-        """
-        Возвращает сконфигурированный экземпляр логгера.
+    def _ensure_log_dir(self) -> Path:
+        log_dir = Path(self.log_dir)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        return log_dir
 
-        :return: Логгер с заданными настройками
-        """
-        return self.logger
+    def get_logger(self) -> BoundLogger:
+        return self._logger
+
+
+# Пример использования
+if __name__ == "__main__":
+    logger = LoggerManager(name="my_app", debug=True).get_logger()
+    logger.info("This is an info message")
+    logger.bind(user_id=123, request_id="abc").info("Processing request")
+    logger.success("Operation completed successfully")
+    logger.notice("Important notice")
+    logger.trace("Detailed trace information")
