@@ -237,8 +237,13 @@ def seconds_to_str(uptime) -> str:
 
 def parse_location(byte_string: bytes) -> Optional[Dict[str, str]]:
     try:
-        decoded_string = byte_string.decode("utf-8")
-        print(f"RAW STRING: {decoded_string}")  # Вывод для отладки
+        if isinstance(byte_string, bytes):
+            decoded_string = byte_string.decode("utf-8")
+        else:
+            decoded_string = str(byte_string)
+        logger.debug(
+            f"[{inspect.currentframe().f_code.co_name}] RAW STRING: {decoded_string}"
+        )  # Вывод для отладки
 
         # Используем регулярное выражение для разделения адреса и координат
         match = re.match(r"(.*)\[(.*?)\]$", decoded_string)
@@ -263,7 +268,9 @@ def parse_location(byte_string: bytes) -> Optional[Dict[str, str]]:
             try:
                 latitude, longitude = map(float, coordinates.split(","))
             except ValueError:
-                logger.error("Invalid coordinates format")
+                logger.error(
+                    f"[{inspect.currentframe().f_code.co_name}] Invalid coordinates format"
+                )
                 return None
 
         return {
@@ -276,5 +283,7 @@ def parse_location(byte_string: bytes) -> Optional[Dict[str, str]]:
         }
     except Exception as e:
         # Логируем ошибку
-        logger.error(f"Error parsing location: {e}")
+        logger.error(
+            f"[{inspect.currentframe().f_code.co_name}] Error parsing location: {e}"
+        )
         return None
