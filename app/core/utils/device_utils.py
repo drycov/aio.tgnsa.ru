@@ -2,8 +2,9 @@ import inspect
 from typing import List
 from app.core.config import logger
 from app.core.oid_loader import OIDLoader
+from app.core.utils.enr_parser import EnterpriseNumberRegistry
 from app.core.utils.snmp_utils import SNMPUtils
-from app.core.utils.utils import seconds_to_str, to_string
+from app.core.utils.utils import parse_location, seconds_to_str, to_string
 
 logger = logger.bind(component="DeviceUtils")
 
@@ -56,7 +57,7 @@ class DeviceUtils:
     @staticmethod
     async def get_basic_info(host: str, community: str) -> dict | None:
         oids = OIDLoader.load()
-        
+
         try:
             oid_model = oids["basic_oids"]["oid_model"]
             oid_sysname = oids["basic_oids"]["oid_sysname"]
@@ -66,39 +67,59 @@ class DeviceUtils:
 
             # Получение данных по OID
             try:
-                dirty_data = await SNMPUtils.get_snmp_data(host, oid_model, community)
+                dirty_data = await SNMPUtils.get_snmp_data(host, community, oid_model)
                 print(dirty_data)
                 if not dirty_data:
-                    raise ValueError(f"Не удалось получить данные по OID модели для хоста {host}")
-                dirty_data = dirty_data.decode('utf-8') if isinstance(dirty_data, bytes) else str(dirty_data)
+                    raise ValueError(
+                        f"Не удалось получить данные по OID модели для хоста {host}"
+                    )
+                dirty_data = (
+                    dirty_data.decode("utf-8")
+                    if isinstance(dirty_data, bytes)
+                    else str(dirty_data)
+                )
             except Exception as e:
-                logger.error(f"Ошибка при получении данных OID модели для хоста {host}: {e}")
+                logger.error(
+                    f"Ошибка при получении данных OID модели для хоста {host}: {e}"
+                )
                 return None
 
-            sw_sys_name = await SNMPUtils.get_snmp_data(host, oid_sysname, community)
+            sw_sys_name = await SNMPUtils.get_snmp_data(host, community, oid_sysname)
             if not sw_sys_name:
                 raise ValueError(f"Не удалось получить имя устройства для хоста {host}")
-            sw_sys_name = sw_sys_name.decode('utf-8') if isinstance(sw_sys_name, bytes) else str(sw_sys_name)
+            sw_sys_name = (
+                sw_sys_name.decode("utf-8")
+                if isinstance(sw_sys_name, bytes)
+                else str(sw_sys_name)
+            )
 
-            sw_pen = await SNMPUtils.get_snmp_data(host, oid_sysObjectID, community)
-            up_time = await SNMPUtils.get_snmp_data(host, oid_uptime, community)
-            sys_location = await SNMPUtils.get_snmp_data(host, oid_sysLocation, community)
+            sw_pen = await SNMPUtils.get_snmp_data(host, community, oid_sysObjectID)
+            up_time = await SNMPUtils.get_snmp_data(host, community, oid_uptime)
+            sys_location = await SNMPUtils.get_snmp_data(
+                host, community, oid_sysLocation
+            )
 
             if not sw_pen or not up_time or not sys_location:
-                raise ValueError(f"Не удалось получить все необходимые данные для хоста {host}")
+                raise ValueError(
+                    f"Не удалось получить все необходимые данные для хоста {host}"
+                )
 
-            parsed_oid = PENFinder.parse_oid(sw_pen)
-            vendor = PENFinder.search_pen(parsed_oid['pen'])
-            app_logger.debug(vendor[0].get('Organization'))
+            parsed_oid = EnterpriseNumberRegistry.parse_oid(sw_pen)
+            vendor = EnterpriseNumberRegistry.search_pen(parsed_oid["pen"])
+            logger.debug(vendor[0].organization)
 
             # Парсинг sys_location
-            result = HelperFunctions.parse_location(sys_location)
+            result = parse_location(sys_location)
             address = (
-                f"{result.get('country', 'Неизвестная страна')}, "
-                f"{result.get('city', 'Неизвестный город')}, "
-                f"{result.get('street', 'Неизвестная улица')}, "
-                f"{result.get('house_number', '0')}"
-            ) if result else "Неизвестный адрес"
+                (
+                    f"{result.get('country', 'Неизвестная страна')}, "
+                    f"{result.get('city', 'Неизвестный город')}, "
+                    f"{result.get('street', 'Неизвестная улица')}, "
+                    f"{result.get('house_number', '0')}"
+                )
+                if result
+                else "Неизвестный адрес"
+            )
 
             # Фильтрация модели устройства
             sw_model = DeviceUtils.filter_device_model(dirty_data)
@@ -109,7 +130,7 @@ class DeviceUtils:
 
             return {
                 "host": host,
-                "vendor": vendor[0].get('Organization'),
+                "vendor": vendor[0].organization,
                 "sw_sys_name": sw_sys_name,
                 "sw_model": sw_model,
                 "sw_up_time": sw_up_time,
@@ -122,5 +143,24 @@ class DeviceUtils:
 
         except Exception as e:
             # Логирование ошибки с трассировкой
-            logger.
+            logger.exception(
+                f"[{inspect.currentframe().f_code.co_name}] Ошибка получения базовой информации с {host}: {e}"
+            )
             return None
+
+    @staticmethod
+    def filter_device_model(dirty_data: str) -> str:
+        """
+        Определяет модель устройства на основе строки `dirty_data`.
+        """
+        dirty_data = to_string(dirty_data, encoding="iso-8859-1")
+        for model_key, model_info in DeviceUtils.device_data.items():
+            if model_key in dirty_data:
+                model_name = model_info["name"]
+                # app_logger.info(LogMessages.MODEL_FILTERED.value.format(model_name=model_name, model_key=model_key))
+                return model_name
+
+        logger.warning(
+            f"[{inspect.currentframe().f_code.co_name}] Не удалось определить модель устройства из строки: {dirty_data}"
+        )
+        return dirty_data

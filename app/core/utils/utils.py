@@ -1,8 +1,9 @@
 import datetime
 import inspect
 import os
+import re
 import tempfile
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Callable, Dict, Literal, Optional
 import redis.asyncio as redis
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage
@@ -232,3 +233,48 @@ def seconds_to_str(uptime) -> str:
     result.append(f"{seconds:02} секунд")  # Секунды всегда отображаются
 
     return " ".join(result)
+
+
+def parse_location(byte_string: bytes) -> Optional[Dict[str, str]]:
+    try:
+        decoded_string = byte_string.decode("utf-8")
+        print(f"RAW STRING: {decoded_string}")  # Вывод для отладки
+
+        # Используем регулярное выражение для разделения адреса и координат
+        match = re.match(r"(.*)\[(.*?)\]$", decoded_string)
+        if match:
+            address = match.group(1).strip()
+            coordinates = match.group(2).strip()
+        else:
+            address = decoded_string.strip()
+            coordinates = None
+
+        # Парсим адрес
+        address_parts = address.split(",")
+        address_parts = [part.strip() for part in address_parts if part.strip()]
+
+        street = address_parts[0] if len(address_parts) > 0 else ""
+        house_number = address_parts[1] if len(address_parts) > 1 else ""
+        city = address_parts[2] if len(address_parts) > 2 else ""
+        country = address_parts[3] if len(address_parts) > 3 else ""
+
+        latitude = longitude = None
+        if coordinates and "," in coordinates:
+            try:
+                latitude, longitude = map(float, coordinates.split(","))
+            except ValueError:
+                logger.error("Invalid coordinates format")
+                return None
+
+        return {
+            "street": street,
+            "house_number": house_number,
+            "city": city,
+            "country": country,
+            "latitude": latitude,
+            "longitude": longitude,
+        }
+    except Exception as e:
+        # Логируем ошибку
+        logger.error(f"Error parsing location: {e}")
+        return None

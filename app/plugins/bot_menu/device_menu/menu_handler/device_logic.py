@@ -1,3 +1,4 @@
+import inspect
 from app.bot.fsm.state_manager import StateManager
 from aiogram.types import Message, ReplyKeyboardRemove
 from app.core.config import logger
@@ -65,13 +66,28 @@ async def handle_device_status_logic(message: Message, state: FSMContext):
     await StateManager.set_state_with_history(
         state, DeviceCommands.CHECK_STATUS, display_data
     )
-    if_name = await DeviceUtils.get_interface_range(str(host), valid)
-    if_index = await DeviceUtils.get_if_index_range(str(host), valid)
-    logger.info(if_name)
-    logger.info(if_index)
+    # if_name = await DeviceUtils.get_interface_range(str(host), valid)
+    # if_index = await DeviceUtils.get_if_index_range(str(host), valid)
+    # logger.info(if_name)
+    # logger.info(if_index)
 
-    interface_map = dict(zip(if_index, if_name))
-    logger.debug(f"Сопоставление интерфейсов: {interface_map}")
+    # interface_map = dict(zip(if_index, if_name))
+    # logger.debug(f"Сопоставление интерфейсов: {interface_map}")
+    device_info = await DeviceUtils.get_basic_info(str(host), valid)
+    if not device_info:
+        logger.error(
+            f"[{inspect.currentframe().f_code.co_name}] Не удалось получить базовую информацию об устройстве {host}"
+        )
+        await message.answer(
+            f"⚠️ <b>Не удалось получить базовую информацию об устройстве <code>{host}</code></b>",
+            reply_markup=in_back_keyboard,
+            parse_mode="HTML",
+        )
+        await state.update_data(waiting_for_ip=False)
+        return
+    logger.info(
+        f"[{inspect.currentframe().f_code.co_name}] Получена базовая информация: {device_info}"
+    )
 
     # Запуск асинхронной функции для получения интерфейсов
     # Отправка сообщения пользователю

@@ -42,7 +42,7 @@ async def handle_start(message: Message, state: FSMContext, db: AsyncSession) ->
     try:
         user = await service.get_user(user_id, UserSearchField.TG_ID)
         if not user.is_authorized:
-            await service.set_authorized(user_id, True)
+            await service.set_authorized(user_id, False)
     except UserNotFoundError:
         logger.warning(
             f"[main_menu] 🚫 User not authorized or not found: tg_id={user_id}"
