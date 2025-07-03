@@ -11,8 +11,10 @@ from app.core.plugin_manager.manager import PluginManager
 
 
 class BotManager:
+    name = "BotManager"
     def __init__(self, lifecycle_manager: AppLifecycleManager):
         self.lifecycle_manager = lifecycle_manager
+        self.logger = logger.bind(component=self.name)
 
         self.storage = initialize_storage()
         self.session = get_sessionmaker()
@@ -25,6 +27,14 @@ class BotManager:
         # Регистрация lifecycle hooks
         lifecycle_manager.on_startup(name="bot_startup")(self.on_startup)
         lifecycle_manager.on_shutdown(name="bot_shutdown")(self.on_shutdown)
+        self.logger.info(f"[{self.name}] инициализирован")
+        self.logger.info(f"[{self.name}]📦 Версия приложения: {settings.VERSION}")
+        self.logger.info(f"[{self.name}]📂 Путь к приложению: {APP_DIR}")
+        self.logger.info(f"[{self.name}]📂 Базовый путь: {BASE_DIR}")
+        self.logger.info(f"[{self.name}]storage: {self.storage.__class__.__name__}")
+        self.logger.info(f"[{self.name}]session: {self.session.__class__.__name__}")
+
+
 
     async def setup(self):
         # Регистрация middlewares, фильтров, хендлеров

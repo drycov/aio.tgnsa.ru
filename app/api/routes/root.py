@@ -61,11 +61,11 @@ async def root(request: Request):
         "index.html",
         {
             "request": request,
-            "app_name": settings.app.APP_NAME,
+            "app_name": settings.app.name,
             "favicon_url": settings.app.favicon_url,
             "static_url": settings.app.static_url,
-            "description": settings.app.DESCRIPTION,
-            "version": settings.VERSION,
+            "description": settings.app.description,
+            "version": settings.version,
             "environment": environment,
             "timezone": settings.misc.TIMEZONE,
             "current_time": current_time,  # Передаем объект datetime

@@ -107,7 +107,7 @@ async def send_and_set(
         parse_mode="HTML",
     )
 
-    await StateManager.set_state_with_previous(
+    await StateManager.set_state_with_history(
         state,
         next_state,
         display_data={

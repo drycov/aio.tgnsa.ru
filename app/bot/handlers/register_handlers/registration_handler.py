@@ -94,7 +94,7 @@ async def position_selected(callback: CallbackQuery, state: FSMContext):
         reply_markup=send_contact_keyboard,
     )
 
-    await StateManager.set_state_with_previous(
+    await StateManager.set_state_with_history(
         state,
         RegistrationForm.phone_number,
         display_data={
@@ -154,7 +154,7 @@ async def process_email(message: Message, state: FSMContext):
         reply_markup=generate_confirm_keyboard("registration", user_id),
     )
 
-    await StateManager.set_state_with_previous(
+    await StateManager.set_state_with_history(
         state,
         RegistrationForm.confirmation,
         display_data={

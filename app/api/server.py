@@ -41,7 +41,7 @@ class ApiManager:
         self.lifecycle_manager = lifecycle_manager
 
         self.app: FastAPI = FastAPI(
-            title=settings.app.APP_NAME,
+            title=settings.app.name,
             version=__version__,
         )
         self._setup_static()
@@ -123,9 +123,9 @@ def start_api(lifecycle: AppLifecycleManager) -> None:
 
     uvicorn.run(
         app,
-        host=settings.api.API_HOST,
-        port=settings.api.API_PORT,
-        workers=1 if debug_mode else settings.api.API_WORKERS,
+        host=settings.api.api_host,
+        port=settings.api.api_port,
+        workers=1 if debug_mode else settings.api.api_workers,
         reload=debug_mode,
         log_level="debug" if debug_mode else "info",
     )
