@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import secrets
 from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar
-
+from app.core.globals import flags
 from dotenv import load_dotenv
 from pydantic import (
     Field,
@@ -45,6 +45,7 @@ if not SECRETS_DIR.exists():
 # --- Загрузка .env заранее ---
 load_dotenv(dotenv_path=ENV_PATH, override=True)
 
+
 def load_toml(name: str) -> dict:
     try:
         assert name.exists(), f"{name=} не существует"
@@ -52,11 +53,14 @@ def load_toml(name: str) -> dict:
             return tomllib.load(f)  # выбросит ошибку, если формат неверен
     except FileNotFoundError:
         return {}
+
+
 T = TypeVar("T")
 
 
 SECRETS_DICT = load_toml(SECRETS_TOML)
 CONFIGS_DICT = load_toml(CONFIG_PATH)
+
 
 def _convert(val: Any, target_type: Type[T]) -> T:
     if target_type == list[str]:
@@ -93,7 +97,6 @@ def load_from_sources(
     raise ValueError(
         f"Конфигурационный параметр '{section}.{key}' не найден ни в env, ни в config.toml, ни в secrets.toml!"
     )
-
 
 
 # --- Определение роли ---
@@ -278,7 +281,7 @@ class Security(BaseSettings):
         default=60,
         description="Алгоритм подписи JWT токенов",
     )
-    access_token_expire_seconds:int = Field(
+    access_token_expire_seconds: int = Field(
         default=3600,
         description="Алгоритм подписи JWT токенов",
     )
@@ -303,7 +306,6 @@ class Security(BaseSettings):
         if isinstance(v, str):
             return SecretStr(v)
         raise ValueError("token должен быть строкой или SecretStr")
-
 
     @computed_field
     def TFA_ENABLE(self) -> bool:
@@ -597,28 +599,38 @@ class MongoDBConfig(BaseSettings):
 
 class NetworkConfig(BaseSettings):
     ping_count: int = Field(
-        default_factory=lambda: load_from_sources("network", "ping_count", int, env_prefix="NETWORK_"),
+        default_factory=lambda: load_from_sources(
+            "network", "ping_count", int, env_prefix="NETWORK_"
+        ),
         description="Количество ping-пакетов",
         env="PING_COUNT",
     )
     ping_interval: int = Field(
-        default_factory=lambda: load_from_sources("network", "ping_interval", int, env_prefix="NETWORK_"),
+        default_factory=lambda: load_from_sources(
+            "network", "ping_interval", int, env_prefix="NETWORK_"
+        ),
         description="Интервал между ping, сек",
         env="PING_INTERVAL",
     )
     ping_timeout: int = Field(
-        default_factory=lambda: load_from_sources("network", "ping_timeout", int, env_prefix="NETWORK_"),
+        default_factory=lambda: load_from_sources(
+            "network", "ping_timeout", int, env_prefix="NETWORK_"
+        ),
         description="Таймаут ожидания ответа, сек",
         env="PING_TIMEOUT",
     )
 
     snmp_ro: List[str] = Field(
-        default_factory=lambda: load_from_sources("network", "snmp_ro", list[str], env_prefix="NETWORK_"),
+        default_factory=lambda: load_from_sources(
+            "network", "snmp_ro", list[str], env_prefix="NETWORK_"
+        ),
         description="Список SNMP RO community",
         env="SNMP_RO",
     )
     snmp_rw: List[str] = Field(
-        default_factory=lambda: load_from_sources("network", "snmp_rw", list[str], env_prefix="NETWORK_"),
+        default_factory=lambda: load_from_sources(
+            "network", "snmp_rw", list[str], env_prefix="NETWORK_"
+        ),
         description="Список SNMP RW community",
         env="SNMP_RW",
     )
@@ -633,6 +645,7 @@ class NetworkConfig(BaseSettings):
         secrets_dir=str(DATA_DIR / "secrets"),
         env_nested_delimiter="__",
     )
+
 
 class MiscConfig(BaseSettings):
     """Настройки Miscellaneous.
@@ -796,18 +809,36 @@ class Settings(BaseSettings):
             file_secret_settings,
         )
 
+    @classmethod
+    def load(cls, config_path: Optional[str] = None):
+        import traceback
+
+        # Логируем вызов load (можно кастомизировать уровень и формат)
+        print(
+            "[Settings.load] called from:\n" + "".join(traceback.format_stack(limit=8))
+        )
+
+        # Здесь происходит загрузка конфигурации, например, из файла
+        if config_path:
+            with open(config_path, "r", encoding="utf-8") as f:
+                # допустим, JSON для примера
+                import json
+
+                cls._config_data = json.load(f)
+
+        # Инициализация полей из self._config_data
+        # (Примерно, в зависимости от структуры)
+
+        # Можно добавить валидацию, преобразования и т.п.
+
+        return cls  # для цепочек вызовов
+
 
 # Инициализация конфигурации
 settings = Settings()
 
 
-# Определение режима DEBUG с резервом на ENV
-def resolve_debug_mode() -> bool:
-    return bool(settings.DEBUG) or os.getenv("DEBUG", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-    )
+# debug_mode =globals.debug_mode
 
 
-debug_mode = resolve_debug_mode()
+debug_mode = property(lambda: flags.debug_mode)

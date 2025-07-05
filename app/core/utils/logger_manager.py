@@ -35,6 +35,11 @@ class BoundLogger(logging.Logger):
     def bind(self, **kwargs) -> "ContextLogger":
         return ContextLogger(self, kwargs)
 
+    def process(self, msg, kwargs):
+        if self.extra:
+            kwargs["extra"] = {**kwargs.get("extra", {}), **self.extra}
+        return msg, kwargs
+
 
 class ContextLogger(logging.LoggerAdapter):
     """Адаптер логгера с контекстом и поддержкой bind()"""
@@ -75,7 +80,22 @@ _patch_logger_class()
 
 
 class LoggerManager:
-    """Менеджер логгеров с поддержкой Rich и файлового логирования"""
+    """
+    Менеджер логгеров с поддержкой Rich и файлового логирования.
+
+    Позволяет создавать и настраивать логгер с кастомными уровнями,
+    ротацией файлов, а также красивым выводом в консоль с использованием Rich.
+
+    Attributes:
+        name (str): Имя логгера.
+        debug (bool): Флаг для активации режима отладки.
+        log_dir (Optional[Union[str, Path]]): Путь к директории логов.
+        log_level (Optional[Union[str, int]]): Уровень логирования (например, "DEBUG", "INFO" или числовой).
+        enable_file (bool): Включить файловое логирование.
+        enable_console (bool): Включить консольное логирование.
+        file_size (int): Максимальный размер файла лога в байтах для ротации.
+        backups (int): Количество резервных файлов для ротации.
+    """
 
     def __init__(
         self,
@@ -88,6 +108,19 @@ class LoggerManager:
         file_size: int = 10 * 1024 * 1024,
         backups: int = 5,
     ):
+        """
+        Инициализирует LoggerManager и настраивает логгер.
+
+        Args:
+            name (str, optional): Имя логгера. Defaults to "app".
+            debug (bool, optional): Флаг режима отладки. При True уровень по умолчанию DEBUG. Defaults to False.
+            log_dir (Optional[Union[str, Path]], optional): Путь к папке с логами. Defaults to "logs".
+            log_level (Optional[Union[str, int]], optional): Уровень логирования. Если не указан, зависит от debug.
+            enable_file (bool, optional): Включить файловое логирование. Defaults to True.
+            enable_console (bool, optional): Включить консольное логирование. Defaults to True.
+            file_size (int, optional): Максимальный размер файла лога (в байтах). Defaults to 10*1024*1024.
+            backups (int, optional): Количество файлов для ротации. Defaults to 5.
+        """
         self.name = name
         self.debug = debug
         self.log_level = log_level or ("DEBUG" if debug else "INFO")
@@ -98,26 +131,32 @@ class LoggerManager:
         self.log_dir = log_dir or "logs"
         self._logger = self._configure_logger()
 
-# --- Изменим метод _configure_logger() ---
-
     def _configure_logger(self) -> BoundLogger:
+        """
+        Конфигурирует и возвращает экземпляр логгера с необходимыми обработчиками.
+
+        - Настраивает уровень логирования.
+        - Добавляет файловый обработчик с ротацией.
+        - Добавляет консольный обработчик с поддержкой Rich.
+        - Подключает кастомные фильтры и форматтеры.
+
+        Returns:
+            BoundLogger: Настроенный экземпляр логгера с расширенными возможностями.
+        """
         logger = logging.getLogger(self.name)
-        logger.setLevel(self.log_level)
+
+        level = self.log_level
+        if isinstance(level, str):
+            level = logging._nameToLevel.get(level.upper(), logging.INFO)
+        logger.setLevel(level)
+
         logger.handlers.clear()
 
-        # Основной formatter
         file_formatter = logging.Formatter(
             "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
-        # Консольный formatter для Rich
-        console_formatter = logging.Formatter(
-            "[%(asctime)s][%(name)s] %(message)s%(extra_context)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
-
-        # Файловый обработчик
         if self.enable_file:
             log_dir = self._ensure_log_dir()
             file_handler = RotatingFileHandler(
@@ -126,10 +165,10 @@ class LoggerManager:
                 backupCount=self.backups,
                 encoding="utf-8",
             )
+            file_handler.setLevel(level)
             file_handler.setFormatter(file_formatter)
             logger.addHandler(file_handler)
 
-        # Консольный обработчик с Rich
         if self.enable_console:
             console = Console(theme=RICH_THEME)
             rich_handler = RichHandler(
@@ -137,10 +176,11 @@ class LoggerManager:
                 show_time=True,
                 show_level=True,
                 show_path=False,
-                rich_tracebacks=True,
+                rich_tracebacks=False,
                 tracebacks_show_locals=self.debug,
             )
-            rich_handler.setFormatter(console_formatter)
+            rich_handler.setLevel(level)
+            # НЕ устанавливаем setFormatter для RichHandler
             rich_handler.addFilter(ExtraContextFilter())
             logger.addHandler(rich_handler)
 
@@ -148,19 +188,23 @@ class LoggerManager:
         return logger
 
     def _ensure_log_dir(self) -> Path:
+        """
+        Обеспечивает существование директории для логов.
+
+        Создаёт директорию, если её нет.
+
+        Returns:
+            Path: Путь к директории логов.
+        """
         log_dir = Path(self.log_dir)
         log_dir.mkdir(parents=True, exist_ok=True)
         return log_dir
 
     def get_logger(self) -> BoundLogger:
+        """
+        Возвращает настроенный экземпляр логгера.
+
+        Returns:
+            BoundLogger: Логгер с поддержкой кастомных уровней и Rich.
+        """
         return self._logger
-
-
-# Пример использования
-if __name__ == "__main__":
-    logger = LoggerManager(name="my_app", debug=True).get_logger()
-    logger.info("This is an info message")
-    logger.bind(user_id=123, request_id="abc").info("Processing request")
-    logger.success("Operation completed successfully")
-    logger.notice("Important notice")
-    logger.trace("Detailed trace information")

@@ -12,20 +12,36 @@ from rich import print as rprint
 
 from app.core.applcm_manager import AppLifecycleManager
 from app.core.constants import ENV_VARS_TO_CLEAR
-from app.core.logging_setup import configure_logger
+from app.core.logging_setup import logger
 from app.core.plugin_manager.manager import PluginManager
 from app import __version__
 from app.core.validators import validate_all_settings
 from app.core.config import settings
+from app.core.globals import flags
+
 # --- Globals & Constants ---
 app = typer.Typer(help="TGNMS Entrypoint", rich_markup_mode="rich")
 console = Console()
 
-logger = configure_logger().bind(component="cli")
+logger = logger.bind(component="cli")
 
 
 DEFAULT_CONFIG_PATH = os.path.expanduser("~/.tgnmsrc")
 plugin_manager = None
+
+# Определение режима DEBUG с резервом на ENV
+def resolve_debug_mode(cli_debug: Optional[bool] = None) -> bool:
+    """
+    Определяет режим DEBUG на основе приоритета:
+    CLI > ENV > settings
+    """
+    if cli_debug is not None:
+        return cli_debug
+
+    env_debug = os.getenv("DEBUG", "").strip().lower() in ("1", "true", "yes")
+    return bool(settings.DEBUG) or env_debug
+
+
 
 def extract_env_from_model(model: BaseSettings, prefix: str = "") -> dict[str, Any]:
     """
@@ -71,13 +87,14 @@ def _load_custom_env(path: Optional[str] = None):
 def clean_env_vars(
     dry_run: bool,
     role: str,
-    log_changes: bool,
-    env_vars: List[str] = ENV_VARS_TO_CLEAR,
-) -> List[str]:
+    log_changes: bool = True,
+    env_vars: list[str] = ENV_VARS_TO_CLEAR,
+) -> list[str]:
+    """
+    Очищает переменные окружения перед запуском сервиса.
+    """
     cleared_vars = []
-    show_table = os.environ.get("DEBUG", "false").lower() in ("1", "true") or os.environ.get("DEV", "false").lower() in ("1", "true")
-
-    table = Table(title=f"Environment Cleanup for [bold]{role}[/bold]", show_header=True, header_style="bold magenta") if show_table else None
+    table = Table(title=f"Environment Cleanup for [bold]{role}[/bold]") if log_changes else None
     if table:
         table.add_column("Variable", style="cyan")
         table.add_column("Action", style="green")
@@ -91,38 +108,37 @@ def clean_env_vars(
             if not dry_run:
                 os.environ.pop(key)
 
-    if log_changes and cleared_vars and table:
+    if table and cleared_vars:
         console.print(table)
-        rprint(f"\n[bold]{'Would clear' if dry_run else 'Cleared'}:[/bold] {len(cleared_vars)} variables")
+        rprint(f"[bold]{'Would clear' if dry_run else 'Cleared'}:[/bold] {len(cleared_vars)} variables")
 
     return cleared_vars
-
-
 # --- Service Launcher ---
-def _run_service(role: str, debug: bool, dev: bool, dry_run: bool, log_changes: bool):
-    clean_env_vars(dry_run, role, log_changes)
+def _run_service(role: RoleType, debug: bool, dev: bool, dry_run: bool, log_changes: bool):
+    # Очистка окружения
+    # cleaned = clean_env_vars(dry_run, role.value, log_changes)
 
-    os.environ["APP_ROLE"] = role
-    if debug:
-        os.environ["DEBUG"] = "True"
-    if dev:
-        os.environ["DEV"] = "True"
+    # Установка роли
+    os.environ["APP_ROLE"] = role.value
 
-    from app.api.server import start_api
-    from app.bot.runner import run_bot
-    from app.scheduler.jobs import run_scheduler
+
+    try:
+        from app.api.server import start_api
+        from app.bot.runner import run_bot
+        from app.scheduler.jobs import run_scheduler
+    except ImportError as e:
+        logger.error(f"Failed to import service module for {role}: {e}")
+        raise typer.Abort()
 
     lifecycle = AppLifecycleManager()
+    logger.info(f"\U0001f680 Starting {role.upper()}...")
+
     if role == "bot":
-        logger.info("\U0001f680 Starting Telegram Bot...")
         run_bot(lifecycle)
     elif role == "api":
-        logger.info("\U0001f680 Starting API Server...")
         start_api(lifecycle)
     elif role == "scheduler":
-        logger.info("\U0001f680 Starting Task Scheduler...")
         run_scheduler(lifecycle)
-
 
 # --- Plugin Manager ---
 def _get_plugins() -> PluginManager:
@@ -134,9 +150,13 @@ def _get_plugins() -> PluginManager:
     return plugin_manager
 
 
-def plugin_name_autocomplete(ctx: typer.Context, incomplete: str) -> List[str]:
-    return [p.meta.name for p in getattr(_get_plugins(), "sorted_plugins", []) if p.meta.name.startswith(incomplete)]
-
+def plugin_name_autocomplete(ctx: typer.Context, incomplete: str) -> list[str]:
+    manager = _get_plugins()
+    return [
+        p.meta.name
+        for p in getattr(manager, "sorted_plugins", [])
+        if p.meta.name.lower().startswith(incomplete.lower())
+    ]
 
 # --- Plugin CLI ---
 plugins_app = typer.Typer(help="Plugin management commands")
@@ -174,7 +194,7 @@ env_app = typer.Typer(help="Environment variable commands")
 @env_app.command("list")
 def list_env():
     """
-    📄 Показать все конфигурационные переменные и их текущее значение.
+    📄 Показывает все конфигурационные переменные и их текущие значения.
     """
     table = Table(title="📦 TGNMS Configuration Variables", header_style="bold green")
     table.add_column("Key", style="cyan")
@@ -182,17 +202,11 @@ def list_env():
     table.add_column("Effective Value", style="magenta")
 
     def check_env_match(key_path: str, effective_val: Any) -> tuple[str, bool]:
-        """
-        Проверяет, установлена ли переменная через окружение.
-        Возвращает значение и флаг.
-        """
-        # Убрать вложенные точки (.) — привести к переменной окружения вида SECTION__KEY
         parts = key_path.split(".")
         env_key = "__".join(part.upper() for part in parts)
         env_value = os.getenv(env_key)
-        return env_value if env_value is not None else "-", env_value is not None
+        return str(env_value) if env_value is not None else "-", bool(env_value)
 
-    # Сбор переменных из всех секций settings
     sections = {
         "app": settings.app,
         "api": settings.api,
@@ -202,9 +216,10 @@ def list_env():
         "net": settings.net,
         "misc": settings.misc,
     }
-    if settings.USE_REDIS and settings.redis:
+
+    if hasattr(settings, "redis") and settings.USE_REDIS:
         sections["redis"] = settings.redis
-    if settings.USE_MONGODB and settings.mongo:
+    if hasattr(settings, "mongo") and settings.USE_MONGODB:
         sections["mongo"] = settings.mongo
 
     for section, model in sections.items():
@@ -214,7 +229,6 @@ def list_env():
             table.add_row(key_path, "✅" if is_set else "❌", str(effective_value))
 
     console.print(table)
-
 @env_app.command("diagnose")
 def diagnose_env():
     from app.core.config import settings
@@ -247,14 +261,20 @@ def run(
     dry_run: bool = typer.Option(False, help="Dry run environment cleanup"),
     log_changes: bool = typer.Option(True, help="Log environment changes"),
 ):
-    _run_service(role, debug, dev, dry_run, log_changes)
+    debug_mode = resolve_debug_mode(debug)
+    os.environ["DEBUG"] = "1" if debug_mode else "0"
 
+    # Регистрируем логгер с учетом debug
+    from app.core.logging_setup import configure_logger
+    global logger
+    logger = configure_logger(debug=debug_mode).bind(component="cli")
+
+    _run_service(role, debug_mode, dev, dry_run, log_changes)
 
 # --- CLI Entrypoint ---
 app.add_typer(service_app, name="service")
 app.add_typer(plugins_app, name="plugins")
 app.add_typer(env_app, name="env")
-app.add_typer(dev_app, name="dev")
 
 @app.command()
 def completion(shell: Optional[str] = typer.Argument(None)):
@@ -269,18 +289,15 @@ def main(
     version: Optional[bool] = typer.Option(None, "--version", help="Show version and exit", is_eager=True),
     config: Optional[str] = typer.Option(None, "--config", help="Path to env override file"),
 ):
-    # try:
-    #     validate_all_settings()
-    # except RuntimeError as e:
-    #     logger.critical(f"Ошибка конфигурации при старте:\n{e}")
-    #     raise typer.Exit(code=1)
-
+    # Загрузка .env
     if config:
         _load_custom_env(config)
     elif os.path.exists(DEFAULT_CONFIG_PATH):
         _load_custom_env(DEFAULT_CONFIG_PATH)
 
     if version:
-        from app.core.config import settings
         console.print(f"[bold]{settings.app.APP_NAME}[/bold] version [green]{settings.VERSION}[/green]")
         raise typer.Exit()
+    debug = resolve_debug_mode()
+    flags.debug_mode = debug  # установка
+

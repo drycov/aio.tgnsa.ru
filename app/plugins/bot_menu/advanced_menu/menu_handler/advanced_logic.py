@@ -150,3 +150,37 @@ async def handle_ping_logic(message: Message, state: FSMContext):
     await StateManager.set_state_with_history(state, Advanced.MENU, display_data)
     await message.answer(**display_data)
     await state.update_data(waiting_for_host=False)
+
+async def handle_traceroute_logic(message: Message, state: FSMContext):
+    host = message.text.strip()
+    progress_msg = await message.answer("🔄 Выполняю трассировку...")
+
+    try:
+        route = await NetworkUtils.detailed_traceroute(host)
+
+        if not route:
+            await progress_msg.edit_text("❌ Не удалось выполнить трассировку.")
+            return
+
+        result_lines = ["🔍 Результаты трассировки маршрута:"]
+        for hop in route:
+            ip = hop["ip"] or "*"
+            rtt = f"{hop['rtt_ms']} мс" if hop["rtt_ms"] is not None else "*"
+            org = hop["org"] or "Неизвестно"
+            city = hop["location"]["city"]
+            country = hop["location"]["country"]
+
+            location = ", ".join(filter(None, [city, country]))
+            owner_info = f"{org} ({location})" if location else org
+
+            result_lines.append(f"{hop['hop']}   {ip} ({rtt}) — {owner_info}")
+
+        full_result = "\n".join(result_lines)
+        await progress_msg.edit_text(full_result)
+
+    except Exception as e:
+        logger.error(f"Ошибка при выполнении traceroute для {host}: {e}", exc_info=True)
+        await progress_msg.edit_text("⚠️ Произошла ошибка при выполнении трассировки.")
+
+    finally:
+        await state.update_data(waiting_for_host=False)

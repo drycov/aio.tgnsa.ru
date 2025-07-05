@@ -9,7 +9,6 @@ from app.core.config import APP_DIR, BASE_DIR, settings
 from app.core.db import get_sessionmaker
 from app.core.plugin_manager.manager import PluginManager
 
-import logging
 from app.core.logging_setup import logger
 
 

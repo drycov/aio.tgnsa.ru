@@ -9,10 +9,8 @@ import sys
 import aiohttp.web_runner
 from dataclasses import dataclass
 from enum import Enum, auto
-from app.core.config import debug_mode
-from app.core.logging_setup import configure_logger
-
-
+from app.core.logging_setup import logger
+from app.core.globals import flags
 
 class HookType(Enum):
     STARTUP = auto()
@@ -36,8 +34,9 @@ class AppLifecycleManager:
         self._loop = loop or asyncio.get_event_loop()
         self._startup_tasks: Dict[str, asyncio.Task] = {}
         self._shutdown_tasks: Dict[str, asyncio.Task] = {}
-        self.logger = configure_logger().bind(component=f"{__class__.__name__}")
+        self.logger = logger.bind(component=f"{__class__.__name__}")
         self._is_running = False
+        self.debug_mode=flags.debug_mode
 
         self._patch_aiohttp_for_windows()
 
@@ -171,8 +170,6 @@ class AppLifecycleManager:
         self._is_running = True
         self.logger.info("🟢 Starting application lifecycle")
 
-        if debug_mode:
-            self._start_monitor()
 
         for hook in self._startup_hooks:
             task = asyncio.create_task(hook.func(), name=f"startup:{hook.name}")
