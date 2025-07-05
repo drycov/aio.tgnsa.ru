@@ -2,7 +2,8 @@ from typing import Dict, Optional, Type
 from pathlib import Path
 import asyncio
 
-from app.core.config import APP_DIR, BASE_DIR, logger, settings
+from app.core.config import APP_DIR, BASE_DIR
+from app.core.logging_setup import configure_logger
 from app.core.plugin_manager.interfaces import IPluginSource
 from app.core.plugin_manager.base import PluginBase
 from app.core.plugin_manager.sources.directory_source import PluginDirectorySource
@@ -19,6 +20,7 @@ class PluginManager:
     """
 
     _instance: Optional["PluginManager"] = None
+    name = "PluginManager"
 
     def __init__(
         self,
@@ -28,7 +30,7 @@ class PluginManager:
         self._raw_plugins: Dict[str, PluginBase] = {}
         self._active_plugins: Dict[str, PluginBase] = {}
 
-        self._logger = logger.bind(component="PluginManager")
+        self._logger = configure_logger().bind(component=f"{__class__.__name__}")
         self._loaded = False
         self._configured = False
         self._initialized = False

@@ -35,8 +35,9 @@ port = 3306
 name = "test"
 
 [bot]
-admins = [123456789]
+admins = [123456789,987654321]
 superusers = [123456789]
+owner_id=6818244868
 rate_limit = 1.0
 role_access = { admin = ["*"] }
 
@@ -80,10 +81,9 @@ api_workers = 1
 
 [network]
 ping_count = 4
-ping_interval = 2
-ping_timeout = 10
-snmp_ro = []
-snmp_rw = []
+ping_interval = 7
+ping_timeout = 30
+
 
 [tfa]
 issuer = "TG NMS"

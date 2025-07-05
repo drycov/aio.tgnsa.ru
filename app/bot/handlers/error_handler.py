@@ -13,7 +13,10 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.bot.constants.messages import ErrorMessages
-from app.core.config import logger as app_logger
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -29,7 +32,7 @@ async def error_handler(event: Update, *args, **kwargs):
     exception = kwargs.get("exception")
 
     if not exception:
-        app_logger.error(ErrorMessages.NO_EXCEPTION_INFO.value, exc_info=True)
+        logger.error(ErrorMessages.NO_EXCEPTION_INFO.value, exc_info=True)
         raise HTTPException(
             status_code=500, detail=ErrorMessages.UNKNOWN_ERROR_USER.value
         )
@@ -40,7 +43,7 @@ async def error_handler(event: Update, *args, **kwargs):
 
         # Specific handling for "Invalid message argument"
         if "Invalid message argument" in error_message:
-            app_logger.warning(
+            logger.warning(
                 "Message validation error detected: %s",
                 error_message,
                 exc_info=True,
@@ -53,17 +56,17 @@ async def error_handler(event: Update, *args, **kwargs):
         # Other BadRequest cases
         if isinstance(exception, TelegramBadRequest):
             if "blocked" in error_message.lower():
-                app_logger.warning("Bot is blocked by the user.")
+                logger.warning("Bot is blocked by the user.")
                 raise HTTPException(
                     status_code=403, detail="Bot is blocked by the user"
                 )
             elif "chat not found" in error_message.lower():
-                app_logger.info("Chat with the user not found.")
+                logger.info("Chat with the user not found.")
                 raise HTTPException(
                     status_code=404, detail="Chat with the user not found"
                 )
             else:
-                app_logger.warning(
+                logger.warning(
                     ErrorMessages.BAD_REQUEST.value.format(exception=error_message)
                 )
                 raise HTTPException(
@@ -76,7 +79,7 @@ async def error_handler(event: Update, *args, **kwargs):
     # Standard handling for other Telegram API errors
     elif isinstance(exception, TelegramRetryAfter):
         retry_after = exception.retry_after
-        app_logger.warning(
+        logger.warning(
             ErrorMessages.FLOOD_CONTROL.value.format(retry_after=retry_after)
         )
         raise HTTPException(
@@ -85,27 +88,27 @@ async def error_handler(event: Update, *args, **kwargs):
         )
 
     elif isinstance(exception, TelegramUnauthorizedError):
-        app_logger.error(ErrorMessages.UNAUTHORIZED_TOKEN.value)
+        logger.error(ErrorMessages.UNAUTHORIZED_TOKEN.value)
         raise HTTPException(
             status_code=401, detail=ErrorMessages.UNAUTHORIZED_TOKEN.value
         )
 
     elif isinstance(exception, TelegramForbiddenError):
-        app_logger.warning(ErrorMessages.FORBIDDEN_CHAT.value)
+        logger.warning(ErrorMessages.FORBIDDEN_CHAT.value)
         raise HTTPException(status_code=403, detail=ErrorMessages.FORBIDDEN_CHAT.value)
 
     elif isinstance(exception, TelegramConflictError):
-        app_logger.error(ErrorMessages.TOKEN_CONFLICT.value)
+        logger.error(ErrorMessages.TOKEN_CONFLICT.value)
         raise HTTPException(status_code=409, detail=ErrorMessages.TOKEN_CONFLICT.value)
 
     elif isinstance(exception, TelegramNotFound):
-        app_logger.info(ErrorMessages.RESOURCE_NOT_FOUND.value)
+        logger.info(ErrorMessages.RESOURCE_NOT_FOUND.value)
         raise HTTPException(
             status_code=404, detail=ErrorMessages.RESOURCE_NOT_FOUND.value
         )
 
     elif isinstance(exception, TelegramAPIError):
-        app_logger.error(
+        logger.error(
             ErrorMessages.TELEGRAM_API_ERROR.value.format(exception=exception)
         )
         raise HTTPException(
@@ -116,7 +119,7 @@ async def error_handler(event: Update, *args, **kwargs):
     elif "TelegramNetworkError" in str(exception) or "ClientConnectorDNSError" in str(
         exception
     ):
-        app_logger.error(f"Network error: {exception}")
+        logger.error(f"Network error: {exception}")
         raise HTTPException(
             status_code=503,
             detail="Сетевая ошибка Telegram API. Проверьте соединение с api.telegram.org.",
@@ -124,7 +127,7 @@ async def error_handler(event: Update, *args, **kwargs):
 
     else:
         # Handling unknown errors
-        app_logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)
+        logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)
         raise HTTPException(
             status_code=500, detail=ErrorMessages.UNKNOWN_ERROR_USER.value
         )

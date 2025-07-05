@@ -3,8 +3,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.triggers.interval import IntervalTrigger
 from app.core.applcm_manager import AppLifecycleManager
-from app.core.config import logger, settings
+from app.core.config import  settings
 from app.core.plugin_manager.manager import PluginManager
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SchedulerManager:

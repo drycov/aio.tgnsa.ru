@@ -17,7 +17,7 @@ CUSTOM_LOG_LEVELS = {
 # Тема для Rich
 RICH_THEME = Theme(
     {
-        "logging.level.trace": "dim white",
+        "logging.level.trace": "dim white on black",
         "logging.level.notice": "bold magenta",
         "logging.level.success": "bold green",
         "logging.level.debug": "dim blue",
@@ -48,6 +48,12 @@ class ContextLogger(logging.LoggerAdapter):
             kwargs["extra"] = {**kwargs.get("extra", {}), **self.extra}
         return msg, kwargs
 
+class ExtraContextFilter(logging.Filter):
+    def filter(self, record):
+        record.extra_context = ""
+        for key, value in getattr(record, 'extra', {}).items():
+            record.extra_context += f" {key}={value}"
+        return True
 
 def _patch_logger_class():
     """Добавляет кастомные уровни и метод bind к классу Logger"""
@@ -92,14 +98,25 @@ class LoggerManager:
         self.log_dir = log_dir or "logs"
         self._logger = self._configure_logger()
 
+# --- Изменим метод _configure_logger() ---
+
     def _configure_logger(self) -> BoundLogger:
         logger = logging.getLogger(self.name)
         logger.setLevel(self.log_level)
         logger.handlers.clear()
-        formatter = logging.Formatter(
+
+        # Основной formatter
+        file_formatter = logging.Formatter(
             "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
+
+        # Консольный formatter для Rich
+        console_formatter = logging.Formatter(
+            "[%(asctime)s][%(name)s] %(message)s%(extra_context)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
+        )
+
         # Файловый обработчик
         if self.enable_file:
             log_dir = self._ensure_log_dir()
@@ -109,18 +126,24 @@ class LoggerManager:
                 backupCount=self.backups,
                 encoding="utf-8",
             )
-            file_handler.setFormatter(formatter)
+            file_handler.setFormatter(file_formatter)
             logger.addHandler(file_handler)
+
         # Консольный обработчик с Rich
         if self.enable_console:
             console = Console(theme=RICH_THEME)
-            console_handler = RichHandler(
+            rich_handler = RichHandler(
                 console=console,
-                show_time=False,
-                rich_tracebacks=False,
+                show_time=True,
+                show_level=True,
+                show_path=False,
+                rich_tracebacks=True,
                 tracebacks_show_locals=self.debug,
             )
-            logger.addHandler(console_handler)
+            rich_handler.setFormatter(console_formatter)
+            rich_handler.addFilter(ExtraContextFilter())
+            logger.addHandler(rich_handler)
+
         logger.__class__ = BoundLogger
         return logger
 

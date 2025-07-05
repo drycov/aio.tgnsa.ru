@@ -2,8 +2,10 @@ from pathlib import Path
 import subprocess
 import tomllib  # Python 3.11+
 from typing import Optional
-from loguru import logger as loguru_logger
 
+import logging
+
+logger = logging.getLogger(__name__)
 # Определяем BASE_DIR независимо
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -19,13 +21,13 @@ def read_version_file(path: Optional[Path] = None) -> Optional[str]:
         Optional[str]: Строка с версией, если файл найден и прочитан; иначе None.
     """
     path = path or BASE_DIR / "VERSION"
-    loguru_logger.debug(f"[version] Чтение версии из {path}")
+    logger.debug(f"[version] Чтение версии из {path}")
     if not path.is_file():
         return None
     try:
         return path.read_text(encoding="utf-8").strip() if path.is_file() else None
     except Exception as e:
-        loguru_logger.error(f"[version] Ошибка чтения VERSION: {e}")
+        logger.error(f"[version] Ошибка чтения VERSION: {e}")
         return None
 
 
@@ -40,7 +42,7 @@ def read_pyproject_version(path: Optional[Path] = None) -> Optional[str]:
         Optional[str]: Версия проекта из pyproject.toml, если найдена; иначе None.
     """
     path = path or BASE_DIR / "pyproject.toml"
-    loguru_logger.info(f"[version] Чтение версии из {path}")
+    logger.info(f"[version] Чтение версии из {path}")
 
     if not path.is_file():
         return None
@@ -52,7 +54,7 @@ def read_pyproject_version(path: Optional[Path] = None) -> Optional[str]:
             or data.get("project", {}).get("version")
         )
     except Exception as e:
-        loguru_logger.error(f"[version] Ошибка чтения pyproject.toml: {e}")
+        logger.error(f"[version] Ошибка чтения pyproject.toml: {e}")
         return None
 
 
@@ -97,7 +99,7 @@ def read_git_tag_version() -> Optional[str]:
             )
             return f"no-tags-{commit_hash}"
     except Exception as e:
-        loguru_logger.error(f"[version] Ошибка получения версии из git: {e}")
+        logger.error(f"[version] Ошибка получения версии из git: {e}")
         return None
 
 

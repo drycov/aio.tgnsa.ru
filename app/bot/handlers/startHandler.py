@@ -17,11 +17,14 @@ from app.bot.constants.messages import ContextHelp, Messages
 from app.bot.handlers.register_handlers.registration_handler import start_registration
 from app.bot.keyboards.main import generate_main_keyboard
 from app.bot.keyboards.base import build_auth_keyboard, on_enter_keyboard
-from app.core.config import logger
 from app.exceptions.exceptions import UserNotFoundError
 from app.services.user import UserSearchField, UserService
 from app.core.utils.decorators import safe_delete_message
 from sqlalchemy.ext.asyncio import AsyncSession
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 

@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException
 from app.api.middlewares.middleware import RequestLoggingMiddleware
 from app.api.routes import api_router
 from app.core.applcm_manager import AppLifecycleManager
-from app.core.config import debug_mode, logger, settings
+from app.core.config import debug_mode,  settings
 from app.core.errors import (
     general_error_handler,
     http_error_handler,
@@ -20,6 +20,11 @@ from app.core.errors import (
 )
 from app.core.patchs import ProjectPaths
 from app.core.plugin_manager.manager import PluginManager
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 EXCLUDE_PATHS: List[str] = [
     "/",

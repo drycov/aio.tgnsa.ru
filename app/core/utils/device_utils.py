@@ -1,166 +1,147 @@
 import inspect
-from typing import List
-from app.core.config import logger
+import logging
+from pathlib import Path
+from typing import List, Optional, Dict, Any, Tuple
+
+import structlog
 from app.core.oid_loader import OIDLoader
 from app.core.utils.enr_parser import EnterpriseNumberRegistry
 from app.core.utils.snmp_utils import SNMPUtils
-from app.core.utils.utils import parse_location, seconds_to_str, to_string
+from app.core.utils.utils import parse_location, parse_snmp_uptime, seconds_to_str, to_string
+
+from app.core.logging_setup import logger
+from app.core.utils.decorators import log_execution
+from app.core.utils.device_matcher import ModelMatcher
+from app.core.config import DATA_DIR
 
 logger = logger.bind(component="DeviceUtils")
+structlog.configure(
+    processors=[
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.dict_tracebacks,
+        structlog.processors.JSONRenderer()
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+)
+logger = structlog.get_logger()
 
+DEVICE_MODEL_RULES = DATA_DIR / "device_models.toml"
+MODEL_MATCHER = ModelMatcher(DEVICE_MODEL_RULES)
 
 class DeviceUtils:
-    """Утилиты для работы с устройствами в сети."""
+    """Утилиты для работы с сетевыми устройствами."""
+    _model_matcher: Optional[ModelMatcher] = None
 
     @staticmethod
     async def get_interface_range(host: str, community: str) -> List[str]:
-        try:
-            result = await SNMPUtils.walk_snmp_data(
-                host, community, "1.3.6.1.2.1.2.2.1.2"
-            )
-            if not result:
-                logger.warning(
-                    f"[{inspect.currentframe().f_code.co_name}] Нет данных по интерфейсам от {host}"
-                )
-                return []
-
-            # Просто str() от значений
-            return [
-                v.decode("utf-8") if isinstance(v, bytes) else str(v)
-                for v in result.values()
-            ]
-        except Exception as e:
-            logger.exception(
-                f"[{inspect.currentframe().f_code.co_name}] Ошибка получения интерфейсов с {host}: {e}"
-            )
+        result = await SNMPUtils.walk_snmp_data(host, community, "1.3.6.1.2.1.2.2.1.2")
+        if not result:
+            logger.warning("get_interface_range", host=host, error="No data received")
             return []
+        return [v.decode("utf-8") if isinstance(v, bytes) else str(v) for v in result.values()]
 
     @staticmethod
     async def get_if_index_range(host: str, community: str) -> List[int]:
-        try:
-            result = await SNMPUtils.walk_snmp_data(
-                host, community, "1.3.6.1.2.1.2.2.1.1"
-            )
-            if not result:
-                logger.warning(
-                    f"[{inspect.currentframe().f_code.co_name}] Нет данных по индексам интерфейсов от {host}"
-                )
-                return []
-
-            return [int(v) for v in result.values()]
-        except Exception as e:
-            logger.exception(
-                f"[{inspect.currentframe().f_code.co_name}] Ошибка получения индексов интерфейсов с {host}: {e}"
-            )
+        result = await SNMPUtils.walk_snmp_data(host, community, "1.3.6.1.2.1.2.2.1.1")
+        if not result:
+            logger.warning("get_if_index_range", host=host, error="No data received")
             return []
+        return [int(v) for v in result.values()]
 
     @staticmethod
-    async def get_basic_info(host: str, community: str) -> dict | None:
+    @log_execution(level="info")
+    async def get_basic_info(host: str, community: str) -> Optional[Dict[str, Any]]:
         oids = OIDLoader.load()
+        basic_oids = oids["basic_oids"]
 
-        try:
-            oid_model = oids["basic_oids"]["oid_model"]
-            oid_sysname = oids["basic_oids"]["oid_sysname"]
-            oid_uptime = oids["basic_oids"]["oid_uptime"]
-            oid_sysLocation = oids["basic_oids"]["oid_sysLocation"]
-            oid_sysObjectID = oids["basic_oids"]["oid_sysObjectID"]
+        # Параллельный запрос всех необходимых OID
+        results = await SNMPUtils.bulk_get_snmp_data(
+            host,
+            community,
+            [
+                basic_oids["oid_model"],
+                basic_oids["oid_sysname"],
+                basic_oids["oid_uptime"],
+                basic_oids["oid_sysLocation"],
+                basic_oids["oid_sysObjectID"],
+            ],
+        )
 
-            # Получение данных по OID
-            try:
-                dirty_data = await SNMPUtils.get_snmp_data(host, community, oid_model)
-                print(dirty_data)
-                if not dirty_data:
-                    raise ValueError(
-                        f"Не удалось получить данные по OID модели для хоста {host}"
-                    )
-                dirty_data = (
-                    dirty_data.decode("utf-8")
-                    if isinstance(dirty_data, bytes)
-                    else str(dirty_data)
-                )
-            except Exception as e:
-                logger.error(
-                    f"Ошибка при получении данных OID модели для хоста {host}: {e}"
-                )
-                return None
-
-            sw_sys_name = await SNMPUtils.get_snmp_data(host, community, oid_sysname)
-            if not sw_sys_name:
-                raise ValueError(f"Не удалось получить имя устройства для хоста {host}")
-            sw_sys_name = (
-                sw_sys_name.decode("utf-8")
-                if isinstance(sw_sys_name, bytes)
-                else str(sw_sys_name)
-            )
-
-            sw_pen = await SNMPUtils.get_snmp_data(host, community, oid_sysObjectID)
-            up_time = await SNMPUtils.get_snmp_data(host, community, oid_uptime)
-            sys_location = await SNMPUtils.get_snmp_data(
-                host, community, oid_sysLocation
-            )
-
-            if not sw_pen or not up_time or not sys_location:
-                raise ValueError(
-                    f"Не удалось получить все необходимые данные для хоста {host}"
-                )
-
-            parsed_oid = EnterpriseNumberRegistry.parse_oid(sw_pen)
-            vendor = EnterpriseNumberRegistry.search_pen(parsed_oid["pen"])
-            logger.debug(vendor[0].organization)
-
-            # Парсинг sys_location
-            result = parse_location(sys_location)
-            address = (
-                (
-                    f"{result.get('country', 'Неизвестная страна')}, "
-                    f"{result.get('city', 'Неизвестный город')}, "
-                    f"{result.get('street', 'Неизвестная улица')}, "
-                    f"{result.get('house_number', '0')}"
-                )
-                if result
-                else "Неизвестный адрес"
-            )
-
-            # Фильтрация модели устройства
-            sw_model = DeviceUtils.filter_device_model(dirty_data)
-            device_data = DeviceUtils.get_interface_config(dirty_data)
-
-            # Фильтрация модели устройства и формирование uptime
-            sw_up_time = seconds_to_str(up_time)
-
-            return {
-                "host": host,
-                "vendor": vendor[0].organization,
-                "sw_sys_name": sw_sys_name,
-                "sw_model": sw_model,
-                "sw_up_time": sw_up_time,
-                "up_time": up_time,
-                "device_data": device_data,
-                "address": address,
-                "latitude": result.get("latitude", 0.0) if result else 0.0,
-                "longitude": result.get("longitude", 0.0) if result else 0.0,
-            }
-
-        except Exception as e:
-            # Логирование ошибки с трассировкой
-            logger.exception(
-                f"[{inspect.currentframe().f_code.co_name}] Ошибка получения базовой информации с {host}: {e}"
-            )
+        if not results or len(results) != 5:
+            logger.error("get_basic_info: host=%s, error=%s, results=%s", host, "SNMP response is None or incomplete", results)
             return None
 
-    @staticmethod
-    def filter_device_model(dirty_data: str) -> str:
-        """
-        Определяет модель устройства на основе строки `dirty_data`.
-        """
-        dirty_data = to_string(dirty_data, encoding="iso-8859-1")
-        for model_key, model_info in DeviceUtils.device_data.items():
-            if model_key in dirty_data:
-                model_name = model_info["name"]
-                # app_logger.info(LogMessages.MODEL_FILTERED.value.format(model_name=model_name, model_key=model_key))
-                return model_name
+        # dirty_data, sw_sys_name, up_time, sys_location, sw_pen = results
+        dirty_data = results.get(basic_oids["oid_model"])
+        sw_sys_name = results.get(basic_oids["oid_sysname"])
+        up_time = results.get(basic_oids["oid_uptime"])
+        sys_location = results.get(basic_oids["oid_sysLocation"])
+        sw_pen = results.get(basic_oids["oid_sysObjectID"])
 
-        logger.warning(
-            f"[{inspect.currentframe().f_code.co_name}] Не удалось определить модель устройства из строки: {dirty_data}"
+
+
+        if not all([dirty_data, sw_sys_name]):
+            logger.error("get_basic_info", host=host, error="Missing critical SNMP data")
+            return None
+
+        dirty_data = to_string(dirty_data)
+        sw_sys_name = to_string(sw_sys_name)
+        # up_time = int(up_time) if up_time else 0
+
+        parsed_oid = EnterpriseNumberRegistry.parse_oid(sw_pen)
+        vendor = await EnterpriseNumberRegistry.search_pen_cached(parsed_oid["pen"])
+
+        result_location = parse_location(sys_location)
+        address = (
+            f"{result_location.get('country', 'Неизвестная страна')}, "
+            f"{result_location.get('city', 'Неизвестный город')}, "
+            f"{result_location.get('street', 'Неизвестная улица')}, "
+            f"{result_location.get('house_number', '0')}"
+            if result_location
+            else "Неизвестный адрес"
         )
-        return dirty_data
+
+        sw_model = DeviceUtils.filter_device_model(dirty_data)
+        device_data = DeviceUtils.get_interface_config(dirty_data)
+        sw_up_time = parse_snmp_uptime(up_time)
+
+        return {
+            "host": host,
+            "vendor": vendor[0].organization if vendor else "Неизвестный вендор",
+            "sw_sys_name": sw_sys_name,
+            "sw_model": sw_model,
+            "sw_up_time": sw_up_time,
+            "up_time": up_time,
+            "device_data": device_data,
+            "address": address,
+            "latitude": result_location.get("latitude", 0.0),
+            "longitude": result_location.get("longitude", 0.0),
+        }
+
+    @classmethod
+    def init_model_matcher(cls, rules_path: Path):
+        if not rules_path.exists():
+            logger.warning("init_model_matcher", path=str(rules_path), error="File not found")
+            return
+        cls._model_matcher = ModelMatcher(rules_path)
+        logger.info("init_model_matcher", path=str(rules_path), status="Initialized")
+
+    @staticmethod
+    def filter_device_model(raw_data: str) -> str:
+        clean_data = to_string(raw_data, encoding="iso-8859-1")
+        if not clean_data:
+            return "Неизвестная модель"
+
+        if DeviceUtils._model_matcher:
+            matched = DeviceUtils._model_matcher.match(clean_data)
+            if matched != clean_data:
+                return matched
+
+        logger.warning("filter_device_model", raw=clean_data, status="Fallback used")
+        return clean_data
+
+    @staticmethod
+    def get_interface_config(data: str) -> dict:
+        # TODO: Реализовать при необходимости
+        return {}

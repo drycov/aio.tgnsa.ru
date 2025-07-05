@@ -1,33 +1,23 @@
 import traceback
 from fastapi import Request, status
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException
 
-from app.core.config import logger
+from app.core.logging_setup import logger  # ✅ Исправление
 from app.core.utils.date_utils import isotime
+from app.core.utils.decorators import log_execution
 
 
+@log_execution(
+    level="info",
+    success_message="Ошибка валидации корректно обработана.",
+    error_message="Ошибка валидации конфигурации",
+    log_args=False,
+    log_exceptions=False,  # ✅ Не дублируем лог ниже
+)
 async def validation_error_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    """
-    Handles request validation errors.
-
-    Overrides the default 422 case:
-      - Returns a structured JSON response with a `detail` field
-      - Message format:
-        {
-          "status": "error",
-          "timestamp": "...",
-          "path": "/...",
-          "method": "POST",
-          "detail": [...],
-          "type": "validation_error"
-        }
-
-    Connected via FastAPI: app.exception_handler(RequestValidationError)
-    """
     logger.error(
         f"Validation error for {request.method} {request.url.path}: {exc.errors()}"
     )
@@ -45,13 +35,6 @@ async def validation_error_handler(
 
 
 async def http_error_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    """
-    Handles HTTP exceptions.
-
-    Catches Starlette HTTPException (including FastAPI HTTPException),
-    and returns a JSON response with details.
-    Connected via: app.exception_handler(HTTPException)
-    """
     logger.error(
         f"HTTP error for {request.method} {request.url.path}: {exc.status_code} {exc.detail}"
     )
@@ -69,16 +52,10 @@ async def http_error_handler(request: Request, exc: HTTPException) -> JSONRespon
 
 
 async def general_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    """
-    Handles unhandled exceptions.
-
-    Logs the stack trace and exception, returns a 500 Internal Server Error
-    with a generic message, without leaking details.
-    Connected via: app.exception_handler(Exception)
-    """
-    logger.error(f"Unhandled exception for {request.method} {request.url.path}: {exc}")
+    logger.error(
+        f"Unhandled exception for {request.method} {request.url.path}: {exc}"
+    )
     logger.error(traceback.format_exc())
-
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={

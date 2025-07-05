@@ -10,6 +10,7 @@ from .register_handlers.registration_handler import router as registration_route
 from .admin_handlers.admin_callback import router as admin_callback
 from .startHandler import router as start_router
 from .error_handler import router as error_router
+from .profile_handlers.profile_command import router as profile_router
 
 from app.bot.middlewares.database import DatabaseMiddleware
 
@@ -49,6 +50,7 @@ def register_handlers(
     dp.include_router(error_router)
     dp.include_router(start_router)
     dp.include_router(main_router)
+    dp.include_router(profile_router)
     dp.include_router(registration_router)
     dp.include_router(admin_callback)
 

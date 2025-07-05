@@ -1,17 +1,21 @@
-from aiogram import Router, F
-from aiogram.types import Message, ReplyKeyboardRemove
-from aiogram.fsm.context import FSMContext
+import logging
+
+from aiogram import F, Router
 from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.types import Message, ReplyKeyboardRemove
 
 from app.bot.fsm.state_manager import StateManager
+from app.bot.keyboards.base import in_back_keyboard
+from app.core.logging_setup import configure_logger
 from app.core.utils.decorators import safe_delete_message
-from .device_logic import handle_device_status_logic
+
 from ..constants.menu_label import MenuLabels
 from ..constants.messages import Messages
 from ..constants.states import DeviceCommands
+from .device_logic import handle_device_status_logic
 
-from app.core.config import logger
-from app.bot.keyboards.base import in_back_keyboard
+logger = configure_logger().bind(component=f"{__name__}")
 
 
 def register_handlers(router: Router):

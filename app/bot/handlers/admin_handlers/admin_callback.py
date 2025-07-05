@@ -1,15 +1,22 @@
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram.types import Message
+from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
+from app.core.config import settings
 
-from app.core.config import logger
 from app.schemas.user import UserCreate
 from app.services.user import UserService
 from app.services.registration_buffer import (
     RegistrationBuffer,
 )  # 👈 временное хранилище данных (см. ниже)
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = Router()
+OWNER_ID = settings.bot.OWNER_ID  # Установите ID владельца в конфигурации
 
 
 @router.callback_query(F.data.startswith("admin:confirm:"))
@@ -73,3 +80,24 @@ async def handle_admin_reject(callback: CallbackQuery):
         await callback.message.answer(
             "❌ Не удалось отправить уведомление пользователю."
         )
+
+async def is_chat_available(bot, user_id: int) -> bool:
+    try:
+        await bot.get_chat(user_id)
+        return True
+    except (TelegramBadRequest, TelegramForbiddenError):
+        return False
+
+@router.message(F.text == "/admins")
+async def check_admins_status(message: Message):
+    if message.from_user.id != OWNER_ID:
+        await message.answer("⛔ Команда доступна только владельцу бота.")
+        return
+
+    results = []
+    for admin_id in settings.bot.ADMINS:
+        status = "✅ доступен" if await is_chat_available(message.bot, admin_id) else "❌ не доступен"
+        results.append(f"<code>{admin_id}</code> — {status}")
+
+    text = "🛡 Статус администраторов:\n\n" + "\n".join(results)
+    await message.answer(text, parse_mode="HTML")

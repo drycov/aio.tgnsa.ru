@@ -1,104 +1,106 @@
-import inspect
-from app.bot.fsm.state_manager import StateManager
+from datetime import datetime
+import logging
 from aiogram.types import Message, ReplyKeyboardRemove
-from app.core.config import logger
-import asyncio
 from aiogram.fsm.context import FSMContext
-from app.bot.keyboards.base import in_back_keyboard
 
+from app.bot.keyboards.base import in_back_keyboard
+from app.core.logging_setup import configure_logger
 from app.core.utils.device_utils import DeviceUtils
 from app.core.utils.network_utils import NetworkUtils
 from app.core.utils.snmp_community_scanner import SNMPCommunityScanner
+from app.core.config import settings
+from app.core.utils.decorators import log_execution
+from app.bot.fsm.state_manager import StateManager
 
 from ..constants.states import DeviceCommands
 from ..constants.menu import get_device_keyboard
-from app.core.config import settings
+from ..constants.messages import Messages
+
+logger = configure_logger().bind(component=f"{__name__}")
 
 
+@log_execution(success_message="Статус устройства проверен")
 async def handle_device_status_logic(message: Message, state: FSMContext):
     host = message.text.strip()
-    # Проверка, что введённый текст является IP-адресом
+
     host, error = await NetworkUtils.validate_ip(host)
     logger.debug(f"Проверка IP-адреса: {host}, ошибка: {error}")
     if error:
         await message.answer(error, reply_markup=in_back_keyboard, parse_mode="HTML")
         await state.update_data(waiting_for_ip=False)
         return
-    logger.info(
-        f"[device_status] Запрошен статус устройства: user_id={message.from_user.id}, host={host}"
-    )
-    # Проверка доступности устройства
+
+    logger.info(f"[device_status] Запрошен статус: user_id={message.from_user.id}, host={host}")
+
     is_alive = await NetworkUtils.is_alive(host)
     if not is_alive:
         await message.answer(
             f"⚠️ <b>Устройство <code>{host}</code> недоступно</b>",
             reply_markup=in_back_keyboard,
-            parse_mode="HTML",
+            parse_mode="HTML"
         )
         await state.update_data(waiting_for_ip=False)
         return
-    # Если устройство доступно, продолжаем обработку
 
-    # Получение SNMP-сообщества
-    scanner = SNMPCommunityScanner(
-        target_ip=host,
-        communities=settings.net.SNMP_RO,  # Используем список SNMP-сообществ
-    )
-    logger.debug(f"Проверка SNMP-сообществ для {host}: {settings.net.SNMP_RO}")
-    # Асинхронный поиск валидного сообщества
-    logger.debug(f"🔍 Ищем валидное SNMP-сообщество для {host}...")
+    scanner = SNMPCommunityScanner(target_ip=host, communities=settings.net.snmp_ro)
+    logger.info(f"Проверка SNMP-сообществ для {host}: {settings.net.snmp_ro}")
     valid = await scanner.find_valid_community()
-    logger.debug(f"✅ Результат: {valid}" if valid else "❌ Ни одна строка не подошла")
+    logger.debug(f"✅ SNMP найден: {valid}" if valid else "❌ Ни одно SNMP-сообщество не подошло")
+
     if not valid:
         await message.answer(
-            f"⚠️ <b>Не удалось найти SNMP-сообщество для устройства <code>{host}</code></b>",
+            f"⚠️ <b>SNMP-сообщество для устройства <code>{host}</code> не найдено</b>",
             reply_markup=in_back_keyboard,
-            parse_mode="HTML",
+            parse_mode="HTML"
         )
         await state.update_data(waiting_for_ip=False)
         return
-    await state.update_data(host=host, snmp_community=valid, is_alive=is_alive)
 
-    display_data = {
-        "text": f"🔍 <b>Проверка статуса устройства <code>{host}</code></b>",
-        "reply_markup": ReplyKeyboardRemove(),
-    }
-    await StateManager.set_state_with_history(
-        state, DeviceCommands.CHECK_STATUS, display_data
+    await state.update_data(host=host, snmp_community=valid, is_alive=True)
+
+    await message.answer(
+        f"🔍 <b>Проверка статуса устройства <code>{host}</code></b>",
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode="HTML"
     )
-    # if_name = await DeviceUtils.get_interface_range(str(host), valid)
-    # if_index = await DeviceUtils.get_if_index_range(str(host), valid)
-    # logger.info(if_name)
-    # logger.info(if_index)
 
-    # interface_map = dict(zip(if_index, if_name))
-    # logger.debug(f"Сопоставление интерфейсов: {interface_map}")
     device_info = await DeviceUtils.get_basic_info(str(host), valid)
     if not device_info:
-        logger.error(
-            f"[{inspect.currentframe().f_code.co_name}] Не удалось получить базовую информацию об устройстве {host}"
-        )
+        logger.error(f"[device_status] Не удалось получить базовую информацию о {host}")
         await message.answer(
-            f"⚠️ <b>Не удалось получить базовую информацию об устройстве <code>{host}</code></b>",
+            f"⚠️ <b>Нет данных об устройстве <code>{host}</code></b>",
             reply_markup=in_back_keyboard,
-            parse_mode="HTML",
+            parse_mode="HTML"
         )
         await state.update_data(waiting_for_ip=False)
         return
-    logger.info(
-        f"[{inspect.currentframe().f_code.co_name}] Получена базовая информация: {device_info}"
+
+    logger.info(f"[device_status] Базовая информация: {device_info}")
+
+    await state.update_data(
+        model=device_info.get("sw_model", "Неизвестная модель"),
+        device_data=device_info.get("device_data", {}),
+        waiting_for_ip=False
     )
 
-    # Запуск асинхронной функции для получения интерфейсов
-    # Отправка сообщения пользователю
+    # Формирование итогового сообщения
+    device_info_message = Messages.DEVICE_INFO.value.format(
+        host=device_info.get("host", "Неизвестный хост"),
+        vendor=device_info.get("vendor", "n/a"),
+        sw_sys_name=device_info.get("sw_sys_name", "n/a"),
+        sw_model=device_info.get("sw_model", "n/a"),
+        sw_up_time=device_info.get("sw_up_time", "n/a"),
+        up_time=device_info.get("up_time", "n/a"),
+        address=device_info.get("address", "n/a"),
+    )
 
-    await message.answer(**display_data)  # ✅ именно так
-    await state.update_data(waiting_for_ip=False)
-    await asyncio.sleep(0.1)  # Эмуляция асинхронной работы, если нужно
     keyboard = get_device_keyboard()
+    formatted_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     display_data = {
-        "text": f"✅ <b>Статус устройства <code>{host}</code> успешно проверен</b>",
+        "text": f"<pre>{device_info_message}</pre>\n\n<i>Выполнено: <code>{formatted_date}</code></i>",
         "reply_markup": keyboard,
+        "parse_mode": "HTML"
     }
+
     await StateManager.set_state_with_history(state, DeviceCommands.MENU, display_data)
     await message.answer(**display_data)

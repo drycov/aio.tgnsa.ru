@@ -1,12 +1,13 @@
-from pathlib import Path
 import importlib.util
+import logging
 import sys
+from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, Optional, Type
 
+from app.core.logging_setup import configure_logger
 from app.core.plugin_manager.base import PluginBase
 from app.core.plugin_manager.interfaces import IPluginSource
-from app.core.config import logger
 
 
 class PluginDirectorySource(IPluginSource):
@@ -14,7 +15,8 @@ class PluginDirectorySource(IPluginSource):
         self.path = path
         self.base_class = base_class
         self.plugins: Dict[str, PluginBase] = {}
-        self._logger = logger.bind(source="PluginDirectorySource")
+
+        self._logger = configure_logger().bind(component=f"{__class__.__name__}")
 
     def load_plugins(self) -> Dict[str, PluginBase]:
         """

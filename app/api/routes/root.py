@@ -7,10 +7,12 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from app.core.config import debug_mode, logger, settings
+from app.core.config import debug_mode, settings
 from app.core.patchs import project_paths
 
-# from app.core.logger import logger
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter()

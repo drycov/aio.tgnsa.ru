@@ -2,13 +2,14 @@ import json
 import tomli
 from pathlib import Path
 from typing import Dict, Any
-from app.core.config import logger
 from app.core.patchs import STATIC_DIR
 
 TOML_PATH = STATIC_DIR / "oids" / "oids.toml"
 JSON_PATH = STATIC_DIR / "oids" / "oids.json"
 
+import logging
 
+logger = logging.getLogger(__name__)
 class OIDLoader:
     _cached_oids: Dict[str, Any] = {}
 

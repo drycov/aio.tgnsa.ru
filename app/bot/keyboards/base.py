@@ -8,7 +8,9 @@ from typing import Union, List, Tuple
 
 from app.bot.constants.labels import MenuLabels
 from app.bot.constants.positions import POSITIONS_BY_DEPARTMENT
-from app.core.config import logger
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def build_auth_keyboard(is_authenticated: bool) -> ReplyKeyboardMarkup:

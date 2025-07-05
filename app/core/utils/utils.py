@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import logging
 import os
 import re
 import tempfile
@@ -11,7 +12,7 @@ from redis.exceptions import RedisError
 import tomli_w
 
 from app.bot.fsm.file_storage import FileStorage
-from app.core.config import logger, settings
+from app.core.config import settings
 from app.core.config import DATA_DIR
 from puresnmp.types import TimeTicks
 
@@ -19,6 +20,8 @@ from pyasn1.type.univ import OctetString
 from pyasn1_modules.rfc1902 import Counter32
 
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def initialize_storage():
@@ -171,6 +174,29 @@ def is_hex_string(s: str) -> bool:
             return False
     return False
 
+def parse_snmp_uptime(timeticks: int | str) -> str:
+    try:
+        seconds = int(timeticks) // 100
+    except (ValueError, TypeError):
+        return "Недоступно"
+
+    minutes, sec = divmod(seconds, 60)
+    hours, min_ = divmod(minutes, 60)
+    days, hour = divmod(hours, 24)
+    weeks, day = divmod(days, 7)
+
+    parts = []
+    if weeks:
+        parts.append(f"{weeks} неделя(и)")
+    if day:
+        parts.append(f"{day} день(дней)")
+    if hour:
+        parts.append(f"{hour} час(ов)")
+    if min_:
+        parts.append(f"{min_} мин.")
+    if sec:
+        parts.append(f"{sec} сек.")
+    return " ".join(parts)
 
 def seconds_to_str(uptime) -> str:
     """

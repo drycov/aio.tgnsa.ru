@@ -11,11 +11,12 @@ from typing import Optional, Dict, Any, Callable, Literal
 import aiofiles
 from aiogram.fsm.state import State
 from aiogram.fsm.storage.base import BaseStorage, StorageKey
-from app.core.config import logger
+
+logger = logging.getLogger(__name__)
+
 
 # --- Поддержка сериализации ---
 SerialFormat = Literal["json", "toml", "yaml", "msgpack"]
-logger = logging.getLogger(__name__)
 
 
 def strip_unsupported(obj):

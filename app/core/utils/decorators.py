@@ -1,5 +1,7 @@
 from functools import wraps
+import json
 from typing import Any, Callable, Coroutine, List, Optional, Union
+import logging
 from aiogram.types import (
     Message,
     ReplyKeyboardRemove,
@@ -9,8 +11,18 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
+import logging
+import inspect
+import traceback
+from functools import wraps
+from typing import Callable, Optional
 
-from app.core.config import logger
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Уровень можно задать в конфиге приложения
+
 
 
 # ──────────────────────────────────────────────────────────────
@@ -218,3 +230,96 @@ def handle_network_error(default_return: Any = None) -> Callable[..., Coroutine]
         return wrapper
 
     return decorator
+
+def log_execution(
+    level: str = "info",
+    success_message: str = "Успешно выполнено.",
+    error_message: str = "Ошибка выполнения.",
+    log_args: bool = False,
+    log_exceptions: bool = True,
+    log_traceback: bool = False,
+    logger: Optional[logging.Logger] = None,
+):
+    """
+    Декоратор для логирования выполнения функции (sync/async).
+
+    :param level: уровень логирования ('debug', 'info', 'warning', 'error')
+    :param success_message: сообщение при успешном выполнении
+    :param error_message: сообщение при исключении
+    :param log_args: логировать ли аргументы функции
+    :param log_exceptions: логировать ли ошибки
+    :param log_traceback: включать ли traceback в лог
+    :param logger: логгер (по умолчанию logging.getLogger(func.__module__))
+    """
+    def decorator(func: Callable):
+        log = logger or logging.getLogger(func.__module__)
+        log_func = getattr(log, level.lower(), log.info)
+
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                try:
+                    result = await func(*args, **kwargs)
+                    args_repr = f" | args={args}, kwargs={kwargs}" if log_args else ""
+                    log_func(f"[{func.__name__}] {success_message}{args_repr}")
+                    return result
+                except Exception as ex:
+                    if log_exceptions:
+                        msg = f"[{func.__name__}] {error_message}: {ex}"
+                        if log_traceback:
+                            msg += "\n" + traceback.format_exc()
+                        log.error(msg)
+                    raise
+            return async_wrapper
+        else:
+            @wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                try:
+                    result = func(*args, **kwargs)
+                    args_repr = f" | args={args}, kwargs={kwargs}" if log_args else ""
+                    log_func(f"[{func.__name__}] {success_message}{args_repr}")
+                    return result
+                except Exception as ex:
+                    if log_exceptions:
+                        msg = f"[{func.__name__}] {error_message}: {ex}"
+                        if log_traceback:
+                            msg += "\n" + traceback.format_exc()
+                        log.error(msg)
+                    raise
+            return sync_wrapper
+
+    return decorator
+
+def log_model_init(cls):
+    orig_init = cls.__init__
+    from rich import print
+
+    def safe_model_dump(instance: BaseSettings) -> dict:
+        def safe_val(val: Any):
+            if isinstance(val, SecretStr):
+                return "********"
+            elif isinstance(val, set):
+                return list(val)
+            elif isinstance(val, BaseSettings):
+                return safe_model_dump(val)
+            elif isinstance(val, dict):
+                return {k: safe_val(v) for k, v in val.items()}
+            elif isinstance(val, list):
+                return [safe_val(i) for i in val]
+            return val
+
+        return {k: safe_val(v) for k, v in instance.model_dump().items()}
+
+    def new_init(self, **kwargs):
+        orig_init(self, **kwargs)
+        try:
+            dumped = json.dumps(safe_model_dump(self), indent=2, ensure_ascii=False)
+        except Exception as e:
+            dumped = f"[Ошибка сериализации]: {e}"
+        print(f"[🔧 Init] {cls.__name__}:\n{dumped}")
+        logger.debug(f"[🔧 Init] {cls.__name__}:\n{dumped}")
+
+    cls.__init__ = new_init
+    return cls
+
+

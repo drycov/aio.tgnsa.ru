@@ -9,7 +9,9 @@ import sys
 import aiohttp.web_runner
 from dataclasses import dataclass
 from enum import Enum, auto
-from app.core.config import debug_mode, logger
+from app.core.config import debug_mode
+from app.core.logging_setup import configure_logger
+
 
 
 class HookType(Enum):
@@ -26,6 +28,7 @@ class LifecycleHook:
 
 
 class AppLifecycleManager:
+    name="AppLifecycleManager"
     def __init__(self, loop: Optional[asyncio.AbstractEventLoop] = None):
         self._startup_hooks: List[LifecycleHook] = []
         self._shutdown_hooks: List[LifecycleHook] = []
@@ -33,6 +36,7 @@ class AppLifecycleManager:
         self._loop = loop or asyncio.get_event_loop()
         self._startup_tasks: Dict[str, asyncio.Task] = {}
         self._shutdown_tasks: Dict[str, asyncio.Task] = {}
+        self.logger = configure_logger().bind(component=f"{__class__.__name__}")
         self._is_running = False
 
         self._patch_aiohttp_for_windows()
@@ -88,14 +92,14 @@ class AppLifecycleManager:
             @wraps(func)
             async def wrapped():
                 try:
-                    logger.info(f"🚀 Running startup hook: {hook_name}")
+                    self.logger.info(f"🚀 Running startup hook: {hook_name}")
                     if timeout:
                         await asyncio.wait_for(func(), timeout=timeout)
                     else:
                         await func()
-                    logger.info(f"✅ Startup hook completed: {hook_name}")
+                    self.logger.info(f"✅ Startup hook completed: {hook_name}")
                 except Exception as e:
-                    logger.error(f"❌ Startup hook failed: {hook_name}: {str(e)}")
+                    self.logger.error(f"❌ Startup hook failed: {hook_name}: {str(e)}")
                     if critical:
                         raise
 
@@ -128,14 +132,14 @@ class AppLifecycleManager:
             @wraps(func)
             async def wrapped():
                 try:
-                    logger.info(f"🛑 Running shutdown hook: {hook_name}")
+                    self.logger.info(f"🛑 Running shutdown hook: {hook_name}")
                     if timeout:
                         await asyncio.wait_for(func(), timeout=timeout)
                     else:
                         await func()
-                    logger.info(f"✅ Shutdown hook completed: {hook_name}")
+                    self.logger.info(f"✅ Shutdown hook completed: {hook_name}")
                 except Exception as e:
-                    logger.error(f"❌ Shutdown hook failed: {hook_name}: {str(e)}")
+                    self.logger.error(f"❌ Shutdown hook failed: {hook_name}: {str(e)}")
                     if critical:
                         raise
 
@@ -155,7 +159,7 @@ class AppLifecycleManager:
             await self.startup()
             yield
         except Exception as e:
-            logger.error(f"❌ Lifespan failed: {str(e)}")
+            self.logger.error(f"❌ Lifespan failed: {str(e)}")
         finally:
             await self.shutdown()
 
@@ -165,7 +169,7 @@ class AppLifecycleManager:
             raise RuntimeError("Application is already running")
 
         self._is_running = True
-        logger.info("🟢 Starting application lifecycle")
+        self.logger.info("🟢 Starting application lifecycle")
 
         if debug_mode:
             self._start_monitor()
@@ -175,14 +179,14 @@ class AppLifecycleManager:
             self._startup_tasks[hook.name] = task
 
         await asyncio.gather(*self._startup_tasks.values(), return_exceptions=False)
-        logger.info("🟢 Application started successfully")
+        self.logger.info("🟢 Application started successfully")
 
     async def shutdown(self) -> None:
         """Run all shutdown hooks and clean up resources."""
         if not self._is_running:
             return
 
-        logger.info("🛑 Shutting down application lifecycle")
+        self.logger.info("🛑 Shutting down application lifecycle")
 
         # Cancel all startup tasks
         await self._cancel_tasks(self._startup_tasks, "startup")
@@ -198,7 +202,7 @@ class AppLifecycleManager:
                 timeout=30,
             )
         except asyncio.TimeoutError:
-            logger.warning("⚠️ Timeout waiting for shutdown hooks to complete")
+            self.logger.warning("⚠️ Timeout waiting for shutdown hooks to complete")
 
         # Cancel remaining tasks
         await self._cancel_all_tasks()
@@ -208,7 +212,7 @@ class AppLifecycleManager:
             self._monitor = None
 
         self._is_running = False
-        logger.info("🛑 Application shutdown completed")
+        self.logger.info("🛑 Application shutdown completed")
 
     def _start_monitor(self) -> None:
         """
@@ -224,16 +228,16 @@ class AppLifecycleManager:
                 console_port=50101,
                 console_enabled=not is_windows,
             )
-            logger.info(
+            self.logger.info(
                 "🔧 aiomonitor started (telnet enabled: %s)",
                 not is_windows,
             )
         except NotImplementedError as nie:
-            logger.warning(
+            self.logger.warning(
                 "⚠️ aiomonitor telnet disabled (platform limitation): %s", nie
             )
         except Exception as e:
-            logger.exception("❌ Failed to start aiomonitor: %s", e)
+            self.logger.exception("❌ Failed to start aiomonitor: %s", e)
 
     async def _cancel_tasks(
         self, tasks: Dict[str, asyncio.Task], task_type: str
@@ -243,7 +247,7 @@ class AppLifecycleManager:
         if not tasks_to_cancel:
             return
 
-        logger.info(f"⏳ Cancelling {len(tasks_to_cancel)} {task_type} tasks...")
+        self.logger.info(f"⏳ Cancelling {len(tasks_to_cancel)} {task_type} tasks...")
         for task in tasks_to_cancel:
             task.cancel()
 
@@ -252,7 +256,7 @@ class AppLifecycleManager:
                 asyncio.gather(*tasks_to_cancel, return_exceptions=True), timeout=10
             )
         except asyncio.TimeoutError:
-            logger.warning(f"⚠️ Timeout waiting for {task_type} tasks to cancel")
+            self.logger.warning(f"⚠️ Timeout waiting for {task_type} tasks to cancel")
 
     async def _cancel_all_tasks(self) -> None:
         """Cancel all active tasks except the current one."""
@@ -266,7 +270,7 @@ class AppLifecycleManager:
         if not tasks:
             return
 
-        logger.info(f"⏳ Cancelling {len(tasks)} remaining tasks...")
+        self.logger.info(f"⏳ Cancelling {len(tasks)} remaining tasks...")
         for task in tasks:
             task.cancel()
 
@@ -275,11 +279,11 @@ class AppLifecycleManager:
                 asyncio.gather(*tasks, return_exceptions=True), timeout=15
             )
         except asyncio.TimeoutError:
-            logger.warning("⚠️ Timeout waiting for tasks to cancel")
+            self.logger.warning("⚠️ Timeout waiting for tasks to cancel")
 
     def log_active_tasks(self) -> None:
         """Log information about current tasks."""
         tasks = asyncio.all_tasks(self._loop)
-        logger.info(f"🔍 Active tasks: {len(tasks)}")
+        self.logger.info(f"🔍 Active tasks: {len(tasks)}")
         for task in tasks:
-            logger.debug(f"Task: {task.get_name()}, done: {task.done()}")
+            self.logger.debug(f"Task: {task.get_name()}, done: {task.done()}")

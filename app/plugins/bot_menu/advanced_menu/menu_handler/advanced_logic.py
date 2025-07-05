@@ -3,12 +3,13 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from pythonping import ping
 
+from app.core.logging_setup import configure_logger
 from app.core.utils.network_utils import NetworkUtils
 from ..constants.states import Advanced
 from app.bot.keyboards.base import in_back_keyboard
 from app.bot.fsm.state_manager import StateManager
-from app.core.config import logger
 
+logger = configure_logger().bind(component=f"{__name__}")
 
 async def handle_cidr_logic(message: Message, state: FSMContext):
     """Обработчик CIDR калькулятора с расширенной информацией"""

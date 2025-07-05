@@ -1,13 +1,15 @@
 import inspect
 from typing import Optional, List
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-from app.core.config import logger
 from pysnmp.hlapi.v1arch.asyncio import *
-
-logger = logger.bind(component="SNMPCommunityScanner")
-
+import logging
 
 class SNMPCommunityScanner:
+    @property
+    def logger(self):
+        from app.core.logging_setup import configure_logger
+        return configure_logger().bind(component=self.__class__.__name__)
+
     def __init__(
         self,
         target_ip: str,
@@ -30,7 +32,7 @@ class SNMPCommunityScanner:
     )
     async def _snmp_get(self, community: str) -> Optional[str]:
         """Выполняет SNMP GET запрос асинхронно."""
-        logger.debug(
+        self.logger.debug(
             f"[{inspect.currentframe().f_code.co_name}]Trying community '{community}'..."
         )
 
@@ -45,12 +47,12 @@ class SNMPCommunityScanner:
             errorIndication, errorStatus, errorIndex, varBinds = iterator
 
             if errorIndication:
-                logger.error(
+                self.logger.error(
                     f"[{inspect.currentframe().f_code.co_name}] SNMP error for community '{community}': {errorIndication}"
                 )
                 return None
             elif errorStatus:
-                logger.error(
+                self.logger.error(
                     f"[{inspect.currentframe().f_code.co_name}] SNMP error for community '{community}': {errorStatus.prettyPrint()}"
                 )
                 return None
@@ -67,20 +69,20 @@ class SNMPCommunityScanner:
             try:
                 result = await self._snmp_get(community)
                 if result:
-                    logger.info(
+                    self.logger.info(
                         f"[{inspect.currentframe().f_code.co_name}] ✅ Valid community string found: '{community}'"
                     )
                     return community
             except TimeoutError as e:
-                logger.warning(
+                self.logger.warning(
                     f"[{inspect.currentframe().f_code.co_name}] Timeout for community '{community}': {e}"
                 )
             except Exception as e:
-                logger.error(
+                self.logger.error(
                     f"[{inspect.currentframe().f_code.co_name}] Unhandled error for community '{community}': {e}"
                 )
 
-        logger.warning(
+        self.logger.warning(
             f"[{inspect.currentframe().f_code.co_name}] ❌ No valid community string found."
         )
         return None

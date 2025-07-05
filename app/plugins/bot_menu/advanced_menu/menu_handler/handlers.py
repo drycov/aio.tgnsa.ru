@@ -4,12 +4,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 
 from app.bot.fsm.state_manager import StateManager
+from app.core.logging_setup import configure_logger
 from app.core.utils.decorators import safe_delete_message
 from ..constants.menu_label import MenuLabels
 from ..constants.messsages import Messages
 from ..constants.menu import get_advanced_keyboard
 from ..constants.states import Advanced
-from app.core.config import logger
+
 
 from .advanced_logic import (
     handle_cidr_logic,
@@ -17,6 +18,9 @@ from .advanced_logic import (
     handle_ping_logic,
 )
 
+import logging
+
+logger = configure_logger().bind(component=f"{__name__}")
 
 def register_handlers(router: Router):
     @router.message(F.text == MenuLabels.ADVANCED.value)

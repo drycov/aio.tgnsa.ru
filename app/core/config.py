@@ -1,17 +1,28 @@
 import json
+import logging
 import os
 from pathlib import Path
 import secrets
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar
 
 from dotenv import load_dotenv
-from pydantic import Field, SecretStr, computed_field, field_validator, model_validator
+from pydantic import (
+    Field,
+    SecretStr,
+    ValidationError,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict, TomlConfigSettingsSource
-
-from app.core import LoggerManager
+import inspect
+from app.core.utils.decorators import log_execution, log_model_init
 from app.core.utils.version import __version__
 import tomllib
-from loguru import logger as loguru_logger
+
+logger = logging.getLogger(__name__)
+os.environ["PYDANTIC_DEBUG"] = "1"
+
 
 # --- Путь к проекту ---
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -31,6 +42,9 @@ if not SECRETS_DIR.exists():
     SECRETS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+# --- Загрузка .env заранее ---
+load_dotenv(dotenv_path=ENV_PATH, override=True)
+
 def load_toml(name: str) -> dict:
     try:
         assert name.exists(), f"{name=} не существует"
@@ -38,12 +52,49 @@ def load_toml(name: str) -> dict:
             return tomllib.load(f)  # выбросит ошибку, если формат неверен
     except FileNotFoundError:
         return {}
+T = TypeVar("T")
 
 
 SECRETS_DICT = load_toml(SECRETS_TOML)
+CONFIGS_DICT = load_toml(CONFIG_PATH)
 
-# --- Загрузка .env заранее ---
-load_dotenv(dotenv_path=ENV_PATH, override=True)
+def _convert(val: Any, target_type: Type[T]) -> T:
+    if target_type == list[str]:
+        if isinstance(val, str):
+            return [x.strip() for x in val.split(",") if x.strip()]  # CSV to list
+        if isinstance(val, list):
+            return val
+        raise TypeError(f"Ожидался list[str], но получен {type(val).__name__}")
+    return target_type(val)  # int, float, str, bool etc.
+
+
+def load_from_sources(
+    section: str,
+    key: str,
+    target_type: Type[T],
+    env_prefix: str = "",
+) -> T:
+    env_key = f"{env_prefix}{key}".upper()
+
+    # 1. ENV (переменные среды / .env)
+    if env_key in os.environ:
+        return _convert(os.environ[env_key], target_type)
+
+    # 2. CONFIG (config.toml)
+    config_val = CONFIGS_DICT.get(section, {}).get(key)
+    if config_val is not None:
+        return _convert(config_val, target_type)
+
+    # 3. SECRETS (secrets.toml)
+    secret_val = SECRETS_DICT.get(section, {}).get(key)
+    if secret_val is not None:
+        return _convert(secret_val, target_type)
+
+    raise ValueError(
+        f"Конфигурационный параметр '{section}.{key}' не найден ни в env, ни в config.toml, ни в secrets.toml!"
+    )
+
+
 
 # --- Определение роли ---
 APP_ROLE = os.getenv("APP_ROLE", "app")
@@ -188,12 +239,15 @@ class DataBaseSettings(BaseSettings):
         else:
             raise ValueError(f"Неизвестный движок базы данных: {engine}")
 
+
 class TFAConfig(BaseSettings):
     enabled: bool = Field(default=False, description="Включить TFA")
     issuer: str = Field(default="TG NMS", description="Issuer для TOTP")
     digits: int = Field(default=6, description="Количество цифр в коде")
     period: int = Field(default=30, description="Период действия кода (сек)")
-    secret: Optional[SecretStr] = Field(default=None, description="Секрет для генерации TOTP")
+    secret: Optional[SecretStr] = Field(
+        default=None, description="Секрет для генерации TOTP"
+    )
 
     model_config = SettingsConfigDict(
         toml_file=str(CONFIG_PATH),
@@ -202,6 +256,7 @@ class TFAConfig(BaseSettings):
         extra="ignore",
         secrets_dir=str(DATA_DIR / "secrets"),
     )
+
 
 class Security(BaseSettings):
     """
@@ -219,8 +274,36 @@ class Security(BaseSettings):
         default=False,
         description="Включить двухфакторную аутентификацию (TFA) для всего приложения",
     )
+    access_token_expire_minutes: int = Field(
+        default=60,
+        description="Алгоритм подписи JWT токенов",
+    )
+    access_token_expire_seconds:int = Field(
+        default=3600,
+        description="Алгоритм подписи JWT токенов",
+    )
 
     tfa: Optional[TFAConfig] = None
+
+    @field_validator("jwt_secret", mode="before")
+    @classmethod
+    def ensure_secretstr(cls, v):
+        if v is None or v == "":
+            # Динамическая подгрузка из secrets.toml
+            from app.core.config import SECRETS_DICT
+
+            jwt_secret = SECRETS_DICT.get("jwt", {}).get("jwt_secret")
+            if not jwt_secret:
+                raise ValueError(
+                    "Token не найден ни в env, ни в config.toml, ни в secrets.toml!"
+                )
+            return SecretStr(jwt_secret)
+        if isinstance(v, SecretStr):
+            return v
+        if isinstance(v, str):
+            return SecretStr(v)
+        raise ValueError("token должен быть строкой или SecretStr")
+
 
     @computed_field
     def TFA_ENABLE(self) -> bool:
@@ -252,8 +335,6 @@ class Security(BaseSettings):
     def conditional_tfa_load(self):
         self.tfa = TFAConfig() if self.tfa_enable else None
         return self
-
-
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_PATH),
@@ -302,7 +383,6 @@ class APISettings(BaseSettings):
         default=1,
         description="Количество воркеров для API сервера",
     )
-
     model_config = SettingsConfigDict(
         toml_file=str(CONFIG_PATH),
         env_file=str(ENV_PATH),
@@ -315,7 +395,8 @@ class APISettings(BaseSettings):
 class BotConfig(BaseSettings):
     token: str | SecretStr = Field(
         default=None,
-        description="Токен бота Telegram",)
+        description="Токен бота Telegram",
+    )
     # .env: ADMINS=123456789,987654321
     admins: Set[int] = Field(
         default_factory=set, description="Список ID администраторов", env="ADMINS"
@@ -326,6 +407,13 @@ class BotConfig(BaseSettings):
         description="Список ID суперпользователей (имеют полный доступ)",
         env="SUPERUSERS",
     )
+
+    owner_id: int = Field(
+        ...,
+        description="ID владельца бота",
+        env="OWNER_ID",
+    )
+
     rate_limit: float = Field(
         default=1.0, description="Лимит запросов в секунду", env="RATE_LIMIT"
     )
@@ -342,11 +430,12 @@ class BotConfig(BaseSettings):
         if v is None or v == "":
             # Динамическая подгрузка из secrets.toml
             from app.core.config import SECRETS_DICT
+
             token = SECRETS_DICT.get("bot", {}).get("token")
-            loguru_logger.debug(f"Проверка токена бота... {token}")
             if not token:
-                raise ValueError("Token не найден ни в env, ни в config.toml, ни в secrets.toml!")
-            loguru_logger.debug(f"Динамическая подгрузка токена: {token[:5]}...")
+                raise ValueError(
+                    "Token не найден ни в env, ни в config.toml, ни в secrets.toml!"
+                )
             return SecretStr(token)
         if isinstance(v, SecretStr):
             return v
@@ -355,26 +444,32 @@ class BotConfig(BaseSettings):
         raise ValueError("token должен быть строкой или SecretStr")
 
     @property
+    def OWNER_ID(self) -> int:
+        return self.owner_id
+
+    @property
     def TOKEN(self) -> str | SecretStr:
         """Свойство для получения токена бота."""
         if isinstance(self.token, SecretStr):
             return self.token
         # fallback, если вдруг что-то пошло не так
-        loguru_logger.debug(f"{self.token.get_secret_value()[:5]}")
         return SecretStr(str(self.token))
 
     @property
     def ADMINS(self) -> Set[int]:
         """Свойство для получения списка администраторов."""
         return self.admins
+
     @property
     def SUPERUSERS(self) -> Set[int]:
         """Свойство для получения списка суперпользователей."""
         return self.superusers
+
     @property
     def ROLE_ACCESS(self) -> Dict[str, List[str]]:
         """Свойство для получения прав доступа по ролям."""
         return self.role_access
+
     @computed_field
     def RATE_LIMIT(self) -> float:
         """Свойство для получения лимита запросов в секунду."""
@@ -432,7 +527,8 @@ class BotConfig(BaseSettings):
         toml_file=str(CONFIG_PATH),
         env_file=str(ENV_PATH),
         secrets_dir=str(DATA_DIR / "secrets"),
-        env_nested_delimiter="__",)
+        env_nested_delimiter="__",
+    )
 
 
 class RedisConfig(BaseSettings):
@@ -500,23 +596,43 @@ class MongoDBConfig(BaseSettings):
 
 
 class NetworkConfig(BaseSettings):
-    PING_COUNT: int = Field(default=4, env="NETWORK_PING_COUNT")
-    PING_INTERVAL: int = Field(default=2, env="NETWORK_PING_INTERVAL")
-    PING_TIMEOUT: int = Field(default=10, env="NETWORK_PING_TIMEOUT")
-    SNMP_RO: list[str] = Field(default_factory=list, env="NETWORK_SNMP_RO")
-    SNMP_RW: list[str] = Field(default_factory=list, env="NETWORK_SNMP_RW")
+    ping_count: int = Field(
+        default_factory=lambda: load_from_sources("network", "ping_count", int, env_prefix="NETWORK_"),
+        description="Количество ping-пакетов",
+        env="PING_COUNT",
+    )
+    ping_interval: int = Field(
+        default_factory=lambda: load_from_sources("network", "ping_interval", int, env_prefix="NETWORK_"),
+        description="Интервал между ping, сек",
+        env="PING_INTERVAL",
+    )
+    ping_timeout: int = Field(
+        default_factory=lambda: load_from_sources("network", "ping_timeout", int, env_prefix="NETWORK_"),
+        description="Таймаут ожидания ответа, сек",
+        env="PING_TIMEOUT",
+    )
+
+    snmp_ro: List[str] = Field(
+        default_factory=lambda: load_from_sources("network", "snmp_ro", list[str], env_prefix="NETWORK_"),
+        description="Список SNMP RO community",
+        env="SNMP_RO",
+    )
+    snmp_rw: List[str] = Field(
+        default_factory=lambda: load_from_sources("network", "snmp_rw", list[str], env_prefix="NETWORK_"),
+        description="Список SNMP RW community",
+        env="SNMP_RW",
+    )
 
     model_config = SettingsConfigDict(
-        env_prefix="NETWORK_",
         toml_file=str(CONFIG_PATH),
         env_file=str(ENV_PATH),
         env_file_encoding="utf-8",
+        env_prefix="NETWORK_",
         case_sensitive=True,
         extra="ignore",
         secrets_dir=str(DATA_DIR / "secrets"),
         env_nested_delimiter="__",
     )
-
 
 class MiscConfig(BaseSettings):
     """Настройки Miscellaneous.
@@ -545,7 +661,9 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=False, env="DEBUG")
     version: str = Field(default=__version__, description="Версия приложения")
     use_redis: bool = Field(
-        default=False, env="USE_REDIS", description="Использовать Redis для кэширования",
+        default=False,
+        env="USE_REDIS",
+        description="Использовать Redis для кэширования",
         alias="use_redis",
     )
     use_mongo: bool = Field(
@@ -670,7 +788,7 @@ class Settings(BaseSettings):
         dotenv_settings,
         file_secret_settings,
     ) -> Tuple:
-        # Порядок: TOML (общие параметры) → .env → ENV → Docker-секреты
+
         return (
             TomlConfigSettingsSource(settings_cls),
             dotenv_settings,
@@ -678,35 +796,9 @@ class Settings(BaseSettings):
             file_secret_settings,
         )
 
-    def validate_all(self):
-        # Проверка Redis
-        if self.USE_REDIS:
-            if not self.redis:
-                raise ValueError("USE_REDIS=True, но секция redis не инициализирована!")
-            if not self.redis.HOST or not self.redis.PORT:
-                raise ValueError("Redis: HOST и PORT обязательны при USE_REDIS=True")
-            if self.redis.PASSWORD is None:
-                loguru_logger.warning("Redis: пароль не задан (это допустимо, но не рекомендуется для production)")
-
-        # Проверка MongoDB
-        if self.USE_MONGODB:
-            if not self.mongo:
-                raise ValueError("USE_MONGODB=True, но секция mongo не инициализирована!")
-            if not self.mongo.DB_NAME:
-                raise ValueError("MongoDB: DB_NAME обязателен при USE_MONGODB=True")
-
-        # Пример: если включён TFA, то должен быть секрет
-        if hasattr(self, "security") and getattr(self.security, "tfa_enable", False):
-            if not self.security.tfa or not self.security.tfa.secret:
-                raise ValueError("TFA включён, но секрет не задан!")
-
-        # Можно добавить другие проверки по необходимости
-
-        loguru_logger.info("Проверка целостности конфигурации пройдена успешно.")
 
 # Инициализация конфигурации
 settings = Settings()
-settings.validate_all()
 
 
 # Определение режима DEBUG с резервом на ENV
@@ -719,8 +811,3 @@ def resolve_debug_mode() -> bool:
 
 
 debug_mode = resolve_debug_mode()
-
-# Инициализация логгера
-logger = LoggerManager(name=APP_ROLE, debug=debug_mode).get_logger()
-
-

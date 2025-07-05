@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from importlib import import_module
 from aiogram import Router
+from app.core.logging_setup import configure_logger
 from app.core.plugin_manager.base import PluginBase
-from app.core.config import logger
 from app.core.plugin_manager.descriptors import PluginMetaDescriptor
 
 
@@ -23,7 +23,7 @@ class BotMenuPlugin(PluginBase):
         self.plugin_dir: Optional[Path] = None
         self.router = Router()
         self.subplugins: List[PluginBase] = []
-        self.logger = logger.bind(component=self.name)
+        self.logger = configure_logger().bind(component=f"{__class__.__name__}")
         self.caller_module = self._get_caller_module()
         self.logger.debug(f"[{self.name}] Caller module: {self.caller_module}")
 

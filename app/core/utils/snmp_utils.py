@@ -1,22 +1,33 @@
 import json
 import inspect
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 from pathlib import Path
 from pysnmp.hlapi.v3arch.asyncio import *
-from app.core.config import logger
+from app.core.logging_setup import configure_logger
 from app.core.patchs import BASE_DIR
-
-logger = logger.bind(component="SNMPUtils")
+import logging
+import structlog
 
 
 class SNMPUtils:
+    @property
+    def logger(self):
+        from app.core.logging_setup import configure_logger
+        return configure_logger().bind(component=self.__class__.__name__)
+
     CACHE_DIR = BASE_DIR / "data/snmp_cache"  # Или куда удобно
 
     @staticmethod
-    def format_oid(oid: str) -> str:
-        if not oid.startswith("."):
-            oid = "." + oid + "."
-        return oid
+    def format_oid(oid: str | list | Any) -> str:
+        if isinstance(oid, list):
+            # Преобразуем в строку, если список
+            oid = ".".join(str(part).strip(".") for part in oid if part)
+        elif not isinstance(oid, str):
+            oid = str(oid)
+
+        oid = oid.strip(".")  # Убираем лишние точки с начала и конца
+        return f".{oid}."
+
 
     @staticmethod
     def parse_snmp_response(response: str) -> str:
@@ -106,4 +117,62 @@ class SNMPUtils:
             logger.exception(
                 f"[{inspect.currentframe().f_code.co_name}] Ошибка SNMP WALK: {e}"
             )
+            return None
+
+    @staticmethod
+    async def bulk_get_snmp_data(
+        target_ip: str,
+        community: str,
+        oids: list,
+        timeout: int = 5,
+        retry_count: int = 1
+    ) -> Optional[Dict[str, str]]:
+        """
+        Асинхронно выполняет SNMP GET нескольких OID за один запрос.
+
+        :param target_ip: IP-адрес целевого устройства
+        :param community: SNMP community string
+        :param oids: Список OID для запроса
+        :param timeout: Таймаут соединения
+        :param retry_count: Количество повторных попыток
+        :return: Dict вида {oid: value}, или None при ошибке
+        """
+        engine = SnmpEngine()
+        transport = await UdpTransportTarget.create((target_ip, 161), timeout=timeout, retries=retry_count)
+
+        try:
+            # Форматируем все OID и создаём объекты ObjectType
+            object_types = [ObjectType(ObjectIdentity(SNMPUtils.format_oid(oid))) for oid in oids]
+
+            result = await get_cmd(
+                engine,
+                CommunityData(community, mpModel=0),
+                transport,
+                ContextData(),
+                *object_types
+            )
+
+            errorIndication, errorStatus, errorIndex, varBinds = result
+
+            if errorIndication:
+                logger.error("bulk_get_snmp_data", host=target_ip, error=str(errorIndication))
+                return None
+            elif errorStatus:
+                logger.error(
+                    "bulk_get_snmp_data",
+                    host=target_ip,
+                    error=f"{errorStatus.prettyPrint()} at {errorIndex}"
+                )
+                return None
+
+            response = {}
+            for varBind in varBinds:
+                oid_str = str(varBind[0])
+                value_str = SNMPUtils.parse_snmp_response(str(varBind[1]))
+                response[oid_str] = value_str
+
+            return response
+
+        except Exception as e:
+            logger.exception("bulk_get_snmp_data", host=target_ip, error=str(e))
             return None

@@ -1,8 +1,11 @@
 from passlib.context import CryptContext
 
-from app.core.config import logger
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def hash_password(password: str) -> str:

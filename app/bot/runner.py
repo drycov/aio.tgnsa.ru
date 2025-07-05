@@ -5,17 +5,19 @@ from aiogram.enums import ParseMode
 
 from app.core import initialize_storage
 from app.core.applcm_manager import AppLifecycleManager
-from app.core.config import APP_DIR, BASE_DIR, settings, logger
+from app.core.config import APP_DIR, BASE_DIR, settings
 from app.core.db import get_sessionmaker
 from app.core.plugin_manager.manager import PluginManager
+
+import logging
+from app.core.logging_setup import logger
 
 
 class BotManager:
     name = "BotManager"
     def __init__(self, lifecycle_manager: AppLifecycleManager):
         self.lifecycle_manager = lifecycle_manager
-        self.logger = logger.bind(component=self.name)
-
+        self.logger = logger.bind(component=f"{__class__.__name__}")
         self.storage = initialize_storage()
         self.session = get_sessionmaker()
         self.bot = Bot(
@@ -28,11 +30,11 @@ class BotManager:
         lifecycle_manager.on_startup(name="bot_startup")(self.on_startup)
         lifecycle_manager.on_shutdown(name="bot_shutdown")(self.on_shutdown)
         self.logger.info(f"[{self.name}] инициализирован")
-        self.logger.info(f"[{self.name}]📦 Версия приложения: {settings.VERSION}")
-        self.logger.info(f"[{self.name}]📂 Путь к приложению: {APP_DIR}")
-        self.logger.info(f"[{self.name}]📂 Базовый путь: {BASE_DIR}")
-        self.logger.info(f"[{self.name}]storage: {self.storage.__class__.__name__}")
-        self.logger.info(f"[{self.name}]session: {self.session.__class__.__name__}")
+        self.logger.debug(f"[{self.name}]📦 Версия приложения: {settings.VERSION}")
+        self.logger.debug(f"[{self.name}]📂 Путь к приложению: {APP_DIR}")
+        self.logger.debug(f"[{self.name}]📂 Базовый путь: {BASE_DIR}")
+        self.logger.debug(f"[{self.name}]storage: {self.storage.__class__.__name__}")
+        self.logger.debug(f"[{self.name}]session: {self.session.__class__.__name__}")
 
 
 
@@ -42,10 +44,10 @@ class BotManager:
         from app.bot.middlewares.registry import setup_middleware
 
         await setup_middleware(
-            self.dp, db_sessionmaker=self.session, settings=settings, logger=logger
+            self.dp, db_sessionmaker=self.session, settings=settings, logger=self.logger
         )
         register_handlers(
-            self.dp, db_sessionmaker=self.session, settings=settings, logger=logger
+            self.dp, db_sessionmaker=self.session, settings=settings, logger=self.logger
         )
 
         # Подключаем плагины
@@ -55,17 +57,17 @@ class BotManager:
         pm = PluginManager()
         pm.ensure_ready(settings)
         if not pm.is_initialized:
-            logger.warning("🔌 Плагины не инициализированы. Инициализация...")
+            self.logger.warning("🔌 Плагины не инициализированы. Инициализация...")
             pm.ensure_ready(settings)
         for plugin in pm.all_plugins().values():
             plugin.register_aiogram(self.dp)  # регистрация своих роутеров
 
     async def on_startup(self):
-        logger.info("🟢 Бот запускается...")
-        logger.info(f"📦 Версия приложения: {settings.VERSION}")
+        self.logger.info("🟢 Бот запускается...")
+        self.logger.info(f"📦 Версия приложения: {settings.VERSION}")
 
     async def on_shutdown(self):
-        logger.info("🛑 Завершается работа бота...")
+        self.logger.info("🛑 Завершается работа бота...")
         await self.bot.session.close()
         await self.storage.close()
 
@@ -76,12 +78,12 @@ class BotManager:
         try:
             await self.dp.start_polling(self.bot)
         except asyncio.CancelledError:
-            logger.warning("❗️ Polling отменён.")
+            self.logger.warning("❗️ Polling отменён.")
         except Exception as ex:
-            logger.exception(f"💥 Необработанная ошибка: {ex}")
+            self.logger.exception(f"💥 Необработанная ошибка: {ex}")
         finally:
             await self.lifecycle_manager.shutdown()
-            logger.info("✅ Бот успешно остановлен.")
+            self.logger.info("✅ Бот успешно остановлен.")
 
     def run(self):
         import asyncio
@@ -89,7 +91,7 @@ class BotManager:
         try:
             asyncio.run(self.start_polling())
         except (KeyboardInterrupt, SystemExit):
-            logger.info("⏹ Завершение по сигналу прерывания.")
+            self.logger.info("⏹ Завершение по сигналу прерывания.")
 
 
 def run_bot(lifecycle: AppLifecycleManager):

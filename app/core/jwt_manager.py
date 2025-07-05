@@ -1,7 +1,9 @@
-from jose import jwt, JWTError, ExpiredSignatureError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
+
+from jose import ExpiredSignatureError, JWTError, jwt
+
 from app.core.config import settings
-from typing import List, Optional, Dict, Any
 
 
 class JWTManager:
@@ -37,13 +39,13 @@ class JWTManager:
         )
         ```
         """
-        secret = settings.security.JWT_SECRET
+        secret = settings.security.jwt_secret
         if secret is None:
             raise ValueError("JWT secret key is not configured")
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expire = now + timedelta(
-            seconds=expires_sec or settings.security.ACCESS_TOKEN_EXPIRE_SECONDS
+            seconds=expires_sec or settings.security.access_token_expire_minutes
         )
         payload = {
             "sub": subject,
@@ -55,7 +57,7 @@ class JWTManager:
         return jwt.encode(
             payload,
             secret.get_secret_value(),
-            algorithm=settings.security.JWT_ALGORITHM,
+            algorithm=settings.security.jwt_algorithm,
         )
 
     @staticmethod
@@ -69,14 +71,14 @@ class JWTManager:
         :raises JWTError: for other validation errors
         """
         try:
-            secret = settings.security.JWT_SECRET
+            secret = settings.security.jwt_secret
             if secret is None:
                 raise ValueError("JWT secret key is not configured")
 
             payload = jwt.decode(
                 token,
                 secret.get_secret_value(),
-                algorithms=[settings.security.JWT_ALGORITHM],
+                algorithms=[settings.security.jwt_algorithm],
             )
             return payload
         except ExpiredSignatureError:
