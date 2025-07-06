@@ -123,7 +123,6 @@ def detect_project_namespace(plugin_dir: Path) -> Optional[str]:
         print(f"[NamespaceDetect] ⚠️ Не удалось определить namespace: {e}")
         return None
 
-
 def to_string(value, encoding="utf-8"):
     """
     Преобразует значение типа OctetString, bytes или hex-строку в обычную строку.

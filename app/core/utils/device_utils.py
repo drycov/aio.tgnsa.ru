@@ -4,46 +4,52 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
 
 import structlog
+from app.bot.constants.symbols import Symbols
 from app.core.oid_loader import OIDLoader
 from app.core.utils.enr_parser import EnterpriseNumberRegistry
+from app.core.utils.interface_processor import InterfaceProcessor
 from app.core.utils.snmp_utils import SNMPUtils
-from app.core.utils.utils import parse_location, parse_snmp_uptime, seconds_to_str, to_string
+from app.core.utils.utils import (
+    parse_location,
+    parse_snmp_uptime,
+    seconds_to_str,
+    to_string,
+)
 
 from app.core.logging_setup import logger
 from app.core.utils.decorators import log_execution
 from app.core.utils.device_matcher import ModelMatcher
-from app.core.config import DATA_DIR
+from app.core.config import DATA_DIR, settings
 
 logger = logger.bind(component="DeviceUtils")
-structlog.configure(
-    processors=[
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.dict_tracebacks,
-        structlog.processors.JSONRenderer()
-    ],
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-)
-logger = structlog.get_logger()
 
 DEVICE_MODEL_RULES = DATA_DIR / "device_models.toml"
 MODEL_MATCHER = ModelMatcher(DEVICE_MODEL_RULES)
 
+
 class DeviceUtils:
     """Утилиты для работы с сетевыми устройствами."""
+
     _model_matcher: Optional[ModelMatcher] = None
 
     @staticmethod
-    async def get_interface_range(host: str, community: str) -> List[str]:
-        result = await SNMPUtils.walk_snmp_data(host, community, "1.3.6.1.2.1.2.2.1.2")
+    async def get_ifDescr(host: str, community: str) -> List[str]:
+        oids = OIDLoader.load()
+        ifDescr_oid = oids["generic"]["interfaces"]["ifDescr"]
+        result = await SNMPUtils.walk_snmp_data(host, community, ifDescr_oid)
         if not result:
             logger.warning("get_interface_range", host=host, error="No data received")
             return []
-        return [v.decode("utf-8") if isinstance(v, bytes) else str(v) for v in result.values()]
+        return [
+            v.decode("utf-8") if isinstance(v, bytes) else str(v)
+            for v in result.values()
+        ]
 
     @staticmethod
-    async def get_if_index_range(host: str, community: str) -> List[int]:
-        result = await SNMPUtils.walk_snmp_data(host, community, "1.3.6.1.2.1.2.2.1.1")
+    async def get_ifIndex(host: str, community: str) -> List[int]:
+        oids = OIDLoader.load()
+        ifIndex_oid = oids["generic"]["interfaces"]["ifIndex"]
+        result = await SNMPUtils.walk_snmp_data(host, community, ifIndex_oid)
         if not result:
             logger.warning("get_if_index_range", host=host, error="No data received")
             return []
@@ -53,36 +59,43 @@ class DeviceUtils:
     @log_execution(level="info")
     async def get_basic_info(host: str, community: str) -> Optional[Dict[str, Any]]:
         oids = OIDLoader.load()
-        basic_oids = oids["basic_oids"]
+        basic_oids = oids["generic"]["system"]
 
         # Параллельный запрос всех необходимых OID
         results = await SNMPUtils.bulk_get_snmp_data(
             host,
             community,
             [
-                basic_oids["oid_model"],
-                basic_oids["oid_sysname"],
-                basic_oids["oid_uptime"],
-                basic_oids["oid_sysLocation"],
-                basic_oids["oid_sysObjectID"],
+                basic_oids["model"],
+                basic_oids["sysName"],
+                basic_oids["uptime"],
+                basic_oids["sysLocation"],
+                basic_oids["sysObjectID"],
             ],
         )
 
         if not results or len(results) != 5:
-            logger.error("get_basic_info: host=%s, error=%s, results=%s", host, "SNMP response is None or incomplete", results)
+            logger.error(
+                "get_basic_info: host=%s, error=%s, results=%s",
+                host,
+                "SNMP response is None or incomplete",
+                results,
+            )
             return None
-
+        logger.info(f"{basic_oids["model"]}")
         # dirty_data, sw_sys_name, up_time, sys_location, sw_pen = results
-        dirty_data = results.get(basic_oids["oid_model"])
-        sw_sys_name = results.get(basic_oids["oid_sysname"])
-        up_time = results.get(basic_oids["oid_uptime"])
-        sys_location = results.get(basic_oids["oid_sysLocation"])
-        sw_pen = results.get(basic_oids["oid_sysObjectID"])
+        dirty_data = results.get(basic_oids["model"])
+        sw_sys_name = results.get(basic_oids["sysName"])
+        up_time = results.get(basic_oids["uptime"])
+        sys_location = results.get(basic_oids["sysLocation"])
+        sw_pen = results.get(basic_oids["sysObjectID"])
 
-
+        logger.info(f"{dirty_data} {results}")
 
         if not all([dirty_data, sw_sys_name]):
-            logger.error("get_basic_info", host=host, error="Missing critical SNMP data")
+            logger.error(
+                "get_basic_info", host=host, error="Missing critical SNMP data"
+            )
             return None
 
         dirty_data = to_string(dirty_data)
@@ -122,10 +135,12 @@ class DeviceUtils:
     @classmethod
     def init_model_matcher(cls, rules_path: Path):
         if not rules_path.exists():
-            logger.warning("init_model_matcher", path=str(rules_path), error="File not found")
+            logger.warning(
+                "init_model_matcher", path=str(rules_path), error="File not found"
+            )
             return
         cls._model_matcher = ModelMatcher(rules_path)
-        logger.info("init_model_matcher", path=str(rules_path), status="Initialized")
+        logger.info("init_model_matcher: Initialized, path=%s", str(rules_path))
 
     @staticmethod
     def filter_device_model(raw_data: str) -> str:
@@ -138,10 +153,173 @@ class DeviceUtils:
             if matched != clean_data:
                 return matched
 
-        logger.warning("filter_device_model", raw=clean_data, status="Fallback used")
+        logger.warning("filter_device_model: Fallback used. Raw data: %s", clean_data)
         return clean_data
+
+    @staticmethod
+    async def get_ifTypes(host: str, community: str) -> Dict[int, int]:
+        """
+        Возвращает словарь: { ifIndex: ifTypeCode }
+        """
+        oids = OIDLoader.load()
+        ifType_oid = oids["generic"]["interfaces"]["ifType"]
+        raw = await SNMPUtils.walk_snmp_data(host, community, ifType_oid)
+        return {int(k.split(".")[-1]): int(v) for k, v in raw.items()}
 
     @staticmethod
     def get_interface_config(data: str) -> dict:
         # TODO: Реализовать при необходимости
         return {}
+
+    @staticmethod
+    async def get_port_status(
+        host: str,
+        port_if_list: List[str],
+        port_if_range: List[str],
+        community: str,
+        model: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
+        """
+        Получение статуса портов устройства по SNMP.
+
+        :param host: IP-адрес устройства
+        :param port_if_list: Список индексов SNMP (ifIndex) портов
+        :param port_if_range: Список "человекочитаемых" названий портов (если есть)
+        :param community: SNMP community string
+        :param model: Название модели устройства
+        :return: Список словарей с описанием каждого порта
+        """
+        results = []
+        try:
+            oids = OIDLoader.load()
+
+            def get_descr_oid(
+                model: Optional[str], joid: dict, ignore: bool = False
+            ) -> str:
+                target_models = ["IES-612", "IES1248-51", "SAM1008"]
+                if not ignore:
+                    if isinstance(model, str) and any(
+                        sub in model for sub in target_models
+                    ):
+                        return joid["aam1212"]["ports"]["portName"]
+                return joid["generic"]["interfaces"]["descrPorts"]
+
+            descr_oid = get_descr_oid(model, oids, True)
+            # logger.info(f"{descr_oid}")
+
+            if not isinstance(port_if_list, list):
+                logger.error(
+                    f"[{inspect.currentframe().f_code.co_name}] port_if_list должен быть списком, но получил тип {type(port_if_list)}"
+                )
+                return []
+
+            if not isinstance(port_if_range, list):
+                logger.error(
+                    f"[{inspect.currentframe().f_code.co_name}] port_if_range должен быть списком, но получил тип {type(port_if_range)}"
+                )
+                return []
+
+            if len(port_if_list) != len(port_if_range):
+                logger.warning(
+                    f"[{inspect.currentframe().f_code.co_name}] Длина списков не совпадает: ifList={len(port_if_list)}, range={len(port_if_range)}"
+                )
+
+            s_ifaces = InterfaceProcessor.merge_and_sort_interfaces(
+                port_if_range, port_if_list, True
+            )
+            port_if_range = InterfaceProcessor.extract_physical_ids(s_ifaces)
+            port_if_list = InterfaceProcessor.extract_physical_ifNames(s_ifaces)
+
+            for i, if_index in enumerate(port_if_range):
+                try:
+                    port_str = str(if_index)
+                    # Проверяем, не вышли ли за границы списка
+                    if i >= len(port_if_range):
+                        port_if_range.append("")  # Добавляем пустое значение
+
+                    # Обрабатываем D-Link, только если индекс в пределах списка
+                    if (
+                        i < len(port_if_list)
+                        and isinstance(port_if_list[i], str)
+                        and "D-Link" in port_if_list[i]
+                    ):
+                        port_if_list[i] = (
+                            port_if_list[i].split()[1]
+                            if "Port" in port_if_list[i]
+                            else port_if_list[i]
+                        )
+                    descr_oid_full = f"{descr_oid}.{port_str}"
+
+                    raw_descr = await SNMPUtils.get_snmp_data(
+                        host, community, descr_oid_full
+                    )
+                    decoded_descr = to_string(raw_descr, encoding="iso-8859-1")
+
+                    # Получение статуса интерфейса и ошибок
+                    int_descr = to_string(
+                        await SNMPUtils.get_snmp_data(host, community, descr_oid_full),
+                        encoding="iso-8859-1",
+                    )
+                    port_oper_status = to_string(
+                        await SNMPUtils.get_snmp_data(
+                            host,
+                            community,
+                            f"{oids["generic"]["interfaces"]["operStatus"]}.{port_str}",
+                        ),
+                        encoding="iso-8859-1",
+                    )
+
+                    port_admin_status = to_string(
+                        await SNMPUtils.get_snmp_data(
+                            host,
+                            community,
+                            f"{oids["generic"]["interfaces"]["adminStatus"]}.{port_str}",
+                        ),
+                        encoding="iso-8859-1",
+                    )
+                    get_in_errors = await SNMPUtils.get_snmp_data(
+                        host,
+                        community,
+                        f"{oids["generic"]["interfaces"]["inErrors"]}.{port_str}",
+                    )
+
+                    def clean_snmp_data(data: str, default: str = " ") -> str:
+                        invalid_values = ["noSuchInstance", "noSuchObject", "0"]
+                        return data if data not in invalid_values else default
+
+                    int_descr = clean_snmp_data(int_descr)
+                    int_errors = clean_snmp_data(get_in_errors)
+                    int_name = port_if_list[i]
+
+                    if "Huawei" in port_if_list[i]:
+                        int_name = to_string(
+                            await SNMPUtils.get_snmp_data(
+                                host,
+                                community,
+                                f"{oids["linux"]["interfaces"]["ifName"]}.{port_str}",
+                            ),
+                            encoding="iso-8859-1",
+                        )
+
+                    results.append(
+                        {
+                            "index": port_str,
+                            "label": int_name,
+                            "description": decoded_descr,
+                            "oper_status": port_oper_status,
+                            "admin_status": port_admin_status,
+                            "int_errors": int_errors,
+                        }
+                    )
+                except Exception as inner_e:
+                    logger.warning(
+                        f"[{inspect.currentframe().f_code.co_name}] Ошибка при обработке порта {if_index}: {inner_e}"
+                    )
+
+            return results
+
+        except Exception as e:
+            logger.error(
+                f"[{inspect.currentframe().f_code.co_name}] Критическая ошибка: {e}"
+            )
+            return []

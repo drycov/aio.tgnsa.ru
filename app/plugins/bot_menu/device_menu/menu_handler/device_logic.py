@@ -32,7 +32,7 @@ async def handle_device_status_logic(message: Message, state: FSMContext):
 
     logger.info(f"[device_status] Запрошен статус: user_id={message.from_user.id}, host={host}")
 
-    is_alive = await NetworkUtils.is_alive(host)
+    is_alive, avg_rtt = await NetworkUtils.is_alive(host)
     if not is_alive:
         await message.answer(
             f"⚠️ <b>Устройство <code>{host}</code> недоступно</b>",
@@ -110,7 +110,7 @@ async def handle_port_status_logic(message: Message, state: FSMContext):
     data = await state.get_data()
 
     host: str = data.get("host")
-    community: str = data.get("community")
+    community: str = data.get("snmp_community")
     model: str = data.get("model")
     device_data = data.get("device_data", {})
 
@@ -123,8 +123,15 @@ async def handle_port_status_logic(message: Message, state: FSMContext):
 
     # Получение интерфейсного диапазона, если не указан
     if port_if_range == 'auto' or port_if_range is None:
-        port_if_range = await DeviceUtils.get_interface_range(host, community)
+        port_if_range = await DeviceUtils.get_ifIndex(host, community)
 
     # Получение списка интерфейсов, если не указан
     if port_if_list == 'auto' or port_if_list is None:
-        port_if_list = await DeviceUtils.get_interface_list(host, community)
+        port_if_list = await DeviceUtils.get_ifDescr(host, community)
+
+    try:
+        port_status = await DeviceUtils.get_port_status(host, port_if_list, port_if_range, community, model)
+    except:
+        pass
+
+    logger.info(f"{port_status}" )

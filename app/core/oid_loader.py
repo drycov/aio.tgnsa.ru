@@ -15,11 +15,11 @@ class OIDLoader:
 
     @classmethod
     def load(cls) -> Dict[str, Any]:
-        """Загрузка OID-ов: сначала из JSON, затем fallback на TOML с автогенерацией JSON."""
+        """Загрузка OID-ов: из TOML с автогенерацией JSON."""
         if cls._cached_oids:
             return cls._cached_oids
 
-        # 1. Попытка загрузки JSON
+        # # 1. Попытка загрузки JSON
         if JSON_PATH.exists():
             try:
                 with open(JSON_PATH, "r", encoding="utf-8") as f:

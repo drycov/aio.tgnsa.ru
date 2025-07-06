@@ -1,5 +1,6 @@
 import json
 import inspect
+import pprint
 from typing import Any, Dict, Optional
 from pathlib import Path
 from pysnmp.hlapi.v3arch.asyncio import *
@@ -140,7 +141,6 @@ class SNMPUtils:
         try:
             # Форматируем все OID и создаём объекты ObjectType
             object_types = [ObjectType(ObjectIdentity(SNMPUtils.format_oid(oid))) for oid in oids]
-
             result = await get_cmd(
                 engine,
                 CommunityData(community, mpModel=0),
@@ -163,12 +163,13 @@ class SNMPUtils:
                 return None
 
             response = {}
+
             for varBind in varBinds:
                 oid_str = str(varBind[0])
                 value_str = SNMPUtils.parse_snmp_response(str(varBind[1]))
                 response[oid_str] = value_str
-
             return response
+
 
         except Exception as e:
             SNMPUtils.logger.exception("bulk_get_snmp_data", host=target_ip, error=str(e))

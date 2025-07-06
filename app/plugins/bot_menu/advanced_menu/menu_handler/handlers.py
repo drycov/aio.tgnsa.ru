@@ -16,7 +16,6 @@ from .advanced_logic import (
     handle_cidr_logic,
     handle_p2p_logic,
     handle_ping_logic,
-    handle_traceroute_logic
 )
 
 import logging
@@ -74,16 +73,6 @@ def register_handlers(router: Router):
         display_data = {"text": Messages.ENTER_IP.value}
         await StateManager.set_state_with_history(
             state, Advanced.DEVICE_PING, display_data
-        )
-        await message.answer(
-            **display_data,
-        )
-        await state.update_data(waiting_for_host=True)
-    @router.message(F.text == MenuLabels.TRACEROUTE.value)
-    async def traceroute_device_command(message: Message, state: FSMContext):
-        display_data = {"text": Messages.ENTER_IP.value}
-        await StateManager.set_state_with_history(
-            state, Advanced.TRACEROUTE, display_data
         )
         await message.answer(
             **display_data,
