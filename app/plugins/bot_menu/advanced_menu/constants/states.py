@@ -9,4 +9,3 @@ class Advanced(StatesGroup):
     DEVICE_PING = State()
     MASS_INCIDENT = State()
     API_TOKEN_GENERATOR = State()
-    TRACEROUTE = State()

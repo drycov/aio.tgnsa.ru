@@ -15,4 +15,3 @@ class MenuLabels(Enum):
     P2P_CALC = f"{Symbols.TECH_P2P.value} Рассчитать P2P-пару"
     SUBNET_CALC = f"{Symbols.EMOJI_DEVICE.value} Калькулятор подсети"
     PING_DEVICE = f"{Symbols.ROLE_CLI.value} Ping"
-    TRACEROUTE = f"Трасировка"

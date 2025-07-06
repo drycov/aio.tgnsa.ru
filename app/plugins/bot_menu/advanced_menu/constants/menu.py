@@ -19,7 +19,6 @@ def get_advanced_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
         ],
         [
             KeyboardButton(text=MenuLabels.PING_DEVICE.value),
-            KeyboardButton(text=MenuLabels.TRACEROUTE.value),
         ],
         [KeyboardButton(text=CoreMenuLabels.BACK.value)],
     ]

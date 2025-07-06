@@ -3,17 +3,14 @@ import inspect
 from typing import Any, Dict, Optional
 from pathlib import Path
 from pysnmp.hlapi.v3arch.asyncio import *
-from app.core.logging_setup import configure_logger
 from app.core.patchs import BASE_DIR
-import logging
-import structlog
+
 
 
 class SNMPUtils:
-    @property
-    def logger(self):
-        from app.core.logging_setup import configure_logger
-        return configure_logger().bind(component=self.__class__.__name__)
+    from app.core.logging_setup import logger as _base_logger
+    logger = _base_logger.bind(component="SNMPUtils")
+
 
     CACHE_DIR = BASE_DIR / "data/snmp_cache"  # Или куда удобно
 
@@ -45,7 +42,7 @@ class SNMPUtils:
         engine = SnmpEngine()
 
         if any(int(part) < 0 for part in oid.split(".") if part.isdigit()):
-            logger.error(
+            SNMPUtils.logger.error(
                 f"[{inspect.currentframe().f_code.co_name}] Недопустимый OID: {oid}"
             )
             return None
@@ -61,16 +58,16 @@ class SNMPUtils:
             errorIndication, errorStatus, errorIndex, varBinds = result
 
             if errorIndication:
-                logger.error(f"SNMP error: {errorIndication}")
+                SNMPUtils.logger.error(f"SNMP error: {errorIndication}")
                 return None
             elif errorStatus:
-                logger.error(f"SNMP error: {errorStatus.prettyPrint()}")
+                SNMPUtils.logger.error(f"SNMP error: {errorStatus.prettyPrint()}")
                 return None
 
             for varBind in varBinds:
                 return SNMPUtils.parse_snmp_response(str(varBind[1]))
         except Exception as e:
-            logger.exception(
+            SNMPUtils.logger.exception(
                 f"[{inspect.currentframe().f_code.co_name}] Ошибка SNMP GET: {e}"
             )
             return None
@@ -94,10 +91,10 @@ class SNMPUtils:
                 ObjectType(ObjectIdentity(oid)),
             ):
                 if errorIndication:
-                    logger.error(f"SNMP error: {errorIndication}")
+                    SNMPUtils.logger.error(f"SNMP error: {errorIndication}")
                     break
                 elif errorStatus:
-                    logger.error(
+                    SNMPUtils.logger.error(
                         f"SNMP error: {errorStatus.prettyPrint()} at index {errorIndex}"
                     )
                     break
@@ -114,7 +111,7 @@ class SNMPUtils:
             return result if result else None
 
         except Exception as e:
-            logger.exception(
+            SNMPUtils.logger.exception(
                 f"[{inspect.currentframe().f_code.co_name}] Ошибка SNMP WALK: {e}"
             )
             return None
@@ -155,10 +152,10 @@ class SNMPUtils:
             errorIndication, errorStatus, errorIndex, varBinds = result
 
             if errorIndication:
-                logger.error("bulk_get_snmp_data", host=target_ip, error=str(errorIndication))
+                SNMPUtils.logger.error("bulk_get_snmp_data", host=target_ip, error=str(errorIndication))
                 return None
             elif errorStatus:
-                logger.error(
+                SNMPUtils.logger.error(
                     "bulk_get_snmp_data",
                     host=target_ip,
                     error=f"{errorStatus.prettyPrint()} at {errorIndex}"
@@ -174,5 +171,5 @@ class SNMPUtils:
             return response
 
         except Exception as e:
-            logger.exception("bulk_get_snmp_data", host=target_ip, error=str(e))
+            SNMPUtils.logger.exception("bulk_get_snmp_data", host=target_ip, error=str(e))
             return None

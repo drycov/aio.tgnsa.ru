@@ -7,8 +7,8 @@ import logging
 class SNMPCommunityScanner:
     @property
     def logger(self):
-        from app.core.logging_setup import configure_logger
-        return configure_logger().bind(component=self.__class__.__name__)
+        from app.core.logging_setup import logger
+        return logger().bind(component=self.__class__.__name__)
 
     def __init__(
         self,

@@ -1,17 +1,25 @@
 import asyncio
+from contextlib import ExitStack
 import ipaddress
+import socket
+import time
 from typing import Dict, Optional, Tuple, Union, List
-from ping3 import verbose_ping,ping
+from ping3 import verbose_ping, ping
 from traceroute import traceroute
 
 from app.core.utils.decorators import handle_network_error
-from app.core.logging_setup import logger
+
+UDP_PORT = 33434
 
 
 class NetworkUtils:
     """
     Универсальный набор асинхронных и синхронных утилит для диагностики IP-сетей.
     """
+    from app.core.logging_setup import logger as _base_logger
+    logger = _base_logger.bind(component="NetworkUtils")
+
+
     _dns_cache: dict[str, str] = {}
 
     @staticmethod
@@ -19,38 +27,49 @@ class NetworkUtils:
     async def validate_subnet(
         subnet: str,
     ) -> Tuple[Optional[ipaddress.IPv4Network], Optional[str]]:
+        NetworkUtils.logger.info(f"Валидация подсети: {subnet}")
         try:
             net = ipaddress.IPv4Network(subnet, strict=False)
-        except ValueError:
+            NetworkUtils.logger.info(f"Подсеть успешно распознана: {net}")
+        except ValueError as e:
+            NetworkUtils.logger.info(f"Ошибка при парсинге подсети: {e}")
             return None, "❌ Некорректный формат подсети"
 
         if net.prefixlen < 8:
+            NetworkUtils.logger.info(f"Подсеть слишком большая, prefixlen={net.prefixlen}")
             return None, "❌ Слишком большая подсеть (минимум /8)"
         if net.network_address.is_loopback:
+            NetworkUtils.logger.info(f"Подсеть является loopback: {net.network_address}")
             return None, "❌ Loopback-адрес не используется для сканирования"
         if net.network_address.is_multicast:
+            NetworkUtils.logger.info(f"Подсеть является multicast: {net.network_address}")
             return None, "❌ Multicast-адрес не подходит"
 
+        NetworkUtils.logger.info(f"Подсеть валидна: {net}")
         return net, None
 
     @staticmethod
     async def validate_ip(ip: str) -> Tuple[Optional[ipaddress.IPv4Address], Optional[str]]:
+        NetworkUtils.logger.info(f"Валидация IP: {ip}")
         try:
             addr = ipaddress.IPv4Address(ip)
+            NetworkUtils.logger.info(f"IP валиден: {addr}")
             return addr, None
-        except ipaddress.AddressValueError:
+        except ipaddress.AddressValueError as e:
+            NetworkUtils.logger.info(f"Ошибка валидации IP: {e}")
             return None, "❌ Неверный формат IP-адреса"
 
     @staticmethod
     @handle_network_error(default_return={"error": "⚠️ Ошибка анализа сети"})
     async def get_network_info(net: ipaddress.IPv4Network) -> Dict[str, Union[str, int, bool]]:
+        NetworkUtils.logger.info(f"Получение информации о сети: {net}")
         hosts = list(net.hosts())
         first_host = str(hosts[0]) if hosts else "N/A"
         last_host = str(hosts[-1]) if hosts else "N/A"
 
         total_hosts = net.num_addresses - 2 if net.prefixlen < 31 else net.num_addresses
 
-        return {
+        info = {
             "network": str(net.network_address),
             "netmask": str(net.netmask),
             "broadcast": str(net.broadcast_address) if net.prefixlen < 31 else "N/A",
@@ -67,6 +86,8 @@ class NetworkUtils:
             "is_multicast": net.network_address.is_multicast,
             "is_unspecified": net.network_address.is_unspecified,
         }
+        NetworkUtils.logger.info(f"Информация о сети: {info}")
+        return info
 
     @staticmethod
     @handle_network_error(default_return=(False, None))
@@ -79,10 +100,11 @@ class NetworkUtils:
         """
         Асинхронная проверка доступности IP-хоста через ICMP с несколькими попытками.
         """
+        NetworkUtils.logger.info(f"Проверка доступности хоста {host} с таймаутом {timeout} и количеством попыток {count}")
         try:
             ipaddress.ip_address(host)
         except ValueError:
-            # Если не IP — не пингуем, сразу False
+            NetworkUtils.logger.info(f"Хост {host} не является IP, пропускаем пинг.")
             return False, None
 
         async def single_ping():
@@ -95,8 +117,10 @@ class NetworkUtils:
 
         if valid_times:
             avg_rtt = round(sum(valid_times) / len(valid_times), 2)
+            NetworkUtils.logger.info(f"Хост {host} доступен, среднее время отклика {avg_rtt} мс")
             return True, avg_rtt
         else:
+            NetworkUtils.logger.info(f"Хост {host} недоступен")
             return False, None
 
     @staticmethod
@@ -115,6 +139,8 @@ class NetworkUtils:
         """
         Параллельный расширенный пинг с подсчетом RTT и потерь.
         """
+        NetworkUtils.logger.info(f"Расширенный пинг хоста {host} с таймаутом {timeout} и {count} попытками")
+
         async def ping_once(seq: int):
             delay = await asyncio.to_thread(ping, host, timeout=timeout, seq=seq)
             return delay
@@ -126,6 +152,8 @@ class NetworkUtils:
 
         packets_received = len(rtt_times)
         packet_loss = round((count - packets_received) / count * 100, 1) if count else 100.0
+
+        NetworkUtils.logger.info(f"Пинг {host}: получено {packets_received}/{count} ответов, потеря пакетов {packet_loss}%")
 
         return {
             "host": host,
@@ -145,6 +173,7 @@ class NetworkUtils:
         """
         Синхронный пинг с формированием лог-отчёта.
         """
+        NetworkUtils.logger.info(f"Синхронный пинг устройства {host} с {count} попытками")
         results = []
         log_messages = []
 
@@ -160,148 +189,31 @@ class NetworkUtils:
         if results:
             avg_ping = sum(results) / len(results)
             log_messages.append(f"Среднее время отклика от {host}: {avg_ping:.2f} мс")
+            NetworkUtils.logger.info(f"Среднее время отклика от {host}: {avg_ping:.2f} мс")
         else:
             log_messages.append(f"Устройство {host} недоступно.")
+            NetworkUtils.logger.info(f"Устройство {host} недоступно после {count} попыток.")
 
         return "\n".join(log_messages)
 
     @classmethod
     async def resolve_ip(cls, host: str) -> Optional[str]:
+        NetworkUtils.logger.info(f"Разрешение IP для хоста: {host}")
         if host in cls._dns_cache:
+            NetworkUtils.logger.info(f"IP найден в кэше: {cls._dns_cache[host]}")
             return cls._dns_cache[host]
         try:
             addr = ipaddress.ip_address(host)
             cls._dns_cache[host] = str(addr)
+            NetworkUtils.logger.info(f"Хост уже IP: {addr}")
             return str(addr)
         except ValueError:
             try:
-                # Можно использовать async DNS resolver, например aiodns
                 import socket
                 ip = socket.gethostbyname(host)
                 cls._dns_cache[host] = ip
+                NetworkUtils.logger.info(f"Хост {host} разрешён в IP {ip}")
                 return ip
-            except socket.gaierror:
+            except socket.gaierror as e:
+                NetworkUtils.logger.info(f"Не удалось разрешить хост {host}: {e}")
                 return None
-
-    @staticmethod
-    async def traceroute(
-        host: str,
-        max_hops: int = 30,
-        timeout: int = 2
-    ) -> List[Dict[str, Union[int, str, float, None]]]:
-        """
-        Асинхронная трассировка маршрута до указанного хоста с использованием внешней библиотеки traceroute.
-
-        :param host: Целевой хост (IP или домен)
-        :param max_hops: Максимальное количество переходов (hops)
-        :param timeout: Таймаут на один запрос (в секундах)
-        :return: Список узлов маршрута с информацией об IP и RTT
-        """
-        logger.debug(f"Начинаем трассировку к {host}, max_hops={max_hops}, timeout={timeout}s")
-
-        try:
-            result = await asyncio.to_thread(traceroute, host, max_hops=max_hops, wait=timeout)
-        except Exception as e:
-            logger.error(f"Ошибка при выполнении traceroute для {host}: {e}")
-            return []
-
-        route = []
-        for idx, hop in enumerate(result):
-            ttl = idx + 1
-            ip = hop.get("ip")
-            rtt = hop.get("rtt")
-
-            logger.debug(f"Hop {ttl}: {ip or '*'}, RTT: {rtt or '*'} ms")
-
-            route.append({
-                "hop": ttl,
-                "ip": ip,
-                "rtt_ms": round(rtt, 2) if isinstance(rtt, (int, float)) else None
-            })
-
-            # Остановить, если достигли цели
-            if ip == host or (idx + 1 < len(result) and result[idx + 1].get("ip") == ip):
-                logger.info(f"Цель {host} достигнута на hop {ttl}")
-                break
-
-        logger.debug(f"Трассировка завершена, маршрут: {route}")
-        return route
-    @staticmethod
-    async def get_owner_info(ip: str) -> Dict[str, Union[str, None]]:
-        """
-        Получение информации о владельце IP через ipinfo.io.
-        """
-        import aiohttp
-
-        logger.debug(f"Запрашиваем информацию о владельце для IP: {ip}")
-        url = f"http://ipinfo.io/{ip}/json"
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=5) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        logger.info(f"Информация получена для {ip}: {data}")
-                        return {
-                            "ip": ip,
-                            "org": data.get("org"),
-                            "city": data.get("city"),
-                            "region": data.get("region"),
-                            "country": data.get("country"),
-                            "postal": data.get("postal"),
-                            "timezone": data.get("timezone"),
-                        }
-                    else:
-                        logger.warning(f"ipinfo.io вернул статус {resp.status} для {ip}")
-        except Exception as e:
-            logger.error(f"Ошибка получения данных по {ip}: {e}", exc_info=True)
-
-        logger.debug(f"Не удалось получить данные о владельце для {ip}")
-        return {"ip": ip, "org": None, "city": None, "region": None, "country": None}
-    @staticmethod
-    async def detailed_traceroute(host: str, max_hops: int = 30) -> List[Dict]:
-        """
-        Трассировка с расширенной информацией (владелец, локация).
-        """
-        logger.info(f"Выполняем detailed_traceroute для {host}, max_hops={max_hops}")
-        route = await NetworkUtils.traceroute(host, max_hops)
-
-        if not route:
-            logger.warning(f"Маршрут пустой для {host}")
-            return []
-
-        sem = asyncio.Semaphore(10)
-
-        async def fetch_owner(ip: Optional[str]) -> Optional[Dict]:
-            if not ip:
-                logger.debug("IP не задан, пропускаем запрос владельца")
-                return None
-            async with sem:
-                logger.debug(f"Получаем информацию о владельце для {ip}")
-                return await NetworkUtils.get_owner_info(ip)
-
-        tasks = [fetch_owner(hop["ip"]) for hop in route]
-        logger.debug(f"Запущено {len(tasks)} задач на получение информации о владельцах")
-        owners = await asyncio.gather(*tasks)
-
-        logger.debug(f"Получены данные владельцев: {owners}")
-
-        result = []
-        for idx, hop in enumerate(route):
-            owner = owners[idx] if idx < len(owners) else None
-            result.append({
-                "hop": hop["hop"],
-                "ip": hop["ip"],
-                "rtt_ms": hop["rtt_ms"],
-                "org": owner.get("org") if owner else None,
-                "location": {
-                    "city": owner.get("city") if owner else None,
-                    "region": owner.get("region") if owner else None,
-                    "country": owner.get("country") if owner else None,
-                    "postal": owner.get("postal") if owner else None,
-                    "timezone": owner.get("timezone") if owner else None,
-                }
-            })
-            logger.debug(f"Гоп {hop['hop']}: {hop['ip']} — {owner.get('org') if owner else 'Без данных'}")
-
-        logger.info(f"Детальная трассировка завершена для {host}")
-        return result

@@ -104,3 +104,27 @@ async def handle_device_status_logic(message: Message, state: FSMContext):
 
     await StateManager.set_state_with_history(state, DeviceCommands.MENU, display_data)
     await message.answer(**display_data)
+
+@log_execution(success_message="Проверка портов произведена")
+async def handle_port_status_logic(message: Message, state: FSMContext):
+    data = await state.get_data()
+
+    host: str = data.get("host")
+    community: str = data.get("community")
+    model: str = data.get("model")
+    device_data = data.get("device_data", {})
+
+    port_if_list = device_data.get("interfaceList")
+    port_if_range = device_data.get("interfaceRange")
+
+    if not host or not community:
+        await message.answer("Ошибка: недостающие параметры `host` или `community`.")
+        return
+
+    # Получение интерфейсного диапазона, если не указан
+    if port_if_range == 'auto' or port_if_range is None:
+        port_if_range = await DeviceUtils.get_interface_range(host, community)
+
+    # Получение списка интерфейсов, если не указан
+    if port_if_list == 'auto' or port_if_list is None:
+        port_if_list = await DeviceUtils.get_interface_list(host, community)

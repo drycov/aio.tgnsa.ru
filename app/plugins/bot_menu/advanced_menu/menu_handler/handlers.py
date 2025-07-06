@@ -110,23 +110,3 @@ def register_handlers(router: Router):
         data = await state.get_data()
         if data.get("waiting_for_host"):
             await handle_ping_logic(message, state)
-
-    @router.message(StateFilter(Advanced.TRACEROUTE))
-    async def process_ping_input(message: Message, state: FSMContext):
-        data = await state.get_data()
-        if data.get("waiting_for_host"):
-            await handle_traceroute_logic(message, state)
-
-    # @router.message(F.text)
-    # async def handle_text_input(message: Message, state: FSMContext):
-    #     data = await state.get_data()
-    #     current_state = await state.get_state()
-
-    #     if current_state == Advanced.CIDR_CALCULATOR and data.get("waiting_for_subnet"):
-    #         await handle_cidr_logic(message, state)
-    #     elif current_state == Advanced.P2P_CALCULATOR and data.get(
-    #         "waiting_for_subnet"
-    #     ):
-    #         await handle_p2p_logic(message, state)
-    #     elif current_state == Advanced.DEVICE_PING and data.get("waiting_for_host"):
-    #         await handle_ping_logic(message, state)
