@@ -19,12 +19,17 @@ default_user_fullname = "Admin"
 
 [db]
 echo = false
-engine = "sqlite"  # Доступные движки: sqlite, postgres, mysql
+engine = "postgres"  # переключаемся с sqlite на postgres
 
 [db.postgres]
-host = "localhost"
+host = "ep-aged-cherry-adqhsmjc-pooler.c-2.us-east-1.aws.neon.tech"
 port = 5432
-name = "postgres"
+name = "aio_bot"
+user = "neondb_owner"
+password = "npg_NZ0bndGuilc1"
+sslmode = "require"
+channel_binding = "require"
+
 
 [db.sqlite]
 name = "app.db"

@@ -1,3 +1,4 @@
+# app/core/bot_manager.py
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -8,26 +9,32 @@ from app.core.applcm_manager import AppLifecycleManager
 from app.core.config import APP_DIR, BASE_DIR, settings
 from app.core.db import get_sessionmaker
 from app.core.plugin_manager.manager import PluginManager
-
 from app.core.logging_setup import logger
 
 
 class BotManager:
     name = "BotManager"
+
     def __init__(self, lifecycle_manager: AppLifecycleManager):
         self.lifecycle_manager = lifecycle_manager
-        self.logger = logger.bind(component=f"{__class__.__name__}")
+        self.logger = logger.bind(component=self.__class__.__name__)
         self.storage = initialize_storage()
         self.session = get_sessionmaker()
+
+        token = settings.bot.TOKEN.get_secret_value()
+        if not token:
+            raise RuntimeError("❌ Не найден TELEGRAM TOKEN в настройках")
+
         self.bot = Bot(
-            token=settings.bot.TOKEN.get_secret_value(),
+            token=token,
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
         )
         self.dp = Dispatcher(storage=self.storage, session=self.session, bot=self.bot)
 
-        # Регистрация lifecycle hooks
+        # Lifecycle hooks
         lifecycle_manager.on_startup(name="bot_startup")(self.on_startup)
         lifecycle_manager.on_shutdown(name="bot_shutdown")(self.on_shutdown)
+
         self.logger.info(f"[{self.name}] инициализирован")
         self.logger.debug(f"[{self.name}]📦 Версия приложения: {settings.VERSION}")
         self.logger.debug(f"[{self.name}]📂 Путь к приложению: {APP_DIR}")
@@ -35,10 +42,8 @@ class BotManager:
         self.logger.debug(f"[{self.name}]storage: {self.storage.__class__.__name__}")
         self.logger.debug(f"[{self.name}]session: {self.session.__class__.__name__}")
 
-
-
     async def setup(self):
-        # Регистрация middlewares, фильтров, хендлеров
+        """Регистрация middlewares, фильтров, хендлеров, плагинов."""
         from app.bot.handlers import register_handlers
         from app.bot.middlewares.registry import setup_middleware
 
@@ -49,17 +54,32 @@ class BotManager:
             self.dp, db_sessionmaker=self.session, settings=settings, logger=self.logger
         )
 
-        # Подключаем плагины
-        self.setup_plugins()
+        await self.setup_plugins()
 
-    def setup_plugins(self):
-        pm = PluginManager()
+    async def setup_plugins(self):
+        """Асинхронно подключает плагины и регистрирует их в aiogram."""
+        pm = PluginManager.get_instance()
         pm.ensure_ready(settings)
+
         if not pm.is_initialized:
             self.logger.warning("🔌 Плагины не инициализированы. Инициализация...")
             pm.ensure_ready(settings)
-        for plugin in pm.all_plugins().values():
-            plugin.register_aiogram(self.dp)  # регистрация своих роутеров
+
+        tasks = [self._register_plugin(plugin) for plugin in pm.all_plugins().values()]
+        await asyncio.gather(*tasks)
+
+    async def _register_plugin(self, plugin):
+        meta = getattr(plugin, "meta", None)
+        pname = getattr(meta, "name", plugin.__class__.__name__)
+
+        try:
+            plugin.register_aiogram(self.dp)
+            plugin.register_middlewares(self.dp)
+            plugin.register_callbacks(self.dp)
+            plugin.register_inline_query(self.dp)
+            self.logger.info(f"✅ [{pname}] зарегистрирован")
+        except Exception as e:
+            self.logger.error(f"❌ Ошибка регистрации [{pname}]: {e}", exc_info=True)
 
     async def on_startup(self):
         self.logger.info("🟢 Бот запускается...")
@@ -67,10 +87,14 @@ class BotManager:
 
     async def on_shutdown(self):
         self.logger.info("🛑 Завершается работа бота...")
+        await self.dp.fsm.storage.close()
+        await self.dp.fsm.storage.wait_closed()
         await self.bot.session.close()
-        await self.storage.close()
+        await self.lifecycle_manager.shutdown()
+        self.logger.info("✅ Shutdown завершён")
 
     async def start_polling(self):
+        """Основной цикл aiogram."""
         await self.setup()
         await self.lifecycle_manager.startup()
 
@@ -81,12 +105,10 @@ class BotManager:
         except Exception as ex:
             self.logger.exception(f"💥 Необработанная ошибка: {ex}")
         finally:
-            await self.lifecycle_manager.shutdown()
-            self.logger.info("✅ Бот успешно остановлен.")
+            await self.on_shutdown()
 
     def run(self):
-        import asyncio
-
+        """Запуск Polling."""
         try:
             asyncio.run(self.start_polling())
         except (KeyboardInterrupt, SystemExit):
@@ -94,5 +116,4 @@ class BotManager:
 
 
 def run_bot(lifecycle: AppLifecycleManager):
-    bot_manager = BotManager(lifecycle)
-    bot_manager.run()
+    BotManager(lifecycle).run()

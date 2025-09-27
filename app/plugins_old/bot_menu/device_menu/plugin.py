@@ -9,33 +9,37 @@ from app.core.plugin_manager.base import PluginBase
 from app.core.plugin_manager.descriptors import PluginMetaDescriptor
 
 from .menu_handler.handlers import register_handlers
-
-# from .menu_handler.callbacks import register_callbacks
 from .constants.menu import get_menu_buttons
-import logging
+
+import inspect
+
 
 class DeviceCheckMenuPlugin(PluginBase):
     """Плагин меню проверки устройств в сети."""
 
+    # ========== STATIC META ==========
     name = "device_check_menu"
     description = "Меню проверки устройства"
     menu_section = "main"
 
     meta = PluginMetaDescriptor(
-        name="device_check_menu",
+        name=name,
         version="1.0",
-        description="Плагин для меню проверки устройств сети",
+        description=description,
     )
 
     def __init__(self):
         self.router = Router()
         self.config: Dict[str, Any] = {}
         self.plugin_dir: Optional[Path] = None
-        self.logger = configure_logger().bind(component=f"{__class__.__name__}")
+        self.logger = configure_logger().bind(component=self.__class__.__name__)
         self.caller_module = self._get_caller_module()
         self.logger.debug(f"[{self.name}] Caller module: {self.caller_module}")
 
+    # ========== LIFECYCLE ==========
+
     def init(self, settings: dict) -> None:
+        """Инициализация плагина."""
         try:
             plugin_dir = (
                 settings.get("plugin_dir")
@@ -45,14 +49,19 @@ class DeviceCheckMenuPlugin(PluginBase):
             self.plugin_dir = plugin_dir or Path(__file__).parent
 
             self.load_config()
-
             self.logger.info(
-                f"[{self.name}] Плагин инициализирован  из {self.caller_module}"
+                f"[{self.name}] Плагин инициализирован (caller={self.caller_module})"
             )
 
         except Exception as e:
             self.logger.exception(f"[{self.name}] Ошибка при инициализации: {e}")
-            raise e
+            raise
+
+    def shutdown(self) -> None:
+        """Завершение работы плагина."""
+        self.logger.info(f"[{self.name}] Плагин остановлен")
+
+    # ========== CONFIG ==========
 
     def load_config(self, plugin_dir: Optional[Path] = None) -> None:
         """Загрузка конфигурации из TOML-файла и обновление метаинформации."""
@@ -60,9 +69,7 @@ class DeviceCheckMenuPlugin(PluginBase):
         cfg_path = plugin_dir / "config.toml"
 
         if not cfg_path.exists():
-            self.logger.warning(
-                f"[{self.name}] Конфигурационный файл не найден: {cfg_path}"
-            )
+            self.logger.warning(f"[{self.name}] Конфигурационный файл не найден: {cfg_path}")
             return
 
         try:
@@ -82,30 +89,42 @@ class DeviceCheckMenuPlugin(PluginBase):
             if field in self.config:
                 setattr(self.meta, field, self.config[field])
 
+    # ========== EXTENSIONS ==========
+
     def extend_main_menu(self, is_admin: bool = False) -> List[KeyboardButton]:
-        """Добавление кнопок в основное меню (если реализовано)."""
-        return get_menu_buttons()
-        # return []
+        """Добавление кнопок в основное меню."""
+        try:
+            return get_menu_buttons()
+        except Exception as e:
+            self.logger.error(f"[{self.name}] Ошибка в extend_main_menu: {e}")
+            return []
 
     def register_handlers(self, dp_or_router) -> None:
         """Регистрация хендлеров."""
-        register_handlers(dp_or_router)
-        # pass
+        try:
+            register_handlers(dp_or_router)
+            self.logger.debug(f"[{self.name}] Handlers зарегистрированы")
+        except Exception as e:
+            self.logger.error(f"[{self.name}] Ошибка при регистрации handlers: {e}")
 
     def register_callbacks(self, dp_or_router) -> None:
         """Регистрация callback-хендлеров."""
-        # register_callbacks(dp_or_router)
+        # TODO: реализовать при необходимости
         pass
 
     def register_inline_query(self, dp_or_router) -> None:
         """Регистрация inline query хендлеров."""
-        # register_inline_query(dp_or_router)
+        # TODO: реализовать при необходимости
         pass
 
     def execute(self, **kwargs: Any) -> None:
+        """Произвольный вызов плагина (например, тесты или CLI)."""
         self.logger.debug(f"[{self.name}] execute вызван с аргументами: {kwargs}")
 
+    # ========== UTILS ==========
+
     def get_info(self) -> dict:
+        """Возвращает информацию о плагине и его конфиге."""
         return {
             "name": self.meta.name,
             "version": self.meta.version,
@@ -113,13 +132,8 @@ class DeviceCheckMenuPlugin(PluginBase):
             "config": self.config,
         }
 
-    def shutdown(self) -> None:
-        self.logger.info(f"[{self.name}] Завершение работы плагина")
-
     def _get_caller_module(self) -> str:
         """Определяет модуль, откуда была вызвана инициализация плагина."""
-        import inspect
-
         for frame_info in inspect.stack():
             module = inspect.getmodule(frame_info.frame)
             if module and module.__name__ != __name__:
@@ -127,12 +141,11 @@ class DeviceCheckMenuPlugin(PluginBase):
         return "unknown"
 
 
+# --- Factory Methods ---
 def get_plugin() -> DeviceCheckMenuPlugin:
     return DeviceCheckMenuPlugin()
 
 
-# This function is used to retrieve the plugin instance.
-# It allows the plugin manager to access the plugin without directly importing it.
 def get_plugin_instance() -> DeviceCheckMenuPlugin:
-    """Функция для получения экземпляра плагина."""
+    """Функция для получения экземпляра плагина (совместимость с PluginManager)."""
     return DeviceCheckMenuPlugin()

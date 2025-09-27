@@ -1,57 +1,58 @@
-from venv import logger
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
-
 from app.bot.constants.labels import MenuLabels
 from app.core.plugin_manager.manager import PluginManager
-
-
 from app.core.utils.decorators import add_buttons_to_section
 
+import logging
 
-def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
-    sections = {
-        "main": [
-            [],  # одна строка, одна кнопка
-        ],
-        "ext": [[]],
-        "profile": [
-            [KeyboardButton(text=MenuLabels.USER_PROFILE.value)],
-        ],
-        "exit": [
-            [KeyboardButton(text=MenuLabels.EXIT.value)],
-        ],
-        "admin": [
-            [KeyboardButton(text=MenuLabels.ADMIN_PANEL.value)] if is_admin else [],
-        ],
+
+def generate_main_keyboard(
+    is_admin: bool = False, max_per_row: int = 2, logger: logging.Logger | None = None
+) -> ReplyKeyboardMarkup:
+    """
+    Генерация главного меню.
+
+    :param is_admin: Флаг администратора (добавляет секцию admin).
+    :param max_per_row: Максимальное количество кнопок в строке.
+    :param logger: Логгер (если не передан – stdlib fallback).
+    """
+    logger = logger or logging.getLogger("MainMenu")
+
+    sections: dict[str, list[list[KeyboardButton]]] = {
+        "main": [],
+        "ext": [],
+        "profile": [[KeyboardButton(text=MenuLabels.USER_PROFILE.value)]],
+        "exit": [[KeyboardButton(text=MenuLabels.EXIT.value)]],
     }
 
+    if is_admin:
+        sections["admin"] = [[KeyboardButton(text=MenuLabels.ADMIN_PANEL.value)]]
+
     pm = PluginManager.get_instance()
-    pm.ensure_ready()  # или pm.full_load_cycle()
-    if pm:
+    if pm and pm.ensure_ready():
         for plugin in pm.all_plugins().values():
             if hasattr(plugin, "extend_main_menu"):
                 try:
                     buttons = plugin.extend_main_menu(is_admin=is_admin)
-                    if buttons:
-                        if not isinstance(buttons, list):
-                            buttons = [buttons]
-                        section = getattr(plugin, "menu_section", "main")
-                        add_buttons_to_section(
-                            sections, section, buttons, max_per_row=2
-                        )
+                    if not buttons:
+                        continue
+                    if not isinstance(buttons, list):
+                        buttons = [buttons]
+
+                    section = getattr(plugin, "menu_section", "main")
+                    add_buttons_to_section(sections, section, buttons, max_per_row=max_per_row)
+                    logger.debug(f"[{plugin.__class__.__name__}] кнопки добавлены в {section}")
+
                 except Exception as e:
-                    plugin_name = getattr(plugin, "meta", None)
-                    plugin_name = (
-                        plugin_name.name if plugin_name else plugin.__class__.__name__
-                    )
-                    logger.warning(f"[{plugin_name}] Ошибка при добавлении кнопок: {e}")
+                    plugin_name = getattr(getattr(plugin, "meta", None), "name", plugin.__class__.__name__)
+                    logger.warning(f"[{plugin_name}] Ошибка при добавлении кнопок: {e}", exc_info=True)
     else:
         logger.warning("PluginManager instance is not initialized")
 
+    # Собираем клавиатуру по порядку
     keyboard_rows = []
-    for section_name in ["main", "admin", "profile", "exit"]:
-        rows = [row for row in sections.get(section_name, []) if row]
-        keyboard_rows.extend(rows)
+    for section in ("main", "admin", "profile", "exit"):
+        keyboard_rows.extend([row for row in sections.get(section, []) if row])
 
     return ReplyKeyboardMarkup(
         keyboard=keyboard_rows,
@@ -61,42 +62,31 @@ def generate_main_keyboard(is_admin: bool = False) -> ReplyKeyboardMarkup:
 
 
 def admin_menu() -> ReplyKeyboardMarkup:
-    """
-    Подменю администратора.
-    """
-    keyboard = [
-        [
-            KeyboardButton(text=MenuLabels.VIEW_USERS.value),
-            KeyboardButton(text=MenuLabels.SEND_BROADCAST.value),
-        ],
-        # <- рекомендуется вынести в Enum
-        [KeyboardButton(text=MenuLabels.SYSTEM_STATUS.value)],
-        [KeyboardButton(text=MenuLabels.BACK.value)],
-    ]
     return ReplyKeyboardMarkup(
-        keyboard=keyboard,
+        keyboard=[
+            [
+                KeyboardButton(text=MenuLabels.VIEW_USERS.value),
+                KeyboardButton(text=MenuLabels.SEND_BROADCAST.value),
+            ],
+            [KeyboardButton(text=MenuLabels.SYSTEM_STATUS.value)],
+            [KeyboardButton(text=MenuLabels.BACK.value)],
+        ],
         resize_keyboard=True,
-        one_time_keyboard=False,
         input_field_placeholder="Администрирование",
     )
 
 
 def system_info_menu() -> ReplyKeyboardMarkup:
-    """
-    Подменю состояния системы и диагностики.
-    """
-    keyboard = [
-        [KeyboardButton(text=MenuLabels.SYSTEM_STATUS.value)],
-        [
-            KeyboardButton(text=MenuLabels.CHECK_COMPONENTS.value),
-            KeyboardButton(text=MenuLabels.RESTART_CHECKS.value),
-        ],
-        [KeyboardButton(text=MenuLabels.GET_LOGS.value)],
-        [KeyboardButton(text=MenuLabels.BACK.value)],
-    ]
     return ReplyKeyboardMarkup(
-        keyboard=keyboard,
+        keyboard=[
+            [KeyboardButton(text=MenuLabels.SYSTEM_STATUS.value)],
+            [
+                KeyboardButton(text=MenuLabels.CHECK_COMPONENTS.value),
+                KeyboardButton(text=MenuLabels.RESTART_CHECKS.value),
+            ],
+            [KeyboardButton(text=MenuLabels.GET_LOGS.value)],
+            [KeyboardButton(text=MenuLabels.BACK.value)],
+        ],
         resize_keyboard=True,
-        one_time_keyboard=False,
         input_field_placeholder="Диагностика системы",
     )

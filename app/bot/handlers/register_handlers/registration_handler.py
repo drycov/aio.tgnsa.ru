@@ -8,8 +8,8 @@ from app.bot.keyboards.base import (
     generate_confirm_keyboard,
     generate_department_keyboard,
     generate_position_keyboard,
-    send_contact_keyboard,
-    on_enter_keyboard,
+build_auth_keyboard,
+build_send_contact_keyboard
 )
 from app.bot.fsm.state_manager import StateManager
 from app.core.config import settings
@@ -24,6 +24,12 @@ import re
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+# The line `on_enter_keyboard = build_auth_keyboard(False)` is assigning the result of calling a
+# function `build_auth_keyboard(False)` to the variable `on_enter_keyboard`. However, in the provided
+# code snippet, the function `build_auth_keyboard` is not defined or imported anywhere, so it seems
+# like there might be a missing piece of code related to `build_auth_keyboard`.
+on_enter_keyboard = build_auth_keyboard(False)
 
 
 async def is_chat_available(bot: Bot, user_id: int) -> bool:
@@ -108,7 +114,7 @@ async def position_selected(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.answer(
         REGISTER_MESSAGES["enter_phone"],
-        reply_markup=send_contact_keyboard,
+        reply_markup=build_send_contact_keyboard,
     )
 
     await StateManager.set_state_with_history(
@@ -116,7 +122,7 @@ async def position_selected(callback: CallbackQuery, state: FSMContext):
         RegistrationForm.phone_number,
         display_data={
             "text": REGISTER_MESSAGES["enter_phone"],
-            "reply_markup": send_contact_keyboard,
+            "reply_markup": build_send_contact_keyboard,
         },
     )
 
@@ -262,6 +268,8 @@ async def confirm_registration(callback: CallbackQuery, state: FSMContext):
             logger.critical("[admin_notify] Ни один админ и владелец не доступны — заявка потеряна.")
 
     await callback.answer()
+
+
 
 @router.callback_query(F.data.startswith("registration:cancel:"))
 @log_execution(success_message="Регистрация отменена")

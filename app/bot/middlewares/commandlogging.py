@@ -1,3 +1,4 @@
+import time
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
@@ -6,16 +7,19 @@ from aiogram.types import (
     CallbackQuery,
     InlineQuery,
     TelegramObject,
+    ChatMemberUpdated,
 )
+from aiogram.exceptions import TelegramAPIError, TelegramRetryAfter
 
 from app.core.utils.logger_manager import LoggerManager
 
 
 class CommandLoggingMiddleware(BaseMiddleware):
-    """Middleware для логирования команд, callback-кнопок, inline-запросов и действий меню."""
+    """Middleware для централизованного логирования событий Telegram."""
 
-    def __init__(self, logger: LoggerManager):
+    def __init__(self, logger: LoggerManager, warn_threshold: float = 2.0):
         self.logger = logger
+        self.warn_threshold = warn_threshold
 
     async def __call__(
         self,
@@ -23,71 +27,74 @@ class CommandLoggingMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        self.logger.debug(f"[CommandLogging] ▶️ Event: {type(event).__name__}")
+        start = time.perf_counter()
+        event_type = type(event).__name__
 
+        try:
+            # Логируем входящее событие
+            await self._log_event(event)
+
+            result = await handler(event, data)
+            return result
+
+        except TelegramRetryAfter as e:
+            self.logger.warning(f"[CommandLogging] ⏳ Flood control: retry after {e.retry_after}s")
+            raise
+        except TelegramAPIError as e:
+            self.logger.error(f"[CommandLogging] ❌ Telegram API error: {e}")
+            raise
+        finally:
+            duration = time.perf_counter() - start
+            if duration > self.warn_threshold:
+                self.logger.warning(f"[CommandLogging] ⏱ {event_type} обработан за {duration:.2f}s")
+            else:
+                self.logger.debug(f"[CommandLogging] ⏱ {event_type} {duration:.2f}s")
+
+    async def _log_event(self, event: TelegramObject) -> None:
         if isinstance(event, Message):
             await self._log_message(event)
         elif isinstance(event, CallbackQuery):
             await self._log_callback(event)
         elif isinstance(event, InlineQuery):
             await self._log_inline(event)
-
-        result = await handler(event, data)
-        self.logger.debug("[CommandLogging] ✅ Обработка завершена")
-        return result
+        elif isinstance(event, ChatMemberUpdated):
+            await self._log_member_update(event)
+        else:
+            self.logger.debug(f"[CommandLogging] 📡 Unsupported event: {type(event).__name__}")
 
     async def _log_message(self, message: Message) -> None:
-        chat = message.chat
-        user = message.from_user
-
+        user, chat = message.from_user, message.chat
         if not user or not chat:
-            self.logger.warning("[CommandLogging] ⚠️ Отсутствует chat или user")
             return
 
         text = message.text or message.caption or ""
-        is_command = text.startswith("/")
-        is_menu = text.lower() in ("menu", "меню", "главное меню")
-
-        log_prefix = (
-            "📥 Команда" if is_command else "📩 Меню" if is_menu else "✉️ Сообщение"
-        )
-        chat_type = chat.type
-        lang = user.language_code or "—"
-
+        log_prefix = "📥 Команда" if text.startswith("/") else "✉️ Сообщение"
         self.logger.info(
-            f"[CommandLogging] "
-            f"{log_prefix} | Chat[{chat_type}] {chat.id} | User {user.id} "
-            f"({user.full_name} | @{user.username or '—'}) | "
-            f"Lang: {lang} | Text: {text}"
+            f"{log_prefix} | Chat[{chat.type}] {chat.id} | "
+            f"User {user.id} ({user.full_name} | @{user.username or '—'}) | "
+            f"Lang: {user.language_code or '—'} | Text: {text}"
         )
 
     async def _log_callback(self, cb: CallbackQuery) -> None:
-        user = cb.from_user
-        message = cb.message
-        data = cb.data or "<пусто>"
-
-        is_menu = data.lower() in ("menu", "меню", "main_menu", "open_menu")
-
-        msg_info = (
-            f"{message.chat.id}:{message.message_id}"
-            if message and message.chat
-            else "—"
-        )
-        log_prefix = "🔘 Callback-Меню" if is_menu else "🔘 Callback"
-
+        user, msg, data = cb.from_user, cb.message, cb.data or "<пусто>"
+        msg_info = f"{msg.chat.id}:{msg.message_id}" if msg and msg.chat else "—"
         self.logger.info(
-            f"{log_prefix} | Msg: {msg_info} | User {user.id} "
-            f"({user.full_name} | @{user.username or '—'}) | Data: {data}"
+            f"🔘 Callback | Msg {msg_info} | "
+            f"User {user.id} ({user.full_name} | @{user.username or '—'}) | "
+            f"Data: {data}"
         )
 
     async def _log_inline(self, iq: InlineQuery) -> None:
-        user = iq.from_user
-        query = iq.query or "<пусто>"
-        is_menu = query.lower() in ("menu", "меню")
-
-        log_prefix = "🔍 Inline-Меню" if is_menu else "🔍 Inline"
-
+        user, query = iq.from_user, iq.query or "<пусто>"
         self.logger.info(
-            f"{log_prefix} | User {user.id} ({user.full_name} | @{user.username or '—'}) | "
+            f"🔍 Inline | User {user.id} ({user.full_name} | @{user.username or '—'}) | "
             f"Query: {query}"
+        )
+
+    async def _log_member_update(self, ev: ChatMemberUpdated) -> None:
+        user = ev.from_user
+        self.logger.info(
+            f"👥 MemberUpdate | Chat {ev.chat.id} | User {user.id} "
+            f"({user.full_name} | @{user.username or '—'}) | "
+            f"Old: {ev.old_chat_member.status} → New: {ev.new_chat_member.status}"
         )

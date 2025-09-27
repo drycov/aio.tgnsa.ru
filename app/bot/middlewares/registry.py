@@ -8,12 +8,23 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.bot.middlewares.database import DatabaseMiddleware
+from app.bot.middlewares.profiler import ProfilerMiddleware
 from app.bot.middlewares.throttling import SmartRateLimitMiddleware
 from app.core.config import Settings
 from app.core.utils.logger_manager import LoggerManager
+import importlib
 
 
 class MiddlewareConfig(BaseModel):
+    """
+    rate_limit: float      # Лимит RPS
+    superusers: List[int]  # Исключения из throttling
+    role_access: Dict      # Ролевой доступ
+    enable_profiler: bool  # Профайлер включен/выключен
+    enable_tfa: bool       # Включить двухфакторку
+    max_spam: int          # Сколько спама допускается
+    priorities: Dict[str,int] # Приоритеты middleware (чем меньше число — тем раньше выполняется)
+    """
     rate_limit: float = 1.0
     superusers: List[int] = []
     role_access: Dict[str, List[str]] = {}
@@ -79,6 +90,11 @@ class MiddlewareRegistry:
                 logger=self.logger,
                 auto_commit=True,  # или False, по политике
             ),
+            "ProfilerMiddleware": lambda: ProfilerMiddleware(
+                logger=self.logger,
+                warn_threshold=1.0,  # можно брать из settings.misc.profiler_threshold
+                enable_prometheus=True,  # включаем экспорт метрик
+            ),
         }
 
     def _build_priority_order(self) -> List[str]:
@@ -106,8 +122,14 @@ class MiddlewareRegistry:
 
         for mw_name in self.middleware_priority:
             mw = await self._build_middleware(mw_name)
+            if mw_name == "ProfilerMiddleware" and not self.config.enable_profiler:
+                continue
+            if mw_name == "TFAMiddleware" and not self.config.enable_tfa:
+                continue
             if mw:
                 self.dp.message.middleware(mw)
+                self.dp.callback_query.middleware(mw)
+
                 registered.add(mw_name)
                 self.logger.debug(f"✅ Middleware зарегистрирован: {mw_name}")
 
@@ -147,11 +169,14 @@ class MiddlewareRegistry:
             return None
 
     def _auto_resolve(self, name: str) -> Optional[BaseMiddleware]:
-        """Автоматический импорт и инициализация middleware по имени."""
-
         module_name = name.replace("Middleware", "").lower()
         try:
-            module = __import__(f"app.bot.middlewares.{module_name}", fromlist=["*"])
+            # The line `module = importlib.import_module(f"app.bot.middlewares.{module_name}")` is
+            # importing a module dynamically at runtime based on the `module_name` variable. This
+            # allows the code to load and use a module whose name is constructed using the
+            # `module_name` variable, which is derived from the `name` parameter passed to the
+            # `_auto_resolve` method in the `MiddlewareRegistry` class.
+            module = importlib.import_module(f"app.bot.middlewares.{module_name}")
             for _, obj in inspect.getmembers(module, inspect.isclass):
                 if obj.__name__ == name and issubclass(obj, BaseMiddleware):
                     return self._safe_init(obj)

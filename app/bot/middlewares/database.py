@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError, OperationalError, DBAPIError
 
 from app.core.utils.logger_manager import LoggerManager
 
@@ -15,10 +15,10 @@ class DatabaseMiddleware(BaseMiddleware):
 
     Особенности:
     - Автоматическое управление транзакциями (commit/rollback)
-    - Гибкая настройка поведения при ошибках
+    - Повторы при временных ошибках
     - Подробное логирование операций
     - Поддержка вложенных транзакций
-    - Возможность отключения автоматического управления транзакциями
+    - Режим readonly (без коммита)
     """
 
     def __init__(
@@ -29,30 +29,21 @@ class DatabaseMiddleware(BaseMiddleware):
         auto_rollback: bool = True,
         log_sql: bool = False,
         max_retries: int = 0,
+        readonly: bool = False,
     ):
-        """
-        Инициализация middleware.
-
-        Args:
-            sessionmaker: Фабрика асинхронных сессий SQLAlchemy
-            logger: Логгер для записи событий
-            auto_commit: Автоматически коммитить при успешном выполнении
-            auto_rollback: Автоматически откатывать при ошибках
-            log_sql: Логировать SQL-запросы (требуется настройка в SQLAlchemy)
-            max_retries: Максимальное количество попыток повтора при ошибках
-        """
         self.sessionmaker = sessionmaker
         self.logger = logger
-        self.auto_commit = auto_commit
+        self.auto_commit = auto_commit and not readonly
         self.auto_rollback = auto_rollback
         self.log_sql = log_sql
         self.max_retries = max_retries
+        self.readonly = readonly
 
     @asynccontextmanager
     async def _session_scope(self):
         """Контекстный менеджер для управления сессией."""
         session = self.sessionmaker()
-        if self.log_sql:
+        if self.log_sql and session.bind:
             session.bind.echo = True
 
         try:
@@ -61,10 +52,15 @@ class DatabaseMiddleware(BaseMiddleware):
 
             if self.auto_commit:
                 await session.commit()
-                self.logger.debug("🔄 Коммит транзакции выполнен")
+                self.logger.debug("✅ Транзакция зафиксирована")
+        except (IntegrityError, OperationalError, DBAPIError) as e:
+            if self.auto_rollback:
+                self.logger.warning(f"⚠️ Ошибка транзакции ({type(e).__name__}), rollback")
+                await session.rollback()
+            raise
         except SQLAlchemyError as e:
             if self.auto_rollback:
-                self.logger.error(f"❌ Ошибка БД, выполнение rollback: {str(e)}")
+                self.logger.error(f"❌ SQLAlchemy ошибка: {e}, rollback")
                 await session.rollback()
             raise
         finally:
@@ -77,53 +73,37 @@ class DatabaseMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        """
-        Обработка запроса с управлением сессией БД.
-
-        Args:
-            handler: Обработчик запроса
-            event: Объект события (сообщение, callback и т.д.)
-            data: Контекстные данные
-
-        Returns:
-            Результат выполнения обработчика
-
-        Raises:
-            Exception: Любые ошибки, возникшие при обработке запроса
-        """
         retry_count = 0
 
         while retry_count <= self.max_retries:
             try:
                 async with self._session_scope() as session:
-                    # Добавляем сессию в контекст обработчика
                     data["db"] = session
                     data["db_session"] = session
+                    return await handler(event, data)
 
-                    result = await handler(event, data)
-                    return result
-
-            except SQLAlchemyError as e:
+            except (OperationalError, DBAPIError) as e:
                 retry_count += 1
                 if retry_count > self.max_retries:
                     self.logger.exception(
-                        f"🔥 Превышено максимальное количество попыток ({self.max_retries})"
+                        f"🔥 Превышен лимит повторов ({self.max_retries}) из-за ошибки: {e}"
                     )
                     raise
 
                 self.logger.warning(
-                    f"🔄 Повторная попытка ({retry_count}/{self.max_retries}) после ошибки БД: {str(e)}"
+                    f"🔄 Попытка {retry_count}/{self.max_retries} после OperationalError: {e}"
                 )
+                continue
 
             except Exception as e:
-                self.logger.exception(f"⚠️ Неожиданная ошибка в обработчике: {str(e)}")
+                self.logger.exception(f"⚠️ Неожиданная ошибка в обработчике: {e}")
                 raise
 
 
 class OptionalDatabaseMiddleware(DatabaseMiddleware):
     """
-    Расширение DatabaseMiddleware с поддержкой опционального использования БД.
-    Если сессия уже существует в данных, новая не создается.
+    Вариант DatabaseMiddleware, который использует существующую сессию,
+    если она уже есть в data.
     """
 
     async def __call__(

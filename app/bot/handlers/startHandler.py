@@ -16,7 +16,7 @@ from app.bot.fsm.state_manager import StateManager
 from app.bot.constants.messages import ContextHelp, Messages
 from app.bot.handlers.register_handlers.registration_handler import start_registration
 from app.bot.keyboards.main import generate_main_keyboard
-from app.bot.keyboards.base import build_auth_keyboard, on_enter_keyboard
+from app.bot.keyboards.base import build_auth_keyboard
 from app.exceptions.exceptions import UserNotFoundError
 from app.services.user import UserSearchField, UserService
 from app.core.utils.decorators import safe_delete_message
@@ -27,6 +27,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+on_enter_keyboard = build_auth_keyboard(False)
 
 
 @router.message(CommandStart())

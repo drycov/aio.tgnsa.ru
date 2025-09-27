@@ -3,7 +3,7 @@ import logging
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 
-from app.bot.keyboards.base import in_back_keyboard
+from app.bot.keyboards.base import build_back_keyboard
 from app.core.logging_setup import configure_logger
 from app.core.utils.device_utils import DeviceUtils
 from app.core.utils.network_utils import NetworkUtils
@@ -17,7 +17,7 @@ from ..constants.menu import get_device_keyboard
 from ..constants.messages import Messages
 
 logger = configure_logger().bind(component=f"{__name__}")
-
+in_back_keyboard = build_back_keyboard()
 
 @log_execution(success_message="Статус устройства проверен")
 async def handle_device_status_logic(message: Message, state: FSMContext):

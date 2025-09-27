@@ -2,7 +2,6 @@ import logging
 from typing import Optional, Union
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-import os
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.theme import Theme
@@ -53,12 +52,14 @@ class ContextLogger(logging.LoggerAdapter):
             kwargs["extra"] = {**kwargs.get("extra", {}), **self.extra}
         return msg, kwargs
 
+
 class ExtraContextFilter(logging.Filter):
     def filter(self, record):
         record.extra_context = ""
-        for key, value in getattr(record, 'extra', {}).items():
+        for key, value in getattr(record, "extra", {}).items():
             record.extra_context += f" {key}={value}"
         return True
+
 
 def _patch_logger_class():
     """Добавляет кастомные уровни и метод bind к классу Logger"""
@@ -82,19 +83,6 @@ _patch_logger_class()
 class LoggerManager:
     """
     Менеджер логгеров с поддержкой Rich и файлового логирования.
-
-    Позволяет создавать и настраивать логгер с кастомными уровнями,
-    ротацией файлов, а также красивым выводом в консоль с использованием Rich.
-
-    Attributes:
-        name (str): Имя логгера.
-        debug (bool): Флаг для активации режима отладки.
-        log_dir (Optional[Union[str, Path]]): Путь к директории логов.
-        log_level (Optional[Union[str, int]]): Уровень логирования (например, "DEBUG", "INFO" или числовой).
-        enable_file (bool): Включить файловое логирование.
-        enable_console (bool): Включить консольное логирование.
-        file_size (int): Максимальный размер файла лога в байтах для ротации.
-        backups (int): Количество резервных файлов для ротации.
     """
 
     def __init__(
@@ -108,19 +96,6 @@ class LoggerManager:
         file_size: int = 10 * 1024 * 1024,
         backups: int = 5,
     ):
-        """
-        Инициализирует LoggerManager и настраивает логгер.
-
-        Args:
-            name (str, optional): Имя логгера. Defaults to "app".
-            debug (bool, optional): Флаг режима отладки. При True уровень по умолчанию DEBUG. Defaults to False.
-            log_dir (Optional[Union[str, Path]], optional): Путь к папке с логами. Defaults to "logs".
-            log_level (Optional[Union[str, int]], optional): Уровень логирования. Если не указан, зависит от debug.
-            enable_file (bool, optional): Включить файловое логирование. Defaults to True.
-            enable_console (bool, optional): Включить консольное логирование. Defaults to True.
-            file_size (int, optional): Максимальный размер файла лога (в байтах). Defaults to 10*1024*1024.
-            backups (int, optional): Количество файлов для ротации. Defaults to 5.
-        """
         self.name = name
         self.debug = debug
         self.log_level = log_level or ("DEBUG" if debug else "INFO")
@@ -132,17 +107,6 @@ class LoggerManager:
         self._logger = self._configure_logger()
 
     def _configure_logger(self) -> BoundLogger:
-        """
-        Конфигурирует и возвращает экземпляр логгера с необходимыми обработчиками.
-
-        - Настраивает уровень логирования.
-        - Добавляет файловый обработчик с ротацией.
-        - Добавляет консольный обработчик с поддержкой Rich.
-        - Подключает кастомные фильтры и форматтеры.
-
-        Returns:
-            BoundLogger: Настроенный экземпляр логгера с расширенными возможностями.
-        """
         logger = logging.getLogger(self.name)
 
         level = self.log_level
@@ -180,7 +144,6 @@ class LoggerManager:
                 tracebacks_show_locals=self.debug,
             )
             rich_handler.setLevel(level)
-            # НЕ устанавливаем setFormatter для RichHandler
             rich_handler.addFilter(ExtraContextFilter())
             logger.addHandler(rich_handler)
 
@@ -188,23 +151,18 @@ class LoggerManager:
         return logger
 
     def _ensure_log_dir(self) -> Path:
-        """
-        Обеспечивает существование директории для логов.
-
-        Создаёт директорию, если её нет.
-
-        Returns:
-            Path: Путь к директории логов.
-        """
         log_dir = Path(self.log_dir)
         log_dir.mkdir(parents=True, exist_ok=True)
         return log_dir
 
     def get_logger(self) -> BoundLogger:
-        """
-        Возвращает настроенный экземпляр логгера.
-
-        Returns:
-            BoundLogger: Логгер с поддержкой кастомных уровней и Rich.
-        """
+        """Возвращает настроенный экземпляр логгера (instance-режим)."""
         return self._logger
+
+    @staticmethod
+    def get_logger_static(name: str = "app", level: str = "INFO") -> BoundLogger:
+        """Быстрый доступ: создаёт новый логгер по имени."""
+        logger = logging.getLogger(name)
+        logger.setLevel(logging._nameToLevel.get(level.upper(), logging.INFO))
+        logger.__class__ = BoundLogger
+        return logger

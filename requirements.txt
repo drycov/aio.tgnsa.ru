@@ -11,17 +11,19 @@ passlib[bcrypt]
 pyotp
 pythonping
 aiomonitor
+structlog
+argon2-cffi
 
 # ============================================
 # ⚙️ Async / Task Scheduling
 # ============================================
-asyncio
 APScheduler
 
 # ============================================
 # 📝 Logging
 # ============================================
 loguru
+rich
 
 # ============================================
 # 🤖 Telegram Bot
@@ -35,7 +37,9 @@ cbor2
 # ============================================
 fastapi
 Jinja2
-
+uvicorn
+asyncpg
+psycopg2
 
 # ============================================
 # 🗃️ Database / ORM / Storage
@@ -48,41 +52,46 @@ alembic
 # 🧠 Caching / Messaging
 # ============================================
 redis
-aioredis
+# aioredis  # ⚠️ deprecated, можно убрать если используешь redis>=4.2
 
 # ============================================
 # 🔐 Security / Cryptography
 # ============================================
 cryptography
 PyJWT
-python-jose[cryptography]
+# python-jose[cryptography]  # ⚠️ оставь только одну либу для JWT
 
 # ============================================
-# 🌍 Networking / IP / DNS / ICMP
+# 🌍 Networking / IP / DNS / ICMP / SNMP
 # ============================================
 ping3
 netaddr
 dnspython
 idna
+scapy
+librouteros
+netmiko
+rosapi
+pysnmp
+puresnmp
+pyasn1-modules
+tenacity
+prometheus_client
 
 # ============================================
-# 📦 Packaging / Distribution (опционально)
+# 📦 Packaging / Distribution
 # ============================================
 setuptools
 wheel
-uvicorn
-
 pytz
-
 psutil
 typer
-rich
 tomli-w
-tomli
-scapy
-prometheus_client
-psutil
+# tomli  # ⚠️ встроен в Python 3.11+, можно убрать
 
+# ============================================
+# 📖 Docs / MkDocs
+# ============================================
 mkdocs
 mkdocs-material
 mkdocstrings[python]>=0.18
@@ -90,8 +99,3 @@ mkdocs-gen-files
 mkdocs-literate-nav
 mkdocs-section-index
 mkdocs-api-autonav
-
-pysnmp 
-tenacity
-pyasn1-modules
-puresnmp

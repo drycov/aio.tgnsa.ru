@@ -7,7 +7,7 @@ from app.bot.constants.labels import MenuLabels
 from app.bot.constants.messages import Messages
 from app.bot.fsm.state_manager import StateManager
 from app.bot.fsm.states.main import MAINState
-from app.bot.keyboards.base import build_auth_keyboard, on_enter_keyboard
+from app.bot.keyboards.base import build_auth_keyboard
 from app.bot.keyboards.main import generate_main_keyboard
 from app.core.logging_setup import configure_logger
 from app.exceptions.exceptions import UserNotFoundError
@@ -41,6 +41,8 @@ async def main_menu(message: Message, state: FSMContext, db: AsyncSession):
         logger.warning(
             f"[main_menu] 🚫 User not authorized or not found: tg_id={tg_id}"
         )
+        on_enter_keyboard = build_auth_keyboard(False)
+
         await message.answer(
             Messages.PLEASE_ENTER.value, reply_markup=on_enter_keyboard
         )
