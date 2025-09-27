@@ -9,13 +9,6 @@ import logging
 def generate_main_keyboard(
     is_admin: bool = False, max_per_row: int = 2, logger: logging.Logger | None = None
 ) -> ReplyKeyboardMarkup:
-    """
-    Генерация главного меню.
-
-    :param is_admin: Флаг администратора (добавляет секцию admin).
-    :param max_per_row: Максимальное количество кнопок в строке.
-    :param logger: Логгер (если не передан – stdlib fallback).
-    """
     logger = logger or logging.getLogger("MainMenu")
 
     sections: dict[str, list[list[KeyboardButton]]] = {
@@ -29,7 +22,9 @@ def generate_main_keyboard(
         sections["admin"] = [[KeyboardButton(text=MenuLabels.ADMIN_PANEL.value)]]
 
     pm = PluginManager.get_instance()
-    if pm and pm.ensure_ready():
+    pm.ensure_ready()  # гарантируем загрузку
+
+    if pm.is_initialized:
         for plugin in pm.all_plugins().values():
             if hasattr(plugin, "extend_main_menu"):
                 try:
@@ -47,9 +42,9 @@ def generate_main_keyboard(
                     plugin_name = getattr(getattr(plugin, "meta", None), "name", plugin.__class__.__name__)
                     logger.warning(f"[{plugin_name}] Ошибка при добавлении кнопок: {e}", exc_info=True)
     else:
-        logger.warning("PluginManager instance is not initialized")
+        logger.warning("PluginManager is not initialized")
 
-    # Собираем клавиатуру по порядку
+    # Собираем клавиатуру
     keyboard_rows = []
     for section in ("main", "admin", "profile", "exit"):
         keyboard_rows.extend([row for row in sections.get(section, []) if row])

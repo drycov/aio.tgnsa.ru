@@ -1,0 +1,5 @@
+name = "Dyty_menu"
+description = "Меню дежурств"
+
+enabled = true
+menu_section = "main"  # или "admin", "profile"

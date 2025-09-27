@@ -15,20 +15,18 @@ from app.services.user import UserSearchField, UserService
 from app.bot.handlers.register_handlers.registration_handler import start_registration
 from app.core.utils.decorators import safe_delete_message
 
-
 router = Router()
+logger = configure_logger().bind(component="MainMenuHandlers")
 
-logger = configure_logger().bind(component=f"")
 
 @router.message(F.text.casefold() == MenuLabels.ENTER.value.casefold())
 @safe_delete_message
 async def main_menu(message: Message, state: FSMContext, db: AsyncSession):
     """
-    Handles the main menu entry point.
-
-    - Checks user authorization.
-    - Redirects to registration if the user is not authorized.
-    - Displays the main menu if the user is authorized.
+    Entry point into main menu:
+      - Проверяет авторизацию пользователя.
+      - Регистрирует нового пользователя при необходимости.
+      - Открывает главное меню.
     """
     tg_id = message.from_user.id
     service = UserService(db)
@@ -37,26 +35,24 @@ async def main_menu(message: Message, state: FSMContext, db: AsyncSession):
         user = await service.get_user(tg_id, UserSearchField.TG_ID)
         if not user.is_authorized:
             await service.set_authorized(tg_id, True)
-    except UserNotFoundError:
-        logger.warning(
-            f"[main_menu] 🚫 User not authorized or not found: tg_id={tg_id}"
-        )
-        on_enter_keyboard = build_auth_keyboard(False)
 
-        await message.answer(
-            Messages.PLEASE_ENTER.value, reply_markup=on_enter_keyboard
-        )
+    except UserNotFoundError:
+        logger.warning(f"[main_menu] 🚫 User not found: tg_id={tg_id}")
+        keyboard = build_auth_keyboard(False)
+
+        await message.answer(Messages.PLEASE_ENTER.value, reply_markup=keyboard)
         await start_registration(message, state)
         return
+
     except Exception as e:
-        logger.exception(f"[main_menu] ❌ Unexpected error while loading user: {e}")
+        logger.exception(f"[main_menu] ❌ Unexpected error: {e}")
         await message.answer(Messages.INTERNAL_ERROR.value)
         return
 
-    # Authorized, show main menu
+    # --- Authorized flow ---
     is_admin = await service.is_admin(tg_id)
-
     keyboard = generate_main_keyboard(is_admin)
+
     display = {"text": Messages.WELCOME.value, "reply_markup": keyboard}
     await message.answer(**display)
 
@@ -67,43 +63,45 @@ async def main_menu(message: Message, state: FSMContext, db: AsyncSession):
     await state.update_data(
         user_id=tg_id,
         is_online=True,
-        is_admin=await service.is_admin(tg_id),
+        is_admin=is_admin,
         token=user.generate_jwt(),
     )
 
-    # Set authorization flag
-    await service.set_authorized(tg_id, True)
+    logger.info(f"[main_menu] ✅ User {tg_id} вошёл в систему (admin={is_admin})")
 
 
 @router.message(F.text.casefold() == MenuLabels.EXIT.value.casefold())
 @safe_delete_message
 async def exit_command(message: Message, state: FSMContext, db: AsyncSession):
     """
-    Handles the exit command.
-
-    - Clears the user's state.
-    - Resets authorization.
-    - Displays the entry keyboard.
+    Exit command:
+      - Сбрасывает состояние и авторизацию.
+      - Отправляет клавиатуру входа.
     """
     tg_id = message.from_user.id
     service = UserService(db)
 
     try:
+        # Сообщение "прощания"
         await message.answer(Messages.GOODBYE.value, reply_markup=ReplyKeyboardRemove())
 
+        # Очистка state
         await state.clear()
         await state.set_state(MAINState.MAIN)
-        await state.update_data(
-            user_id=tg_id, is_online=False, is_admin=False, token=""
-        )
+        await state.update_data(user_id=tg_id, is_online=False, is_admin=False, token="")
 
+        # Сброс авторизации
         user = await service.get_user(tg_id, UserSearchField.TG_ID)
-
         await service.set_authorized(tg_id, False)
+
+        # Обновлённый объект
         user = await service.get_user(tg_id, UserSearchField.TG_ID)
 
-        # Reset authorization
         keyboard = build_auth_keyboard(user.is_authorized)
         await message.answer(Messages.PLEASE_ENTER.value, reply_markup=keyboard)
+
+        logger.info(f"[exit_command] 👋 User {tg_id} вышел из системы")
+
     except Exception as e:
-        logger.exception(f"[exit_command] ❌ Unexpected error while exiting: {e}")
+        logger.exception(f"[exit_command] ❌ Unexpected error: {e}")
+        await message.answer(Messages.INTERNAL_ERROR.value)

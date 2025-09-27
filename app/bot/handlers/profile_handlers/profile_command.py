@@ -1,13 +1,18 @@
-from aiogram import Router, F
+from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.bot.constants.labels import MenuLabels
 from app.core.utils.decorators import safe_delete_message
 from app.services.user import UserSearchField, UserService
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.exceptions.exceptions import UserNotFoundError, UserBannedError
 from app.core.config import settings
+from app.core.logging_setup import configure_logger
+
+
 router = Router()
+logger = configure_logger().bind(component="ProfileHandler")
 
 
 @router.message(F.text == "/profile")
@@ -22,33 +27,36 @@ async def handle_profile(message: Message, state: FSMContext, db: AsyncSession):
         role_names = [role.name for role in user.roles]
 
         # Проверка привилегий
-        is_owner = tg_id == settings.bot.owner_id
-        is_superuser = tg_id in settings.bot.superusers
-        is_admin = tg_id in settings.bot.ADMINS
+        is_owner = tg_id == settings.bot.OWNER_ID
+        is_superuser = tg_id in getattr(settings.bot, "SUPERUSERS", [])
+        is_admin_cfg = tg_id in getattr(settings.bot, "ADMINS", [])
+        is_admin_role = any(r == "admin" for r in role_names)
 
-        # Блок привилегий — показывается только владельцу, суперу или админу
+        # Блок привилегий
         privileges = []
         if is_owner:
             privileges.append("🛡️ <b>Владелец</b>")
         if is_superuser:
             privileges.append("👑 Суперпользователь")
-        if is_admin:
+        if is_admin_cfg or is_admin_role:
             privileges.append("🧑‍💼 Администратор")
 
         privilege_text = ""
-        if any([is_owner, is_superuser, is_admin]):
+        if privileges:
             privilege_text = "\n\n<b>Привилегии:</b>\n" + "\n".join(privileges)
 
-        # Доп. информация — только для тех же групп
+        # Debug-блок (для админов/суперов/владельца)
         debug_info = ""
-        if any([is_owner, is_superuser, is_admin]):
+        if privileges:
             debug_info = (
                 f"\n\n<b>Служебная информация:</b>\n"
                 f"🆔 TG ID: <code>{user.tg_id}</code>\n"
                 f"🗂️ ID пользователя: <code>{user.id}</code>\n"
-                f"📅 Зарегистрирован: {user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '—'}\n"
+                f"📅 Зарегистрирован: "
+                f"{user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '—'}\n"
             )
 
+        # Формируем профиль
         profile_text = (
             f"👤 <b>Профиль пользователя</b>\n\n"
             f"🔗 Имя: {user.full_name}\n"
@@ -70,5 +78,5 @@ async def handle_profile(message: Message, state: FSMContext, db: AsyncSession):
     except UserBannedError:
         await message.answer("🚫 Вы были заблокированы. Обратитесь к администратору.")
     except Exception as e:
-        await message.answer("⚠️ Ошибка при получении профиля.")
-        raise
+        logger.exception(f"[handle_profile] Ошибка: {e}")
+        await message.answer("⚠️ Произошла внутренняя ошибка при получении профиля.")

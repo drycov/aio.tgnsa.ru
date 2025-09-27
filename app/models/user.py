@@ -84,6 +84,11 @@ class User(Base):
         secondary=user_roles,
         lazy="joined",
     )
+    
+    # внутри User
+    duty_profile: Mapped[Optional["DutyUser"]] = relationship(
+        "DutyUser", back_populates="user", uselist=False
+    )
 
     @property
     def full_name(self) -> str:

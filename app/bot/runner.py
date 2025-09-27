@@ -55,31 +55,44 @@ class BotManager:
         )
 
         await self.setup_plugins()
-
+        
     async def setup_plugins(self):
-        """Асинхронно подключает плагины и регистрирует их в aiogram."""
+        """Подключает плагины и регистрирует их в aiogram."""
         pm = PluginManager.get_instance()
-        pm.ensure_ready(settings)
 
         if not pm.is_initialized:
-            self.logger.warning("🔌 Плагины не инициализированы. Инициализация...")
-            pm.ensure_ready(settings)
+            self.logger.info("🔌 Первичная инициализация плагинов...")
+            pm.full_load_cycle(settings)
 
-        tasks = [self._register_plugin(plugin) for plugin in pm.all_plugins().values()]
-        await asyncio.gather(*tasks)
+        for plugin in pm.all_plugins().values():
+            self._register_plugin(plugin)
 
-    async def _register_plugin(self, plugin):
+    def _register_plugin(self, plugin):
+        """Безопасная регистрация aiogram-хендлеров и middleware у плагина."""
         meta = getattr(plugin, "meta", None)
         pname = getattr(meta, "name", plugin.__class__.__name__)
 
         try:
-            plugin.register_aiogram(self.dp)
-            plugin.register_middlewares(self.dp)
-            plugin.register_callbacks(self.dp)
-            plugin.register_inline_query(self.dp)
-            self.logger.info(f"✅ [{pname}] зарегистрирован")
+            if hasattr(plugin, "register_aiogram"):
+                plugin.register_aiogram(self.dp)
+                self.logger.info(f"🔗 [{pname}] зарегистрировал роутеры")
+
+            if hasattr(plugin, "register_middlewares"):
+                plugin.register_middlewares(self.dp)
+                self.logger.info(f"🧩 [{pname}] зарегистрировал middleware")
+
+            if hasattr(plugin, "register_callbacks"):
+                plugin.register_callbacks(self.dp)
+                self.logger.info(f"🎯 [{pname}] зарегистрировал callbacks")
+
+            if hasattr(plugin, "register_inline_query"):
+                plugin.register_inline_query(self.dp)
+                self.logger.info(f"🔍 [{pname}] зарегистрировал inline-query")
+
+            self.logger.info(f"✅ [{pname}] успешно подключён")
         except Exception as e:
             self.logger.error(f"❌ Ошибка регистрации [{pname}]: {e}", exc_info=True)
+
 
     async def on_startup(self):
         self.logger.info("🟢 Бот запускается...")
@@ -88,7 +101,7 @@ class BotManager:
     async def on_shutdown(self):
         self.logger.info("🛑 Завершается работа бота...")
         await self.dp.fsm.storage.close()
-        await self.dp.fsm.storage.wait_closed()
+        # await self.dp.fsm.storage.wait_closed()
         await self.bot.session.close()
         await self.lifecycle_manager.shutdown()
         self.logger.info("✅ Shutdown завершён")
