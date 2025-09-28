@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings
 from app import __version__
 from app.core.applcm_manager import AppLifecycleManager
 from app.core.constants import ENV_VARS_TO_CLEAR
+from app.core.integrations import register_integrations
 from app.core.logging_setup import configure_logger, logger
 from app.core.plugin_manager.manager import PluginManager
 from app.core.config import settings
@@ -110,6 +111,10 @@ def _run_service(role: RoleType, debug: bool, dev: bool, dry_run: bool, log_chan
     os.environ["APP_ROLE"] = role.value
     lifecycle = AppLifecycleManager()
     logger.info(f"🚀 Starting {role.value.upper()}...")
+    
+    # 🔌 Подключаем интеграции (phpipam и любые другие)
+    register_integrations(lifecycle)
+
 
     try:
         role.run(lifecycle)

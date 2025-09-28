@@ -94,3 +94,10 @@ ping_timeout = 30
 issuer = "TG NMS"
 digits = 6
 period = 30
+
+[phpipam]
+url = "https://ipam.example.com/api"
+app_id = "tg-nms"
+user = "apiuser"
+password = "apipass"
+verify_ssl = false

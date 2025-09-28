@@ -100,3 +100,4 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
         ...
     """
     return SessionLocal
+

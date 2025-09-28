@@ -13,7 +13,7 @@ pythonping
 aiomonitor
 structlog
 argon2-cffi
-
+httpx
 # ============================================
 # ⚙️ Async / Task Scheduling
 # ============================================

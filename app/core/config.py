@@ -664,6 +664,20 @@ class MiscConfig(BaseSettings):
         extra="ignore",
     )
 
+class PhpIpamSettings(BaseSettings):
+    url: str = Field(..., description="Базовый URL phpIPAM API (например: https://ipam.local/api/)")
+    app_id: str = Field(..., description="ID приложения phpIPAM (см. API settings)")
+    user: str = Field(..., description="Имя пользователя phpIPAM API")
+    password: SecretStr = Field(..., description="Пароль пользователя phpIPAM API")
+    verify_ssl: bool = Field(default=True, description="Проверка SSL-сертификатов")
+    
+    model_config = SettingsConfigDict(
+        env_file=ENV_PATH,
+        toml_file=str(CONFIG_PATH),
+        case_sensitive=False,   # 👈 разрешает разные варианты регистра
+        extra="ignore",
+    )
+
 
 class Settings(BaseSettings):
     """
@@ -735,6 +749,7 @@ class Settings(BaseSettings):
         default_factory=Security,
         description="Настройки безопасности приложения",
     )
+    phpipam: PhpIpamSettings = Field(default_factory=PhpIpamSettings)
 
     @computed_field
     @property

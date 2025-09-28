@@ -103,7 +103,7 @@ class BotManager:
         await self.dp.fsm.storage.close()
         # await self.dp.fsm.storage.wait_closed()
         await self.bot.session.close()
-        await self.lifecycle_manager.shutdown()
+        # await self.lifecycle_manager.shutdown()
         self.logger.info("✅ Shutdown завершён")
 
     async def start_polling(self):
