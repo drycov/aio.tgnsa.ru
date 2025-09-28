@@ -1,4 +1,4 @@
-﻿# ============================================
+# ============================================
 # 🧱 Core / Environment / Settings
 # ============================================
 pip
@@ -9,37 +9,29 @@ python-decouple
 pydantic[email]
 passlib[bcrypt]
 pyotp
-pythonping
-aiomonitor
-structlog
-argon2-cffi
-httpx
+
 # ============================================
 # ⚙️ Async / Task Scheduling
 # ============================================
+asyncio
 APScheduler
 
 # ============================================
 # 📝 Logging
 # ============================================
 loguru
-rich
 
 # ============================================
 # 🤖 Telegram Bot
 # ============================================
 aiogram
-msgpack
-cbor2
 
 # ============================================
 # 🌐 Web / API
 # ============================================
 fastapi
 Jinja2
-uvicorn
-asyncpg
-psycopg2
+
 
 # ============================================
 # 🗃️ Database / ORM / Storage
@@ -52,50 +44,28 @@ alembic
 # 🧠 Caching / Messaging
 # ============================================
 redis
-# aioredis  # ⚠️ deprecated, можно убрать если используешь redis>=4.2
+aioredis
 
 # ============================================
 # 🔐 Security / Cryptography
 # ============================================
 cryptography
-PyJWT
-# python-jose[cryptography]  # ⚠️ оставь только одну либу для JWT
 
 # ============================================
-# 🌍 Networking / IP / DNS / ICMP / SNMP
+# 🌍 Networking / IP / DNS / ICMP
 # ============================================
 ping3
 netaddr
 dnspython
 idna
-scapy
-librouteros
-netmiko
-rosapi
-pysnmp
-puresnmp
-pyasn1-modules
-tenacity
-prometheus_client
 
 # ============================================
-# 📦 Packaging / Distribution
+# 📦 Packaging / Distribution (опционально)
 # ============================================
 setuptools
 wheel
-pytz
-psutil
-typer
-tomli-w
-# tomli  # ⚠️ встроен в Python 3.11+, можно убрать
+uvicorn
 
-# ============================================
-# 📖 Docs / MkDocs
-# ============================================
-mkdocs
-mkdocs-material
-mkdocstrings[python]>=0.18
-mkdocs-gen-files
-mkdocs-literate-nav
-mkdocs-section-index
-mkdocs-api-autonav
+pytz
+
+psutil

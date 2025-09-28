@@ -1,0 +1,5 @@
+name = "device_check_menu"
+description = "Меню проверки устройства"
+
+enabled = true
+menu_section = "main"  # или "admin", "profile"

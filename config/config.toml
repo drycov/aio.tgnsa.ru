@@ -1,0 +1,103 @@
+# config.toml для TG NMS
+
+use_redis = false
+use_fs = true
+use_mongodb = false
+use_firebase = false
+use_cache = false
+
+[app]
+name = "TG NMS"
+description = "Модульная система управления сетевой инфраструктурой"
+version = "0.1.0"
+
+[app.default]
+default_user = "root"
+default_password = "root"
+default_email = "admin@example.com"
+default_user_fullname = "Admin"
+
+[db]
+echo = false
+engine = "postgres"  # переключаемся с sqlite на postgres
+
+[db.postgres]
+host = "ep-aged-cherry-adqhsmjc-pooler.c-2.us-east-1.aws.neon.tech"
+port = 5432
+name = "aio_bot"
+user = "neondb_owner"
+password = "npg_NZ0bndGuilc1"
+sslmode = "require"
+channel_binding = "require"
+
+
+[db.sqlite]
+name = "app.db"
+
+[db.mysql]
+host = "localhost"
+port = 3306
+name = "test"
+
+[bot]
+admins = [123456789,987654321]
+superusers = [123456789]
+owner_id=6818244868
+rate_limit = 1.0
+role_access = { admin = ["*"] }
+
+[security]
+tfa_enable = false
+jwt_algorithm = "HS256"
+access_token_expire_minutes = 60
+access_token_expire_seconds = 3600
+use_special_char = false
+min_length = 8
+
+[redis]
+host = "localhost"
+port = 6379
+db = 0
+password = ""
+use_tls = false
+
+[cache]
+cache_type = "None"
+
+[misc]
+timezone = "UTC"
+max_payload_size_mb = 10
+excluded_substrings = ""
+
+[email]
+smtp_host = "smtp.example.com"
+smtp_port = 587
+smtp_user = "admin@example.com"
+smtp_password = "yourpassword"
+from_email = "admin@example.com"
+enable_tls = true
+support_email = "support@example.com"
+admin_email = "admin@example.com"
+
+[api]
+api_host = "127.0.0.1"
+api_port = 8000
+api_workers = 1
+
+[network]
+ping_count = 4
+ping_interval = 7
+ping_timeout = 30
+
+
+[tfa]
+issuer = "TG NMS"
+digits = 6
+period = 30
+
+[phpipam]
+url = "https://ipam.example.com/api"
+app_id = "tg-nms"
+user = "apiuser"
+password = "apipass"
+verify_ssl = false

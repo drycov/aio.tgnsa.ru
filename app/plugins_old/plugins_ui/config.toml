@@ -1,0 +1,7 @@
+enabled = true
+path = "/plugins"
+
+[ui]
+theme = "dark"          # возможные значения: "dark", "light", "auto"
+show_descriptions = true
+reload_on_toggle = true

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>📡 Netstat UI</title>
+    <link rel="icon" type="image/png" href="{{ favicon_url }}" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ static_url }}/css/styles.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      body {
+        padding: 2rem;
+        background-color: #f8fafc;
+        color: #1f2937;
+      }
+      .theme-dark {
+        background-color: #1a1a1a;
+        color: #ffffff;
+      }
+      .theme-dark .table {
+        color: #ffffff;
+      }
+      .theme-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1055;
+      }
+    </style>
+  </head>
+  <body id="body">
+    <div class="container">
+      <h1 class="mb-4">📡 Netstat Viewer</h1>
+      <div class="table-responsive">
+        <table
+          id="netstat-table"
+          class="table table-bordered table-hover table-striped align-middle"
+        >
+          <thead class="table-dark">
+            <tr>
+              <th>Протокол</th>
+              <th>Адрес</th>
+              <th>Статус</th>
+              <th>PID</th>
+              <th>Процесс</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <button class="btn btn-primary theme-toggle" onclick="toggleTheme()">
+      🌓
+    </button>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      async function loadNetstatData() {
+        const res = await fetch("/network/netstat/json");
+        const data = await res.json();
+        const tbody = document.querySelector("#netstat-table tbody");
+        tbody.innerHTML = "";
+
+        data.forEach((conn) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+          <td><code>${conn.protocol}</code></td>
+          <td><code>${conn.local_address}</code></td>
+          <td><code>${conn.status || "-"}</code></td>
+          <td><code>${conn.pid || "-"}</code></td>
+          <td><code>${conn.process || "-"}</code></td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+
+      function toggleTheme() {
+        document.getElementById("body").classList.toggle("theme-dark");
+        localStorage.setItem(
+          "theme",
+          document.getElementById("body").classList.contains("theme-dark")
+            ? "dark"
+            : "light"
+        );
+      }
+
+      window.onload = () => {
+        if (localStorage.getItem("theme") === "dark") {
+          document.getElementById("body").classList.add("theme-dark");
+        }
+        loadNetstatData();
+        setInterval(loadNetstatData, 5000); // обновление каждые 5 секунд
+      };
+    </script>
+  </body>
+</html>

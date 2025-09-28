@@ -1,0 +1,26 @@
+site_name: aio.tgnsa.ru
+theme:
+  name: material
+
+plugins:
+  - search
+  - api-autonav:
+      modules: ["app"]
+  - literate-nav:
+      nav_file: reference/SUMMARY.md
+  - section-index
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: ["app"]
+          load_external_modules: false
+          inventories:
+            - https://docs.python.org/3/objects.inv
+
+nav:
+  - Home: index.md
+  - API Reference:
+      - Overview: reference/index.md
+      - Core: reference/core.md
+      - Plugins: reference/plugins.md

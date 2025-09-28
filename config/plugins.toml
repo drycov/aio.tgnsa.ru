@@ -1,0 +1,25 @@
+[config_viewer]
+enabled = true
+path = "/config"
+
+[healthcheck]
+enabled = true
+path = "/health"
+
+[metrics]
+port = 9100
+enabled = true
+
+[plugins_ui]
+enabled = true
+path = "/plugins"
+
+[plugins_ui.ui]
+theme = "dark"
+show_descriptions = true
+reload_on_toggle = true
+
+[version_checker]
+enabled = true
+path = "/version"
+summary_path = "/"

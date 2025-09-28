@@ -1,0 +1,280 @@
+[[models]]
+name = "Huawei S2350-28TP-EI-AC"
+score = 100
+match = "S2350"
+
+[[models]]
+name = "Huawei S2700-18TP-SI-AC"
+score = 102
+match = "S2700-18TP-SI-AC"
+
+[[models]]
+name = "Huawei S2320-28TP-EI-AC"
+score = 100
+match = "S2320"
+
+[[models]]
+name = "Huawei S5320-28TP-LI-AC"
+score = 100
+match = "S5320-28TP-LI-AC"
+
+[[models]]
+name = "Huawei S5320-28P-LI-AC"
+score = 100
+match = "S5320-28P-LI-AC"
+
+[[models]]
+name = "Huawei S6320-54C-EI-48S-AC"
+score = 128
+match = "S6320-54C-EI-48S-AC"
+
+[[models]]
+name = "Huawei S5700-26X-SI-12S-AC"
+score = 100
+match = "S5700-26X-SI-12S-AC"
+
+[[models]]
+name = "Huawei SmartAX MA5616"
+score = 100
+match_regex = "Huawei Integrated Access Software"
+
+[[models]]
+name = "Dlink DGS-3420-28SC"
+score = 100
+match = "DGS-3420-28SC"
+
+[[models]]
+name = "Dlink DGS-3620-28SC"
+score = 128
+match = "DGS-3620-28SC"
+
+[[models]]
+name = "Eltex MES2324FB"
+score = 128
+match = "MES2324FB"
+
+[[models]]
+name = "Eltex MES2324 AC"
+score = 104
+match = "MES2324"
+
+[[models]]
+name = "Eltex MES2324P"
+score = 104
+match = "MES2324P"
+
+[[models]]
+name = "Eltex MES3324F"
+score = 128
+match = "MES3324F"
+
+[[models]]
+name = "Eltex MES3308F"
+score = 112
+match = "MES3308F"
+
+[[models]]
+name = "Eltex MES3316F"
+score = 116
+match = "MES3316F"
+
+[[models]]
+name = "Eltex MES2428"
+score = 104
+match = "MES2428"
+
+[[models]]
+name = "ZTE 2928E"
+score = 100
+match_regex = "ZXR10 2928"
+
+[[models]]
+name = "D-Link DES-3200-26"
+score = 102
+match = "DES-3200-26"
+
+[[models]]
+name = "D-Link DES-3200-10"
+score = 102
+match = "DES-3200-10"
+
+[[models]]
+name = "D-Link DES-3200-28"
+score = 102
+match = "DES-3200-28"
+
+[[models]]
+name = "D-Link DES-1228/ME"
+score = 100
+match = "DES-1228/ME"
+
+[[models]]
+name = "D-Link DES-1210-28/ME/B2"
+score = 102
+match = "DES-1210-28/ME/B2"
+
+[[models]]
+name = "D-Link DES-1210-28"
+score = 102
+match = "DES-1210-28"
+
+[[models]]
+name = "D-Link DES-1210-28/ME/B3"
+score = 102
+match = "DES-1210-28/ME/B3"
+
+[[models]]
+name = "D-Link DGS-3000-10T"
+score = 102
+match = "DGS-3000-10TC"
+
+[[models]]
+name = "D-Link DGS-3000-26TC"
+score = 102
+match = "DGS-3000-26TC"
+
+[[models]]
+name = "Tp-Link T2700G-28TQ"
+score = 100
+match_regex = "Tp-Link T2700G-28TQ"
+
+[[models]]
+name = "Tp-Link T2600G-28TS"
+score = 100
+match_regex = "Tp-Link T2600G-28TS"
+
+[[models]]
+name = "Tp-Link TL-SL2428"
+score = 102
+match_regex = "Tp-Link TL-SL2428"
+
+[[models]]
+name = "Tp-Link TL-1600G-52PS"
+score = 100
+match_regex = "Tp-Link TL-1600G-52PS"
+
+[[models]]
+name = "Mikrotik CRS326"
+score = 102
+match_regex = "CRS326-24G-2S+"
+
+[[models]]
+name = "Mikrotik CRS112"
+score = 104
+match = "CRS112"
+
+[[models]]
+name = "Mikrotik RB2011LS"
+score = 101
+match = "RB2011LS"
+
+[[models]]
+name = "Mikrotik RB760iGS"
+score = 101
+match = "RB760"
+
+[[models]]
+name = "MikroTik SXT SA5"
+score = 100
+match_regex = "RB SXT"
+
+[[models]]
+name = "Mikrotik NetBox 5"
+score = 100
+match = "RB911G-5HPacD"
+
+[[models]]
+name = "Mikrotik CSS326"
+score = 102
+match_regex = "CSS326-24G-2S+"
+
+[[models]]
+name = "MikroTik RouterOS CHR"
+score = 100
+match = "CHR"
+
+[[models]]
+name = "SNR S2962-24T"
+score = 104
+match = "SNR-S2962-24T"
+
+[[models]]
+name = "SNR S2995G"
+score = 128
+match = "SNR-S2995G-24FX"
+
+[[models]]
+name = "SNR S2985G 24T"
+score = 104
+match = "SNR-S2985G-24T"
+
+[[models]]
+name = "SNR S2985G 8T"
+score = 102
+match = "SNR-S2985G-8T"
+
+[[models]]
+name = "SNR S2982G 24T"
+score = 102
+match = "SNR-S2982G-24TE"
+
+[[models]]
+name = "ZyXEL IES-612"
+score = 100
+match = "IES-612"
+
+[[models]]
+name = "ZyXEL IES1248-51"
+score = 100
+match = "IES1248"
+
+[[models]]
+name = "ZyXEL SAM1008"
+score = 100
+match_regex = "ZyXEL IES-1000/SAM1008"
+
+[[models]]
+name = "Cisco SG200-26"
+score = 102
+match = "SG200-26"
+
+[[models]]
+name = "V-Solution GPON-OLT V1600G2B"
+score = 124
+match = "V1600G2B"
+
+[[models]]
+name = "LinkSys SPS 208G"
+score = 100
+match_regex = "LinkSys SPS 208G"
+
+[[models]]
+name = "Cisco IOS ME3600"
+score = 100
+match = "ME360x_t"
+
+[[models]]
+name = "Cisco IOS ASR901"
+score = 100
+match = "ASR901"
+
+[[models]]
+name = "Cisco IOS ASR9001"
+score = 100
+match = "ASR9K"
+
+[[models]]
+name = "Cisco C2960"
+score = 100
+match = "C2960"
+
+[[models]]
+name = "Sprinter TX TopGate E1"
+score = 100
+match = "LPOS"
+
+[[models]]
+name = "Linux Server"
+score = 100
+match = "Linux"
+

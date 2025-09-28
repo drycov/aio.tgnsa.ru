@@ -1,0 +1,2 @@
+enabled = true
+menu_section = "main"  # или "admin", "profile"

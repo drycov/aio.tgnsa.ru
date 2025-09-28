@@ -6,16 +6,21 @@
 *.sqlite
 *.db
 *pid.*
+.fsm_states/*
 
 # Виртуальные окружения
 .idea/
 env/
+.venv/
+.venv/*
 venv/
 venv/*
-env*/  # на случай окружений с разными названиями
-*.env  # файлы конфигурации окружений
+env*/ # на случай окружений с разными названиями
+*.env # файлы конфигурации окружений
 .env
 .idx
+config/secrets.toml
+
 
 # Файлы и каталоги, связанные с пакетами
 *.egg
@@ -29,22 +34,31 @@ logs/
 *.log
 dump.rdb
 
-
 # IDE и редакторы
 .idea/
 .vscode/
 .DS_Store
 .history/
+.vs/
 
 # Миграции базы данных
 migrations/
+alembic/
 instance/
+data/
 
 # Дополнительно, если требуется
-*.bak  # резервные файлы
+*.bak # резервные файлы
 serviceAccountKey.json
 pid.run
 api_test/
 env
 .env
 ./serviceAccountKey.json
+.local
+.cache/
+.cache/*
+.github/
+.github/*
+.bash_history
+.python_history
