@@ -7,13 +7,13 @@ from aiogram.exceptions import (
     TelegramNotFound,
     TelegramBadRequest,
     TelegramAPIError,
+    TelegramNetworkError,
 )
 from aiogram.types import Update
 from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.bot.constants.messages import ErrorMessages
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,20 +23,18 @@ router = Router()
 @router.errors()
 async def error_handler(event: Update, exception: Exception):
     """
-    Enhanced error handler for Telegram API errors:
-    - Handles validation and Telegram API errors
-    - Provides structured HTTPException for FastAPI
+    Centralized error handler for Aiogram + FastAPI.
+    Maps known Telegram/Pydantic errors to HTTPException,
+    logs everything else.
     """
+
     # Validation / BadRequest
     if isinstance(exception, (ValidationError, TelegramBadRequest)):
         error_message = str(exception)
 
         if "Invalid message argument" in error_message:
-            logger.warning("Message validation error: %s", error_message, exc_info=True)
-            raise HTTPException(
-                status_code=400,
-                detail="Ошибка форматирования сообщения. Попробуйте другой запрос.",
-            )
+            logger.warning("Message validation error: %s", error_message)
+            raise HTTPException(status_code=400, detail="Ошибка форматирования сообщения.")
 
         if isinstance(exception, TelegramBadRequest):
             if "blocked" in error_message.lower():
@@ -46,23 +44,12 @@ async def error_handler(event: Update, exception: Exception):
                 logger.info("Chat not found.")
                 raise HTTPException(status_code=404, detail="Chat not found")
             else:
-                logger.warning(
-                    ErrorMessages.BAD_REQUEST.value.format(exception=error_message)
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail=ErrorMessages.BAD_REQUEST.value.format(
-                        exception=error_message
-                    ),
-                )
+                logger.warning(f"BadRequest: {error_message}")
+                raise HTTPException(status_code=400, detail=f"BadRequest: {error_message}")
 
     elif isinstance(exception, TelegramRetryAfter):
-        retry_after = exception.retry_after
-        logger.warning(ErrorMessages.FLOOD_CONTROL.value.format(retry_after=retry_after))
-        raise HTTPException(
-            status_code=429,
-            detail=ErrorMessages.FLOOD_CONTROL.value.format(retry_after=retry_after),
-        )
+        logger.warning(f"Flood control: retry after {exception.retry_after}s")
+        raise HTTPException(status_code=429, detail=f"Flood control: retry after {exception.retry_after}s")
 
     elif isinstance(exception, TelegramUnauthorizedError):
         logger.error(ErrorMessages.UNAUTHORIZED_TOKEN.value)
@@ -81,19 +68,13 @@ async def error_handler(event: Update, exception: Exception):
         raise HTTPException(status_code=404, detail=ErrorMessages.RESOURCE_NOT_FOUND.value)
 
     elif isinstance(exception, TelegramAPIError):
-        logger.error(ErrorMessages.TELEGRAM_API_ERROR.value.format(exception=exception))
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorMessages.TELEGRAM_API_ERROR.value.format(exception=exception),
-        )
+        logger.error(f"Telegram API error: {exception}")
+        raise HTTPException(status_code=500, detail=f"Telegram API error: {exception}")
 
-    elif "TelegramNetworkError" in str(exception) or "ClientConnectorDNSError" in str(exception):
+    elif isinstance(exception, TelegramNetworkError):
         logger.error(f"Network error: {exception}")
-        raise HTTPException(
-            status_code=503,
-            detail="Сетевая ошибка Telegram API. Проверьте соединение с api.telegram.org.",
-        )
+        raise HTTPException(status_code=503, detail="Сетевая ошибка Telegram API. Проверьте соединение.")
 
-    # Fallback — неизвестная ошибка
-    logger.exception(ErrorMessages.UNKNOWN_ERROR_USER.value, exc_info=exception)
+    # --- fallback ---
+    logger.exception(f"Unexpected error while handling {event}: {exception}")
     raise HTTPException(status_code=500, detail=ErrorMessages.UNKNOWN_ERROR_USER.value)

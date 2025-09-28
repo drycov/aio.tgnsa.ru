@@ -44,14 +44,23 @@ AUTH_MESSAGES = {
 # Сообщения для формы регистрации пользователя
 
 REGISTER_MESSAGES = {
-    "enter_first_name": f"{Symbols.USER_SINGLE.value} Введите имя",
-    "enter_last_name": f"{Symbols.USER_SINGLE.value} Введите фамилию",
-    "enter_position": f"{Symbols.USER_ADMIN.value} Выберите вашу должность",
+    # 🔹 Ввод ФИО
+    "enter_first_name": f"{Symbols.USER_SINGLE.value} Введите ваше имя",
+    "enter_last_name": f"{Symbols.USER_SINGLE.value} Введите вашу фамилию",
+
+    # 🔹 Выбор департамента и должности
     "enter_department": f"{Symbols.USER_GROUP.value} Выберите направление / отдел",
+    "enter_position": f"{Symbols.USER_ADMIN.value} Выберите должность",
+
+    # 🔹 Локация (если используется участок обслуживания)
     "enter_country": f"{Symbols.USER_GROUP.value} Укажите участок обслуживания",
-    "enter_phone": f"{Symbols.USER_BROADCAST.value} Поделитесь контактом кнопкой ниже",
+
+    # 🔹 Контакт и email
+    "enter_phone": f"{Symbols.USER_BROADCAST.value} Отправьте ваш номер телефона (кнопкой ниже)",
     "enter_email": f"{Symbols.USER_LOGIN.value} Введите корпоративную почту",
-    "success": f"{Symbols.USER_LOGOUT.value} Успешная регистрация. Продолжаем.",
+
+    # 🔹 Финал
+    "success": f"{Symbols.USER_LOGOUT.value} Проверьте введённые данные и подтвердите регистрацию",
 }
 
 

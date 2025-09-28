@@ -26,8 +26,8 @@ async def send_and_set(
     from app.bot.fsm.state_manager import StateManager  # локальный импорт
 
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-    footer = f"\n<pre><i>Completed: <code>{current_date}</code></i></pre>"
-    formatted_text = text.strip() + footer
+    # footer = f"\n<pre><i>Completed: <code>{current_date}</code></i></pre>"
+    formatted_text = text.strip()
 
     await message.answer(
         text=formatted_text,

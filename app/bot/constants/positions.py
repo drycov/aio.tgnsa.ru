@@ -1,10 +1,7 @@
-# app/bot/constants/positions.py
-
 from typing import Dict, List, Tuple
 
-# Универсальная структура:
-# { "КОД_ДЕПАРТАМЕНТА": { "label": "Название департамента", "positions": [(название, код), ...] } }
-
+# 📌 Основная структура
+# dept_code -> { "label": str, "positions": [(title, code), ...] }
 POSITIONS_BY_DEPARTMENT: Dict[str, Dict[str, List[Tuple[str, str]]]] = {
     "SIT": {
         "label": "СИТ",
@@ -28,3 +25,12 @@ POSITIONS_BY_DEPARTMENT: Dict[str, Dict[str, List[Tuple[str, str]]]] = {
         ],
     },
 }
+
+# 📌 Быстрый поиск должности по коду
+# code -> (title, dept_code, dept_label)
+POSITIONS_BY_CODE: Dict[str, Tuple[str, str, str]] = {}
+
+for dept_code, dept_info in POSITIONS_BY_DEPARTMENT.items():
+    dept_label = dept_info["label"]
+    for title, code in dept_info["positions"]:
+        POSITIONS_BY_CODE[code] = (title, dept_code, dept_label)

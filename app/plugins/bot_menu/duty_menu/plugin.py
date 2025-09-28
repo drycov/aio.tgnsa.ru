@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from .constants.menu import get_menu_buttons
 from .menu_handler.handlers import register_handlers
+from .menu_callback.callbacks import register_callbacks
 import inspect
 
 
@@ -63,41 +64,21 @@ class DutyMenuPlugin(PluginBase):
         return get_menu_buttons(is_admin)
 
 
-    def register_aiogram(self, dp_or_router: Router) -> None:
-        """Регистрирует aiogram-маршруты."""
-        dp_or_router.include_router(self.router)
-        self._register_handlers(self.router)
-        self.logger.info(f"[{self.name}] Маршруты зарегистрированы")
-
-    def _register_handlers(self, router: Router) -> None:
-        """Обработчики для duty."""
-        register_handlers(router)
-
-        @router.message(lambda msg: msg.text == "📅 Дежурства")
-        async def duty_menu_handler(message: Message, state, session: AsyncSession):
-            """Показывает персональное расписание дежурств по подразделению."""
-            tg_id = message.from_user.id
-
-            stmt = (
-                select(DutyShift)
-                .join(DutyUser)
-                .where(DutyUser.user.has(tg_id=tg_id))
-                .order_by(DutyShift.starts_at)
-            )
-            result = await session.execute(stmt)
-            shifts = result.scalars().all()
-
-            if not shifts:
-                await message.answer("❌ Для вас нет назначенных дежурств.")
-                return
-
-            lines = [
-                f"📅 {s.starts_at:%d.%m %H:%M} — {s.ends_at:%d.%m %H:%M} "
-                f"({'основное' if s.is_primary else 'резерв'})"
-                for s in shifts
-            ]
-            await message.answer("\n".join(lines))
+    def register_handlers(self, dp_or_router) -> None:
+        """Регистрация обработчиков (если есть)."""
+        register_handlers(dp_or_router)
+        pass
     
+    def register_callbacks(self, dp_or_router) -> None:
+        """Регистрация callback-обработчиков (если есть)."""
+        register_callbacks(dp_or_router)
+        pass
+
+    def register_inline_query(self, dp_or_router) -> None:
+        """Регистрация inline-обработчиков (если есть)."""
+        # register_inline_query(dp_or_router)
+        pass
+        
     def execute(self, **kwargs: Any) -> None:
         """Обязательный метод из PluginBase (заглушка)."""
         self.logger.debug(f"[{self.name}] execute вызван с аргументами: {kwargs}")

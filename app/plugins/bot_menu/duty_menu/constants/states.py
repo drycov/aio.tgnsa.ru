@@ -1,11 +1,24 @@
-from aiogram.fsm.state import StatesGroup, State
+from aiogram.fsm.state import State, StatesGroup
 
 
 class DutyStates(StatesGroup):
-    MENU = State()              # Главное меню дежурств
-    VIEW_SCHEDULE = State()     # Просмотр своего расписания
-    VIEW_TEAM = State()         # Просмотр команды
-    REQUEST_SWAP = State()      # Запрос обмена сменой
-    CONFIRM_SWAP = State()      # Подтверждение обмена
-    REPORT_INCIDENT = State()   # Сообщить об инциденте
-    CLOSE_INCIDENT = State()    # Закрыть/подтвердить решение инцидента
+    # Главное меню
+    MENU = State()
+
+    # Мои смены
+    MY_SHIFTS = State()
+    VIEW_SCHEDULE_WEEK = State()
+    VIEW_SCHEDULE_MONTH = State()
+    REQUEST_SWAP = State()
+    CONFIRM_SWAP = State()
+
+    # Команда
+    VIEW_TEAM = State()
+
+    # Эскалация / инциденты
+    ESCALATION = State()
+    REPORT_INCIDENT = State()
+    CLOSE_INCIDENT = State()
+
+    # Настройки
+    SETTINGS = State()
